@@ -1,0 +1,25 @@
+name: Audit Omura prediction data
+'on':
+  workflow_dispatch:
+  schedule:
+    - cron: '30 9 * * *'
+permissions:
+  contents: write
+jobs:
+  audit:
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.11'
+      - name: Audit CSV sources
+        run: python omura_data_audit.py
+      - name: Commit audit report
+        run: |
+          git config user.name 'github-actions[bot]'
+          git config user.email '41898282+github-actions[bot]@users.noreply.github.com'
+          git add omura/docs/data_audit.json
+          git diff --cached --quiet || git commit -m 'Audit Omura source data'
+          git push

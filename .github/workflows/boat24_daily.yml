@@ -1,0 +1,27 @@
+name: Boat24 forward predictions and results
+on:
+  workflow_dispatch:
+  schedule:
+    - cron: '*/10 * * * *'
+permissions:
+  contents: write
+concurrency:
+  group: boat24-ledger
+  cancel-in-progress: false
+jobs:
+  collect:
+    runs-on: ubuntu-latest
+    timeout-minutes: 8
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.11'
+      - name: Snapshot and settle
+        run: python boat24_daily.py
+      - name: Publish immutable snapshots and settlements
+        run: |
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git add omura/docs/boat24_ledger.json
+          git diff --cached --quiet || (git commit -m "Record boat24 forecasts and results" && git pull --rebase && git push)

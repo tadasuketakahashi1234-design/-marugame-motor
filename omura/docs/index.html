@@ -1,0 +1,102 @@
+
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>大村 モーター評価</title>
+<style>
+*{box-sizing:border-box}
+body{margin:0;background:#f3f5fa;color:#19263d;font-family:system-ui,sans-serif}
+header{background:#132544;color:white;padding:24px 16px}
+header small{color:#a8c6ef}
+h1{font-size:25px;margin:8px 0}
+main{max-width:850px;margin:auto;padding:16px}
+.info{font-size:13px;color:#53647d;margin:10px 0}
+.warning{background:#fff5d8;padding:12px;border-radius:10px;font-size:13px;margin:12px 0}
+.tools{display:flex;gap:8px;margin:16px 0}
+input,select{min-width:0;padding:12px;border:1px solid #ccd5e2;border-radius:9px;background:white}
+input{flex:1}
+.card{background:white;border:1px solid #e0e6ee;border-radius:14px;padding:16px;margin:12px 0;box-shadow:0 2px 7px #00000008}
+.top{display:flex;justify-content:space-between;align-items:center;gap:8px}
+.number{font-size:23px;font-weight:800}
+.score{font-size:21px;font-weight:800;color:#1465ad}
+.rank{font-size:12px;background:#e5f1ff;color:#17558a;padding:4px 9px;border-radius:20px}
+.stats{display:flex;flex-wrap:wrap;gap:15px;margin-top:12px;font-size:13px}
+.history{border-top:1px solid #e6eaf0;margin-top:12px;padding-top:10px;font-size:13px}
+.history p{margin:7px 0}
+.muted{color:#6a7688}
+#error{color:#bb2833}
+</style>
+</head>
+<body>
+<header>
+<small>BOAT MOTOR ANALYTICS · 24 OMURA</small>
+<h1>大村 モーター評価</h1>
+<div>全モーターランキング / 過去3節の使用履歴</div>
+</header>
+<main>
+<div id="meta" class="info">データ読み込み中...</div>
+<div id="warning" class="warning">評価は暫定値です。舟券購入の判断に単独で使用しないでください。</div>
+<div class="tools">
+<input id="search" placeholder="モーター番号・選手名で検索">
+<select id="sort">
+<option value="score">評価順</option>
+<option value="number">番号順</option>
+<option value="two">2連対率順</option>
+</select>
+</div>
+<div id="count" class="info"></div>
+<div id="error"></div>
+<div id="list"></div>
+</main>
+<script>
+let motors=[];
+const $=id=>document.getElementById(id);
+const safe=s=>String(s??'').replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
+const pct=v=>v==null?'不明':Number(v).toFixed(1)+'%';
+
+function render(){
+ const q=$('search').value.trim().toLowerCase();
+ const sort=$('sort').value;
+ const arr=motors.filter(m=>String(m.number).includes(q)||(m.uses||[]).some(u=>String(u.racer||'').toLowerCase().includes(q)));
+ arr.sort((a,b)=>sort==='number'?Number(a.number)-Number(b.number):sort==='two'?(Number(b.two_rate)||0)-(Number(a.two_rate)||0):(Number(b.score)||0)-(Number(a.score)||0));
+ $('count').textContent=`表示 ${arr.length} / ${motors.length} モーター`;
+ $('list').innerHTML=arr.map(m=>`
+ <article class="card">
+ <div class="top">
+ <div><span class="number">${safe(m.number)}号機</span> <span class="rank">${safe(m.rank)}</span></div>
+ <div class="score">${safe(m.score)}点</div>
+ </div>
+ <div class="stats">
+ <span>2連対率 <b>${pct(m.two_rate)}</b></span>
+ <span>3連対率 <b>${pct(m.three_rate)}</b></span>
+ <span>出走数 <b>${safe(m.starts)}</b></span>
+ </div>
+ <div class="history">
+ <b>直近の使用履歴</b>
+ ${(m.uses||[]).length?(m.uses||[]).map(u=>`
+ <p><b>${safe(u.racer)}</b> <span class="muted">${safe(u.start)}〜${safe(u.end)}</span><br>
+ ${safe(u.grade)} / ${safe(u.races)}走 / 平均着順 ${safe(u.avg_finish)} / 着順 ${safe(u.finishes)}</p>
+ `).join(''):'<p class="muted">履歴なし</p>'}
+ </div>
+ </article>`).join('');
+}
+$('search').addEventListener('input',render);
+$('sort').addEventListener('change',render);
+
+fetch('./data.json?cache='+Date.now())
+.then(r=>{if(!r.ok)throw Error('HTTP '+r.status);return r.json()})
+.then(d=>{
+ motors=d.motors||[];
+ $('meta').textContent=`${d.stadium||'大村'} / データ基準日: ${d.stats_date||'不明'} / 更新: ${d.updated_at||'不明'}`;
+ if(d.warning)$('warning').textContent=d.warning;
+ render();
+})
+.catch(e=>{
+ $('meta').textContent='データを読み込めませんでした';
+ $('error').textContent='データ取得エラー: '+e.message;
+});
+</script>
+</body>
+</html>

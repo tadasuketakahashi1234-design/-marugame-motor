@@ -1,0 +1,27 @@
+name: Boat24 forward model comparison
+on:
+  workflow_dispatch:
+  schedule:
+    - cron: '5,15,25,35,45,55 * * * *'
+permissions:
+  contents: write
+concurrency:
+  group: boat24-forward-comparison
+  cancel-in-progress: false
+jobs:
+  compare:
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.11'
+      - name: Compare forward-only forecasts
+        run: python boat24_compare.py
+      - name: Commit comparison ledger
+        run: |
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git add omura/docs/boat24_comparison.json
+          git diff --cached --quiet || (git commit -m "Update forward model comparison" && git pull --rebase && git push)

@@ -68,8 +68,7 @@ def current_series_motors(start, today):
         day += timedelta(days=1)
     grouped = {}
     for item in latest.values():
-        if item['finishes']:
-            grouped.setdefault(item['motor'], []).append(item)
+        grouped.setdefault(item['motor'], []).append(item)
     return grouped
 
 
@@ -83,6 +82,23 @@ def main():
     data['current_series_start'] = start.isoformat() if start else None
     data['current_series_status'] = '開催期間外または日程未取得' if start is None else '集計済み'
     grouped = current_series_motors(start, today) if start else {}
+    # Include motors seen in the current series even if the stats snapshot omits them.
+    existing = {str(m['number']) for m in data['motors']}
+    added = 0
+    for number in sorted(grouped, key=lambda x: int(x) if x.isdigit() else 999):
+        if number in existing:
+            continue
+        data['motors'].append({
+            'number': number, 'score': 50.0, 'raw_score': None,
+            'corrected_score': 50.0, 'score_difference': None,
+            'rank': 'B', 'two_rate': None, 'three_rate': None,
+            'starts': None, 'period_start': '', 'uses': [],
+            'confidence': '低', 'skill_matched': 0, 'skill_total': 0,
+            'past_data_missing': True,
+        })
+        added += 1
+    print('今節から新たに追加したモーター:', added)
+
     for motor in data['motors']:
         motor['past_three_score'] = motor['score']
         entries = grouped.get(str(motor['number']), [])
@@ -108,6 +124,9 @@ def main():
         motor['current_series_score'] = current_score
         # Limited early-series sample: cap current-series weight at 35%.
         weight = min(0.35, len(finishes) / 10 * 0.35)
+        # No historical stats: use neutral 50-point prior and a
+        # sample-size-dependent contribution from this series alone.
+        # Keep the same conservative 35% cap used for existing motors.
         overall = round(motor['past_three_score'] * (1 - weight) + current_score * weight, 1)
         motor['overall_score'] = overall
         motor['score'] = overall
@@ -115,7 +134,8 @@ def main():
         motor['rank'] = ('S' if overall >= 75 else 'A' if overall >= 62 else 'B' if overall >= 48 else 'C' if overall >= 35 else 'D')
     data['motors'].sort(key=lambda x: (-x['score'], int(x['number']) if str(x['number']).isdigit() else 999))
     data['method'] = '過去3節＋今節の暫定評価（選手全国勝率による仮補正）'
-    data['warning'] = '今節は出走表の節間着順を集計。欠場・失格等は平均着順から除外。補正係数と配分比率は未検証で予測確率ではありません。'
+    data['warning'] = '今節は出走表の節間着順を集計。過去成績のないモーターは50点を基準とした暫定評価です。欠場・失格等は平均着順から除外。補正係数と配分比率は未検証で予測確率ではありません。'
+    data['current_series_motors_added'] = added
     data['current_series_motors_with_results'] = sum(bool(m['current_series_races']) for m in data['motors'])
     if start and not grouped:
         data['current_series_status'] = '開催中だが着順データ未取得'

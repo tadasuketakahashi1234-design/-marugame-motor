@@ -1,0 +1,1810 @@
+{
+  "updated_at": "2026-11-01T14:55+09:00",
+  "stats_date": "2026-10-31",
+  "history_snapshot_dates": [
+    "2026-10-15",
+    "2026-10-02",
+    "2026-09-21",
+    "2026-08-28",
+    "2026-08-21"
+  ],
+  "stadium": "丸亀",
+  "method": "暫定・選手補正なし",
+  "warning": "着順と期成績を使った暫定評価です。選手実力・コース・相手関係は未補正。予測確率ではありません。",
+  "motors": [
+    {
+      "number": "50",
+      "score": 73.5,
+      "rank": "A",
+      "two_rate": 87.5,
+      "three_rate": 100.0,
+      "starts": 8.0,
+      "period_start": "2026-09-17",
+      "uses": [
+        {
+          "start": "2026-10-10",
+          "end": "2026-10-15",
+          "racer": "土屋 太朗",
+          "grade": "一般",
+          "finishes": "３６１　２２１　２４５３",
+          "races": 10,
+          "avg_finish": 2.9
+        },
+        {
+          "start": "2026-09-26",
+          "end": "2026-10-02",
+          "racer": "中岡 健人",
+          "grade": "一般",
+          "finishes": "　　　　　　　　　　３６６２",
+          "races": 4,
+          "avg_finish": 4.25
+        },
+        {
+          "start": "2026-09-17",
+          "end": "2026-09-21",
+          "racer": "香川 颯太",
+          "grade": "一般",
+          "finishes": "１１１　１２３１[１]",
+          "races": 8,
+          "avg_finish": 1.38
+        }
+      ],
+      "confidence": "高"
+    },
+    {
+      "number": "18",
+      "score": 71.1,
+      "rank": "A",
+      "two_rate": 75.0,
+      "three_rate": 75.0,
+      "starts": 8.0,
+      "period_start": "2026-09-17",
+      "uses": [
+        {
+          "start": "2026-10-10",
+          "end": "2026-10-15",
+          "racer": "濱本 優一",
+          "grade": "一般",
+          "finishes": "３１４６３２１　１２[４]",
+          "races": 10,
+          "avg_finish": 2.7
+        },
+        {
+          "start": "2026-09-17",
+          "end": "2026-09-21",
+          "racer": "深川 和仁",
+          "grade": "一般",
+          "finishes": "１　１２１１４Ｆ２",
+          "races": 7,
+          "avg_finish": 1.71
+        },
+        {
+          "start": "2026-07-28",
+          "end": "2026-08-02",
+          "racer": "香川 素子",
+          "grade": "一般",
+          "finishes": "３３４２４　５６６５２４",
+          "races": 11,
+          "avg_finish": 4
+        }
+      ],
+      "confidence": "高"
+    },
+    {
+      "number": "19",
+      "score": 66.6,
+      "rank": "A",
+      "two_rate": 62.5,
+      "three_rate": 87.5,
+      "starts": 8.0,
+      "period_start": "2026-09-17",
+      "uses": [
+        {
+          "start": "2026-10-10",
+          "end": "2026-10-15",
+          "racer": "谷川 祐一",
+          "grade": "一般",
+          "finishes": "２　２５２１４２２３４４",
+          "races": 11,
+          "avg_finish": 2.82
+        },
+        {
+          "start": "2026-09-17",
+          "end": "2026-09-21",
+          "racer": "森安 弘雅",
+          "grade": "一般",
+          "finishes": "１２２　４２３１[３]",
+          "races": 8,
+          "avg_finish": 2.25
+        },
+        {
+          "start": "2026-08-07",
+          "end": "2026-08-11",
+          "racer": "澤 大介",
+          "grade": "一般",
+          "finishes": "３　１６６５４　３６",
+          "races": 8,
+          "avg_finish": 4.25
+        }
+      ],
+      "confidence": "高"
+    },
+    {
+      "number": "49",
+      "score": 65.9,
+      "rank": "A",
+      "two_rate": 33.33,
+      "three_rate": 100.0,
+      "starts": 9.0,
+      "period_start": "2026-09-17",
+      "uses": [
+        {
+          "start": "2026-10-10",
+          "end": "2026-10-15",
+          "racer": "佐藤 大介",
+          "grade": "一般",
+          "finishes": "４５４１４　３１１４１３",
+          "races": 11,
+          "avg_finish": 2.82
+        },
+        {
+          "start": "2026-09-26",
+          "end": "2026-10-02",
+          "racer": "梅原 祥平",
+          "grade": "一般",
+          "finishes": "　　　　　　　　　　２２３１",
+          "races": 4,
+          "avg_finish": 2
+        },
+        {
+          "start": "2026-09-17",
+          "end": "2026-09-21",
+          "racer": "中村 辰也",
+          "grade": "一般",
+          "finishes": "３３３　１１３２３３",
+          "races": 9,
+          "avg_finish": 2.44
+        }
+      ],
+      "confidence": "高"
+    },
+    {
+      "number": "38",
+      "score": 62.8,
+      "rank": "A",
+      "two_rate": 66.67,
+      "three_rate": 77.78,
+      "starts": 9.0,
+      "period_start": "2026-09-17",
+      "uses": [
+        {
+          "start": "2026-09-26",
+          "end": "2026-10-02",
+          "racer": "守屋 大地",
+          "grade": "一般",
+          "finishes": "６　１３６３１２２３５４３４",
+          "races": 13,
+          "avg_finish": 3.31
+        },
+        {
+          "start": "2026-09-17",
+          "end": "2026-09-21",
+          "racer": "小林 京平",
+          "grade": "一般",
+          "finishes": "６２１　５２１３１１",
+          "races": 9,
+          "avg_finish": 2.44
+        },
+        {
+          "start": "2026-04-25",
+          "end": "2026-04-30",
+          "racer": "村越 篤",
+          "grade": "一般",
+          "finishes": "６　６５５６６２４　１３",
+          "races": 10,
+          "avg_finish": 4.4
+        }
+      ],
+      "confidence": "高"
+    },
+    {
+      "number": "11",
+      "score": 62.4,
+      "rank": "A",
+      "two_rate": 44.44,
+      "three_rate": 66.67,
+      "starts": 9.0,
+      "period_start": "2026-09-17",
+      "uses": [
+        {
+          "start": "2026-09-26",
+          "end": "2026-10-02",
+          "racer": "安河内 健",
+          "grade": "一般",
+          "finishes": "３４３２２２３　１３３３２１",
+          "races": 13,
+          "avg_finish": 2.46
+        },
+        {
+          "start": "2026-09-17",
+          "end": "2026-09-21",
+          "racer": "金田 大輔",
+          "grade": "一般",
+          "finishes": "２３１　５６３５１２",
+          "races": 9,
+          "avg_finish": 3.11
+        },
+        {
+          "start": "2026-04-25",
+          "end": "2026-04-30",
+          "racer": "中村 晃朋",
+          "grade": "一般",
+          "finishes": "１５２５２　４６１３落１",
+          "races": 10,
+          "avg_finish": 3
+        }
+      ],
+      "confidence": "高"
+    },
+    {
+      "number": "22",
+      "score": 61.7,
+      "rank": "B",
+      "two_rate": 44.44,
+      "three_rate": 66.67,
+      "starts": 9.0,
+      "period_start": "2026-09-17",
+      "uses": [
+        {
+          "start": "2026-10-10",
+          "end": "2026-10-15",
+          "racer": "中澤 和志",
+          "grade": "一般",
+          "finishes": "１３５　１１５５３１[１]",
+          "races": 10,
+          "avg_finish": 2.6
+        },
+        {
+          "start": "2026-09-17",
+          "end": "2026-09-21",
+          "racer": "外崎 悟",
+          "grade": "一般",
+          "finishes": "２１３５６３４２[２]",
+          "races": 9,
+          "avg_finish": 3.11
+        },
+        {
+          "start": "2026-08-24",
+          "end": "2026-08-28",
+          "racer": "飯島 昌弘",
+          "grade": "一般",
+          "finishes": "１４落　４３４５２１",
+          "races": 8,
+          "avg_finish": 3
+        }
+      ],
+      "confidence": "高"
+    },
+    {
+      "number": "48",
+      "score": 61.6,
+      "rank": "B",
+      "two_rate": 55.56,
+      "three_rate": 66.67,
+      "starts": 9.0,
+      "period_start": "2026-09-17",
+      "uses": [
+        {
+          "start": "2026-10-10",
+          "end": "2026-10-15",
+          "racer": "藤田 俊祐",
+          "grade": "一般",
+          "finishes": "５２３１３　４４２３６４",
+          "races": 11,
+          "avg_finish": 3.36
+        },
+        {
+          "start": "2026-09-26",
+          "end": "2026-10-02",
+          "racer": "小林 甘寧",
+          "grade": "一般",
+          "finishes": "　　　　　　　　　　４１２４",
+          "races": 4,
+          "avg_finish": 2.75
+        },
+        {
+          "start": "2026-09-17",
+          "end": "2026-09-21",
+          "racer": "藤岡 俊介",
+          "grade": "一般",
+          "finishes": "１６３１１１４１[６]",
+          "races": 9,
+          "avg_finish": 2.67
+        }
+      ],
+      "confidence": "高"
+    },
+    {
+      "number": "8",
+      "score": 61.5,
+      "rank": "B",
+      "two_rate": 50.0,
+      "three_rate": 62.5,
+      "starts": 8.0,
+      "period_start": "2026-09-17",
+      "uses": [
+        {
+          "start": "2026-09-26",
+          "end": "2026-10-02",
+          "racer": "中越 博紀",
+          "grade": "一般",
+          "finishes": "１　６５１３５　６６１　１５",
+          "races": 11,
+          "avg_finish": 3.64
+        },
+        {
+          "start": "2026-09-17",
+          "end": "2026-09-21",
+          "racer": "山田 真聖",
+          "grade": "一般",
+          "finishes": "６　２１３１２Ｆ４",
+          "races": 7,
+          "avg_finish": 2.71
+        },
+        {
+          "start": "2026-08-24",
+          "end": "2026-08-28",
+          "racer": "木谷 賢太",
+          "grade": "一般",
+          "finishes": "１３１１２１２１[１]",
+          "races": 9,
+          "avg_finish": 1.44
+        }
+      ],
+      "confidence": "高"
+    },
+    {
+      "number": "12",
+      "score": 59.9,
+      "rank": "B",
+      "two_rate": 37.5,
+      "three_rate": 37.5,
+      "starts": 8.0,
+      "period_start": "2026-09-17",
+      "uses": [
+        {
+          "start": "2026-10-10",
+          "end": "2026-10-15",
+          "racer": "深井 利寿",
+          "grade": "一般",
+          "finishes": "４１３１３　１１３２[５]",
+          "races": 10,
+          "avg_finish": 2.4
+        },
+        {
+          "start": "2026-09-26",
+          "end": "2026-10-02",
+          "racer": "重冨 勇哉",
+          "grade": "一般",
+          "finishes": "　　　　　　　　　　２３１３",
+          "races": 4,
+          "avg_finish": 2.25
+        },
+        {
+          "start": "2026-09-17",
+          "end": "2026-09-21",
+          "racer": "峰重 侑治",
+          "grade": "一般",
+          "finishes": "１　４６４６１　４２",
+          "races": 8,
+          "avg_finish": 3.5
+        }
+      ],
+      "confidence": "高"
+    },
+    {
+      "number": "4",
+      "score": 59.4,
+      "rank": "B",
+      "two_rate": 44.44,
+      "three_rate": 88.89,
+      "starts": 9.0,
+      "period_start": "2026-09-17",
+      "uses": [
+        {
+          "start": "2026-09-26",
+          "end": "2026-10-02",
+          "racer": "郷原 章平",
+          "grade": "一般",
+          "finishes": "５２５　３５４２６２４　１１",
+          "races": 12,
+          "avg_finish": 3.33
+        },
+        {
+          "start": "2026-09-17",
+          "end": "2026-09-21",
+          "racer": "権藤 俊光",
+          "grade": "一般",
+          "finishes": "３２３３３１１２[４]",
+          "races": 9,
+          "avg_finish": 2.44
+        },
+        {
+          "start": "2026-08-24",
+          "end": "2026-08-28",
+          "racer": "浦野 海",
+          "grade": "一般",
+          "finishes": "４４転　４　１６６４",
+          "races": 7,
+          "avg_finish": 4.14
+        }
+      ],
+      "confidence": "高"
+    },
+    {
+      "number": "14",
+      "score": 59.1,
+      "rank": "B",
+      "two_rate": 50.0,
+      "three_rate": 50.0,
+      "starts": 10.0,
+      "period_start": "2026-09-17",
+      "uses": [
+        {
+          "start": "2026-10-10",
+          "end": "2026-10-15",
+          "racer": "桑島 和宏",
+          "grade": "一般",
+          "finishes": "４３１　３４２１５４１６",
+          "races": 11,
+          "avg_finish": 3.09
+        },
+        {
+          "start": "2026-09-17",
+          "end": "2026-09-21",
+          "racer": "木田 峰由季",
+          "grade": "一般",
+          "finishes": "１１６４５２１１４５",
+          "races": 10,
+          "avg_finish": 3
+        },
+        {
+          "start": "2026-08-24",
+          "end": "2026-08-28",
+          "racer": "西丸 侑太朗",
+          "grade": "一般",
+          "finishes": "４１２２２４５２[４]",
+          "races": 9,
+          "avg_finish": 2.89
+        }
+      ],
+      "confidence": "高"
+    },
+    {
+      "number": "2",
+      "score": 57.9,
+      "rank": "B",
+      "two_rate": 50.0,
+      "three_rate": 62.5,
+      "starts": 8.0,
+      "period_start": "2026-09-17",
+      "uses": [
+        {
+          "start": "2026-09-26",
+          "end": "2026-10-02",
+          "racer": "坂 咲友理",
+          "grade": "一般",
+          "finishes": "２１４　４　６欠",
+          "races": 5,
+          "avg_finish": 3.4
+        },
+        {
+          "start": "2026-09-17",
+          "end": "2026-09-21",
+          "racer": "泉 具巳",
+          "grade": "一般",
+          "finishes": "２４６　１６１　２３",
+          "races": 8,
+          "avg_finish": 3.12
+        },
+        {
+          "start": "2026-08-24",
+          "end": "2026-08-28",
+          "racer": "繁野谷 圭介",
+          "grade": "一般",
+          "finishes": "１１２５２　５５１５",
+          "races": 9,
+          "avg_finish": 3
+        }
+      ],
+      "confidence": "高"
+    },
+    {
+      "number": "1",
+      "score": 57.3,
+      "rank": "B",
+      "two_rate": 44.44,
+      "three_rate": 55.56,
+      "starts": 9.0,
+      "period_start": "2026-09-17",
+      "uses": [
+        {
+          "start": "2026-10-10",
+          "end": "2026-10-15",
+          "racer": "村田 修次",
+          "grade": "一般",
+          "finishes": "２　４４６１３５４　２２",
+          "races": 10,
+          "avg_finish": 3.3
+        },
+        {
+          "start": "2026-09-26",
+          "end": "2026-10-02",
+          "racer": "芝田 浩治",
+          "grade": "一般",
+          "finishes": "３６５１１　５４１５４２１２",
+          "races": 13,
+          "avg_finish": 3.08
+        },
+        {
+          "start": "2026-09-17",
+          "end": "2026-09-21",
+          "racer": "高橋 正男",
+          "grade": "一般",
+          "finishes": "４転１３２５２　４１",
+          "races": 8,
+          "avg_finish": 2.75
+        }
+      ],
+      "confidence": "高"
+    },
+    {
+      "number": "20",
+      "score": 56.8,
+      "rank": "B",
+      "two_rate": 50.0,
+      "three_rate": 100.0,
+      "starts": 2.0,
+      "period_start": "2026-09-17",
+      "uses": [
+        {
+          "start": "2026-10-10",
+          "end": "2026-10-15",
+          "racer": "松江 秀徳",
+          "grade": "一般",
+          "finishes": "５３２６６４１　２５６",
+          "races": 10,
+          "avg_finish": 4
+        },
+        {
+          "start": "2026-09-26",
+          "end": "2026-10-02",
+          "racer": "小林 文彦",
+          "grade": "一般",
+          "finishes": "４２２　５４４４",
+          "races": 7,
+          "avg_finish": 3.57
+        },
+        {
+          "start": "2026-09-17",
+          "end": "2026-09-21",
+          "racer": "森永 淳",
+          "grade": "一般",
+          "finishes": "１３",
+          "races": 2,
+          "avg_finish": 2
+        }
+      ],
+      "confidence": "高"
+    },
+    {
+      "number": "5",
+      "score": 55.6,
+      "rank": "B",
+      "two_rate": 33.33,
+      "three_rate": 55.56,
+      "starts": 9.0,
+      "period_start": "2026-09-17",
+      "uses": [
+        {
+          "start": "2026-09-26",
+          "end": "2026-10-02",
+          "racer": "平田 忠則",
+          "grade": "一般",
+          "finishes": "１２３１６　２１２２３２[２]",
+          "races": 12,
+          "avg_finish": 2.25
+        },
+        {
+          "start": "2026-09-17",
+          "end": "2026-09-21",
+          "racer": "大池 佑来",
+          "grade": "一般",
+          "finishes": "１５５１３３２Ｆ４",
+          "races": 8,
+          "avg_finish": 3
+        },
+        {
+          "start": "2026-04-18",
+          "end": "2026-04-22",
+          "racer": "倉田 郁美",
+          "grade": "一般",
+          "finishes": "４６６　４５６　５",
+          "races": 7,
+          "avg_finish": 5.14
+        }
+      ],
+      "confidence": "高"
+    },
+    {
+      "number": "17",
+      "score": 55.6,
+      "rank": "B",
+      "two_rate": 40.0,
+      "three_rate": 60.0,
+      "starts": 10.0,
+      "period_start": "2026-09-17",
+      "uses": [
+        {
+          "start": "2026-10-10",
+          "end": "2026-10-15",
+          "racer": "平見 真彦",
+          "grade": "一般",
+          "finishes": "３　５４６３３２１　３２",
+          "races": 10,
+          "avg_finish": 3.2
+        },
+        {
+          "start": "2026-09-17",
+          "end": "2026-09-21",
+          "racer": "岡村 将也",
+          "grade": "一般",
+          "finishes": "２３１４４５５３２１",
+          "races": 10,
+          "avg_finish": 3
+        },
+        {
+          "start": "2026-08-07",
+          "end": "2026-08-11",
+          "racer": "喜多須 杏奈",
+          "grade": "一般",
+          "finishes": "４３５　４６２２３",
+          "races": 8,
+          "avg_finish": 3.62
+        }
+      ],
+      "confidence": "高"
+    },
+    {
+      "number": "47",
+      "score": 54.2,
+      "rank": "B",
+      "two_rate": 25.0,
+      "three_rate": 37.5,
+      "starts": 8.0,
+      "period_start": "2026-09-17",
+      "uses": [
+        {
+          "start": "2026-09-26",
+          "end": "2026-10-02",
+          "racer": "岡村 慶太",
+          "grade": "一般",
+          "finishes": "１１３１３　１３３１１１[１]",
+          "races": 12,
+          "avg_finish": 1.67
+        },
+        {
+          "start": "2026-09-17",
+          "end": "2026-09-21",
+          "racer": "小畑 実成",
+          "grade": "一般",
+          "finishes": "１　５５２４４　３５",
+          "races": 8,
+          "avg_finish": 3.62
+        },
+        {
+          "start": "2026-04-25",
+          "end": "2026-04-30",
+          "racer": "下田 哲也",
+          "grade": "一般",
+          "finishes": "５　４５４　４５３　６６",
+          "races": 9,
+          "avg_finish": 4.67
+        }
+      ],
+      "confidence": "高"
+    },
+    {
+      "number": "46",
+      "score": 52.9,
+      "rank": "B",
+      "two_rate": 55.56,
+      "three_rate": 77.78,
+      "starts": 9.0,
+      "period_start": "2026-09-17",
+      "uses": [
+        {
+          "start": "2026-09-26",
+          "end": "2026-10-02",
+          "racer": "小川 時光",
+          "grade": "一般",
+          "finishes": "５４６　５６２",
+          "races": 6,
+          "avg_finish": 4.67
+        },
+        {
+          "start": "2026-09-17",
+          "end": "2026-09-21",
+          "racer": "河野 真也",
+          "grade": "一般",
+          "finishes": "３　３２２２２４４１",
+          "races": 9,
+          "avg_finish": 2.56
+        },
+        {
+          "start": "2026-08-24",
+          "end": "2026-08-28",
+          "racer": "岩川 仁士",
+          "grade": "一般",
+          "finishes": "４　６５４　３４３",
+          "races": 7,
+          "avg_finish": 4.14
+        }
+      ],
+      "confidence": "高"
+    },
+    {
+      "number": "16",
+      "score": 50.6,
+      "rank": "B",
+      "two_rate": 44.44,
+      "three_rate": 66.67,
+      "starts": 9.0,
+      "period_start": "2026-09-17",
+      "uses": [
+        {
+          "start": "2026-10-10",
+          "end": "2026-10-15",
+          "racer": "飯島 誠",
+          "grade": "一般",
+          "finishes": "２５２　４６５　６６５",
+          "races": 9,
+          "avg_finish": 4.56
+        },
+        {
+          "start": "2026-09-17",
+          "end": "2026-09-21",
+          "racer": "岸本 隆",
+          "grade": "一般",
+          "finishes": "３５２　１５２２３６",
+          "races": 9,
+          "avg_finish": 3.22
+        },
+        {
+          "start": "2026-08-24",
+          "end": "2026-08-28",
+          "racer": "出畑 孝典",
+          "grade": "一般",
+          "finishes": "１　５２４３４４１２",
+          "races": 9,
+          "avg_finish": 2.89
+        }
+      ],
+      "confidence": "高"
+    },
+    {
+      "number": "39",
+      "score": 50.4,
+      "rank": "B",
+      "two_rate": 40.0,
+      "three_rate": 60.0,
+      "starts": 10.0,
+      "period_start": "2026-09-17",
+      "uses": [
+        {
+          "start": "2026-09-26",
+          "end": "2026-10-02",
+          "racer": "高山 敬悟",
+          "grade": "一般",
+          "finishes": "４３１　４６３　１６６　５５",
+          "races": 11,
+          "avg_finish": 4
+        },
+        {
+          "start": "2026-09-17",
+          "end": "2026-09-21",
+          "racer": "河村 了",
+          "grade": "一般",
+          "finishes": "３４１４５３１５２２",
+          "races": 10,
+          "avg_finish": 3
+        },
+        {
+          "start": "2026-08-24",
+          "end": "2026-08-28",
+          "racer": "佃 來紀",
+          "grade": "一般",
+          "finishes": "１６５妨４",
+          "races": 4,
+          "avg_finish": 4
+        }
+      ],
+      "confidence": "高"
+    },
+    {
+      "number": "6",
+      "score": 50.2,
+      "rank": "B",
+      "two_rate": 25.0,
+      "three_rate": 37.5,
+      "starts": 8.0,
+      "period_start": "2026-09-17",
+      "uses": [
+        {
+          "start": "2026-09-26",
+          "end": "2026-10-02",
+          "racer": "佐藤 世那",
+          "grade": "一般",
+          "finishes": "４５１　１４１　２３２転４６",
+          "races": 11,
+          "avg_finish": 3
+        },
+        {
+          "start": "2026-09-17",
+          "end": "2026-09-21",
+          "racer": "三原 司",
+          "grade": "一般",
+          "finishes": "４４１　６４５　２３",
+          "races": 8,
+          "avg_finish": 3.62
+        },
+        {
+          "start": "2026-08-24",
+          "end": "2026-08-28",
+          "racer": "前田 聖文",
+          "grade": "一般",
+          "finishes": "３３２３５６３２１",
+          "races": 9,
+          "avg_finish": 3.11
+        }
+      ],
+      "confidence": "高"
+    },
+    {
+      "number": "35",
+      "score": 49.5,
+      "rank": "B",
+      "two_rate": 25.0,
+      "three_rate": 50.0,
+      "starts": 8.0,
+      "period_start": "2026-09-17",
+      "uses": [
+        {
+          "start": "2026-10-10",
+          "end": "2026-10-15",
+          "racer": "正木 聖賢",
+          "grade": "一般",
+          "finishes": "５２１　１６１６１２[６]",
+          "races": 10,
+          "avg_finish": 3.1
+        },
+        {
+          "start": "2026-09-26",
+          "end": "2026-10-02",
+          "racer": "松井 貫太",
+          "grade": "一般",
+          "finishes": "４　２４５　３４３３３　転欠",
+          "races": 9,
+          "avg_finish": 3.44
+        },
+        {
+          "start": "2026-09-17",
+          "end": "2026-09-21",
+          "racer": "福西 広太郎",
+          "grade": "一般",
+          "finishes": "５　６２３　６３１６",
+          "races": 8,
+          "avg_finish": 4
+        }
+      ],
+      "confidence": "高"
+    },
+    {
+      "number": "13",
+      "score": 49.3,
+      "rank": "B",
+      "two_rate": 30.0,
+      "three_rate": 60.0,
+      "starts": 10.0,
+      "period_start": "2026-09-17",
+      "uses": [
+        {
+          "start": "2026-10-10",
+          "end": "2026-10-15",
+          "racer": "川田 正人",
+          "grade": "一般",
+          "finishes": "４　３３５　２５４　１５",
+          "races": 9,
+          "avg_finish": 3.56
+        },
+        {
+          "start": "2026-09-26",
+          "end": "2026-10-02",
+          "racer": "長谷川 雅和",
+          "grade": "一般",
+          "finishes": "　　　　　　　　　　１５４６",
+          "races": 4,
+          "avg_finish": 4
+        },
+        {
+          "start": "2026-09-17",
+          "end": "2026-09-21",
+          "racer": "北川 太一",
+          "grade": "一般",
+          "finishes": "３２４３２４３６１４",
+          "races": 10,
+          "avg_finish": 3.2
+        }
+      ],
+      "confidence": "高"
+    },
+    {
+      "number": "7",
+      "score": 48.5,
+      "rank": "B",
+      "two_rate": 11.11,
+      "three_rate": 22.22,
+      "starts": 9.0,
+      "period_start": "2026-09-17",
+      "uses": [
+        {
+          "start": "2026-09-26",
+          "end": "2026-10-02",
+          "racer": "福来 剛",
+          "grade": "一般",
+          "finishes": "１６３　１１１２４１２１[３]",
+          "races": 12,
+          "avg_finish": 2.17
+        },
+        {
+          "start": "2026-09-17",
+          "end": "2026-09-21",
+          "racer": "松尾 祭",
+          "grade": "一般",
+          "finishes": "６４４５５３６　５２",
+          "races": 9,
+          "avg_finish": 4.44
+        },
+        {
+          "start": "2026-08-24",
+          "end": "2026-08-28",
+          "racer": "岡崎 恭裕",
+          "grade": "一般",
+          "finishes": "３３２２５２１５１３",
+          "races": 10,
+          "avg_finish": 2.7
+        }
+      ],
+      "confidence": "高"
+    },
+    {
+      "number": "15",
+      "score": 46.9,
+      "rank": "C",
+      "two_rate": 20.0,
+      "three_rate": 40.0,
+      "starts": 5.0,
+      "period_start": "2026-09-17",
+      "uses": [
+        {
+          "start": "2026-10-10",
+          "end": "2026-10-15",
+          "racer": "上田 隆章",
+          "grade": "一般",
+          "finishes": "１　４３５　２６３　２４",
+          "races": 9,
+          "avg_finish": 3.33
+        },
+        {
+          "start": "2026-09-17",
+          "end": "2026-09-21",
+          "racer": "庄司 樹良々",
+          "grade": "一般",
+          "finishes": "４５３５２",
+          "races": 5,
+          "avg_finish": 3.8
+        },
+        {
+          "start": "2026-08-24",
+          "end": "2026-08-28",
+          "racer": "三宅 健太",
+          "grade": "一般",
+          "finishes": "４４１　３４２４２４",
+          "races": 9,
+          "avg_finish": 3.11
+        }
+      ],
+      "confidence": "高"
+    },
+    {
+      "number": "56",
+      "score": 45.5,
+      "rank": "C",
+      "two_rate": 37.5,
+      "three_rate": 37.5,
+      "starts": 8.0,
+      "period_start": "2026-09-17",
+      "uses": [
+        {
+          "start": "2026-10-10",
+          "end": "2026-10-15",
+          "racer": "桂林 寛",
+          "grade": "一般",
+          "finishes": "３６６　３５２　６４３",
+          "races": 9,
+          "avg_finish": 4.22
+        },
+        {
+          "start": "2026-09-17",
+          "end": "2026-09-21",
+          "racer": "草場 康幸",
+          "grade": "一般",
+          "finishes": "５５２　４４１　１５",
+          "races": 8,
+          "avg_finish": 3.38
+        },
+        {
+          "start": "2026-04-18",
+          "end": "2026-04-22",
+          "racer": "伏田 裕隆",
+          "grade": "一般",
+          "finishes": "４　５１６３５４４２",
+          "races": 9,
+          "avg_finish": 3.78
+        }
+      ],
+      "confidence": "高"
+    },
+    {
+      "number": "37",
+      "score": 44.0,
+      "rank": "C",
+      "two_rate": 25.0,
+      "three_rate": 50.0,
+      "starts": 8.0,
+      "period_start": "2026-09-17",
+      "uses": [
+        {
+          "start": "2026-09-26",
+          "end": "2026-10-02",
+          "racer": "加藤 綾",
+          "grade": "一般",
+          "finishes": "３　４６１　６３２５５　３６",
+          "races": 11,
+          "avg_finish": 4
+        },
+        {
+          "start": "2026-09-17",
+          "end": "2026-09-21",
+          "racer": "森 智也",
+          "grade": "一般",
+          "finishes": "２４４３１　６３[５]",
+          "races": 8,
+          "avg_finish": 3.5
+        },
+        {
+          "start": "2026-08-24",
+          "end": "2026-08-28",
+          "racer": "向井田 直弥",
+          "grade": "一般",
+          "finishes": "５　１３３　５６４６",
+          "races": 8,
+          "avg_finish": 4.12
+        }
+      ],
+      "confidence": "高"
+    },
+    {
+      "number": "40",
+      "score": 43.1,
+      "rank": "C",
+      "two_rate": 22.22,
+      "three_rate": 44.44,
+      "starts": 9.0,
+      "period_start": "2026-09-17",
+      "uses": [
+        {
+          "start": "2026-09-26",
+          "end": "2026-10-02",
+          "racer": "井芹 大志",
+          "grade": "一般",
+          "finishes": "４６４　２５５　６５４　４",
+          "races": 10,
+          "avg_finish": 4.5
+        },
+        {
+          "start": "2026-09-17",
+          "end": "2026-09-21",
+          "racer": "古賀 智之",
+          "grade": "一般",
+          "finishes": "３４２２３４５４５",
+          "races": 9,
+          "avg_finish": 3.56
+        },
+        {
+          "start": "2026-08-24",
+          "end": "2026-08-28",
+          "racer": "笠原 亮",
+          "grade": "一般",
+          "finishes": "４２２４２１４３４１",
+          "races": 10,
+          "avg_finish": 2.7
+        }
+      ],
+      "confidence": "高"
+    },
+    {
+      "number": "36",
+      "score": 43.0,
+      "rank": "C",
+      "two_rate": 22.22,
+      "three_rate": 66.67,
+      "starts": 9.0,
+      "period_start": "2026-09-17",
+      "uses": [
+        {
+          "start": "2026-10-10",
+          "end": "2026-10-15",
+          "racer": "枝尾 賢",
+          "grade": "一般",
+          "finishes": "４４５　１５２３４２４５",
+          "races": 11,
+          "avg_finish": 3.55
+        },
+        {
+          "start": "2026-09-26",
+          "end": "2026-10-02",
+          "racer": "宮田 栞",
+          "grade": "一般",
+          "finishes": "６　６６４　４６６　６　４６",
+          "races": 10,
+          "avg_finish": 5.4
+        },
+        {
+          "start": "2026-09-17",
+          "end": "2026-09-21",
+          "racer": "高倉 孝太",
+          "grade": "一般",
+          "finishes": "２　４６３３３５１３",
+          "races": 9,
+          "avg_finish": 3.33
+        }
+      ],
+      "confidence": "高"
+    },
+    {
+      "number": "45",
+      "score": 42.7,
+      "rank": "C",
+      "two_rate": 37.5,
+      "three_rate": 37.5,
+      "starts": 8.0,
+      "period_start": "2026-09-17",
+      "uses": [
+        {
+          "start": "2026-09-26",
+          "end": "2026-10-02",
+          "racer": "山下 智己",
+          "grade": "一般",
+          "finishes": "５　５６５　５５３　４６３５",
+          "races": 11,
+          "avg_finish": 4.73
+        },
+        {
+          "start": "2026-09-17",
+          "end": "2026-09-21",
+          "racer": "池田 雄祐",
+          "grade": "一般",
+          "finishes": "２　２４２５４Ｆ４",
+          "races": 7,
+          "avg_finish": 3.29
+        },
+        {
+          "start": "2026-08-24",
+          "end": "2026-08-28",
+          "racer": "米田 隆弘",
+          "grade": "一般",
+          "finishes": "３３４　１６３５６４",
+          "races": 9,
+          "avg_finish": 3.89
+        }
+      ],
+      "confidence": "高"
+    },
+    {
+      "number": "23",
+      "score": 42.2,
+      "rank": "C",
+      "two_rate": 0.0,
+      "three_rate": 0.0,
+      "starts": 2.0,
+      "period_start": "2026-09-17",
+      "uses": [
+        {
+          "start": "2026-10-10",
+          "end": "2026-10-15",
+          "racer": "白井 友晴",
+          "grade": "一般",
+          "finishes": "２　５３３２４　１６１６",
+          "races": 10,
+          "avg_finish": 3.3
+        },
+        {
+          "start": "2026-09-26",
+          "end": "2026-10-02",
+          "racer": "村上 遼",
+          "grade": "一般",
+          "finishes": "１１１２２　３３２Ｆ４　１",
+          "races": 10,
+          "avg_finish": 2
+        },
+        {
+          "start": "2026-09-17",
+          "end": "2026-09-21",
+          "racer": "岡崎 凪汰",
+          "grade": "一般",
+          "finishes": "　　　　　　　　６６",
+          "races": 2,
+          "avg_finish": 6
+        }
+      ],
+      "confidence": "高"
+    },
+    {
+      "number": "34",
+      "score": 40.6,
+      "rank": "C",
+      "two_rate": 25.0,
+      "three_rate": 37.5,
+      "starts": 8.0,
+      "period_start": "2026-09-17",
+      "uses": [
+        {
+          "start": "2026-10-10",
+          "end": "2026-10-15",
+          "racer": "伊藤 紘章",
+          "grade": "一般",
+          "finishes": "６６５　３６１　６　６５",
+          "races": 9,
+          "avg_finish": 4.89
+        },
+        {
+          "start": "2026-09-26",
+          "end": "2026-10-02",
+          "racer": "大澤 大夢",
+          "grade": "一般",
+          "finishes": "１　１６２　２２６２５５２２",
+          "races": 12,
+          "avg_finish": 3
+        },
+        {
+          "start": "2026-09-17",
+          "end": "2026-09-21",
+          "racer": "宮本 夏樹",
+          "grade": "一般",
+          "finishes": "４６１　３　１５５４",
+          "races": 8,
+          "avg_finish": 3.62
+        }
+      ],
+      "confidence": "高"
+    },
+    {
+      "number": "52",
+      "score": 39.8,
+      "rank": "C",
+      "two_rate": 22.22,
+      "three_rate": 22.22,
+      "starts": 9.0,
+      "period_start": "2026-09-17",
+      "uses": [
+        {
+          "start": "2026-10-10",
+          "end": "2026-10-15",
+          "racer": "古川 誠之",
+          "grade": "一般",
+          "finishes": "１３５４５　６３５　４",
+          "races": 9,
+          "avg_finish": 4
+        },
+        {
+          "start": "2026-09-17",
+          "end": "2026-09-21",
+          "racer": "柳瀬 興志",
+          "grade": "一般",
+          "finishes": "５６２６６　２４６４",
+          "races": 9,
+          "avg_finish": 4.56
+        },
+        {
+          "start": "2026-08-24",
+          "end": "2026-08-28",
+          "racer": "木村 仁紀",
+          "grade": "一般",
+          "finishes": "２２３５１３４３５１",
+          "races": 10,
+          "avg_finish": 2.9
+        }
+      ],
+      "confidence": "高"
+    },
+    {
+      "number": "54",
+      "score": 38.8,
+      "rank": "C",
+      "two_rate": 12.5,
+      "three_rate": 37.5,
+      "starts": 8.0,
+      "period_start": "2026-09-17",
+      "uses": [
+        {
+          "start": "2026-10-10",
+          "end": "2026-10-15",
+          "racer": "平瀬 城啓",
+          "grade": "一般",
+          "finishes": "４６２　１６６　６４５",
+          "races": 9,
+          "avg_finish": 4.44
+        },
+        {
+          "start": "2026-09-17",
+          "end": "2026-09-21",
+          "racer": "渡邉 健",
+          "grade": "一般",
+          "finishes": "３　２６４　４３６６",
+          "races": 8,
+          "avg_finish": 4.25
+        },
+        {
+          "start": "2026-08-24",
+          "end": "2026-08-28",
+          "racer": "黒井 達矢",
+          "grade": "一般",
+          "finishes": "２４１１１２４１[６]",
+          "races": 9,
+          "avg_finish": 2.44
+        }
+      ],
+      "confidence": "高"
+    },
+    {
+      "number": "3",
+      "score": 37.7,
+      "rank": "C",
+      "two_rate": 0.0,
+      "three_rate": 25.0,
+      "starts": 8.0,
+      "period_start": "2026-09-17",
+      "uses": [
+        {
+          "start": "2026-09-26",
+          "end": "2026-10-02",
+          "racer": "中村 桃佳",
+          "grade": "一般",
+          "finishes": "２　２３３２３１４２４２[５]",
+          "races": 12,
+          "avg_finish": 2.75
+        },
+        {
+          "start": "2026-09-17",
+          "end": "2026-09-21",
+          "racer": "甲斐 貴大",
+          "grade": "一般",
+          "finishes": "５　５　６５５３３６",
+          "races": 8,
+          "avg_finish": 4.75
+        },
+        {
+          "start": "2026-08-24",
+          "end": "2026-08-28",
+          "racer": "中岡 駿",
+          "grade": "一般",
+          "finishes": "６３６　４　５６３４",
+          "races": 8,
+          "avg_finish": 4.62
+        }
+      ],
+      "confidence": "高"
+    },
+    {
+      "number": "53",
+      "score": 36.6,
+      "rank": "C",
+      "two_rate": 25.0,
+      "three_rate": 25.0,
+      "starts": 8.0,
+      "period_start": "2026-09-17",
+      "uses": [
+        {
+          "start": "2026-10-10",
+          "end": "2026-10-15",
+          "racer": "高山 秀雄",
+          "grade": "一般",
+          "finishes": "３　１６４　６６４　１３",
+          "races": 9,
+          "avg_finish": 3.78
+        },
+        {
+          "start": "2026-09-17",
+          "end": "2026-09-21",
+          "racer": "菅沼 佳昭",
+          "grade": "一般",
+          "finishes": "５　５５６　２６１５",
+          "races": 8,
+          "avg_finish": 4.38
+        },
+        {
+          "start": "2026-08-24",
+          "end": "2026-08-28",
+          "racer": "安武 一也",
+          "grade": "一般",
+          "finishes": "６　６　５５６　５６",
+          "races": 7,
+          "avg_finish": 5.57
+        }
+      ],
+      "confidence": "高"
+    },
+    {
+      "number": "51",
+      "score": 36.1,
+      "rank": "C",
+      "two_rate": 25.0,
+      "three_rate": 25.0,
+      "starts": 8.0,
+      "period_start": "2026-09-17",
+      "uses": [
+        {
+          "start": "2026-10-10",
+          "end": "2026-10-15",
+          "racer": "近藤 稔也",
+          "grade": "一般",
+          "finishes": "５　３６５　５３３　５６",
+          "races": 9,
+          "avg_finish": 4.56
+        },
+        {
+          "start": "2026-09-17",
+          "end": "2026-09-21",
+          "racer": "河上 年昭",
+          "grade": "一般",
+          "finishes": "６６６　５　５４２２",
+          "races": 8,
+          "avg_finish": 4.5
+        },
+        {
+          "start": "2026-08-24",
+          "end": "2026-08-28",
+          "racer": "安東 幸治",
+          "grade": "一般",
+          "finishes": "２４６４１５１　５５",
+          "races": 9,
+          "avg_finish": 3.67
+        }
+      ],
+      "confidence": "高"
+    },
+    {
+      "number": "21",
+      "score": 34.5,
+      "rank": "D",
+      "two_rate": 0.0,
+      "three_rate": 12.5,
+      "starts": 8.0,
+      "period_start": "2026-09-17",
+      "uses": [
+        {
+          "start": "2026-10-10",
+          "end": "2026-10-15",
+          "racer": "森 晋太郎",
+          "grade": "一般",
+          "finishes": "１５２　６３４　３６２",
+          "races": 9,
+          "avg_finish": 3.56
+        },
+        {
+          "start": "2026-09-17",
+          "end": "2026-09-21",
+          "racer": "表 健太",
+          "grade": "一般",
+          "finishes": "４　５５５　４６６３",
+          "races": 8,
+          "avg_finish": 4.75
+        },
+        {
+          "start": "2026-08-24",
+          "end": "2026-08-28",
+          "racer": "杉山 貴博",
+          "grade": "一般",
+          "finishes": "５　３４５２２　５２",
+          "races": 8,
+          "avg_finish": 3.5
+        }
+      ],
+      "confidence": "高"
+    },
+    {
+      "number": "44",
+      "score": 34.4,
+      "rank": "D",
+      "two_rate": 12.5,
+      "three_rate": 12.5,
+      "starts": 8.0,
+      "period_start": "2026-09-17",
+      "uses": [
+        {
+          "start": "2026-09-26",
+          "end": "2026-10-02",
+          "racer": "森 悠稀",
+          "grade": "一般",
+          "finishes": "１　５２３　５２５６２６１３",
+          "races": 12,
+          "avg_finish": 3.42
+        },
+        {
+          "start": "2026-09-17",
+          "end": "2026-09-21",
+          "racer": "志道 吉和",
+          "grade": "一般",
+          "finishes": "２　５４４　６５５５",
+          "races": 8,
+          "avg_finish": 4.5
+        },
+        {
+          "start": "2026-08-07",
+          "end": "2026-08-11",
+          "racer": "津留 浩一郎",
+          "grade": "一般",
+          "finishes": "６　５５６　５　６",
+          "races": 6,
+          "avg_finish": 5.5
+        }
+      ],
+      "confidence": "高"
+    },
+    {
+      "number": "24",
+      "score": 29.7,
+      "rank": "D",
+      "two_rate": 0.0,
+      "three_rate": 0.0,
+      "starts": 2.0,
+      "period_start": "2026-09-17",
+      "uses": [
+        {
+          "start": "2026-10-10",
+          "end": "2026-10-15",
+          "racer": "杉山 太陽",
+          "grade": "一般",
+          "finishes": "６　１５５　６５５　４５",
+          "races": 9,
+          "avg_finish": 4.67
+        },
+        {
+          "start": "2026-09-26",
+          "end": "2026-10-02",
+          "racer": "泉 啓文",
+          "grade": "一般",
+          "finishes": "３　３６３　１１２３２４２６",
+          "races": 12,
+          "avg_finish": 3
+        },
+        {
+          "start": "2026-09-17",
+          "end": "2026-09-21",
+          "racer": "山下 心一",
+          "grade": "一般",
+          "finishes": "　　　　　　　　６６",
+          "races": 2,
+          "avg_finish": 6
+        }
+      ],
+      "confidence": "高"
+    },
+    {
+      "number": "10",
+      "score": 28.8,
+      "rank": "D",
+      "two_rate": 16.67,
+      "three_rate": 33.33,
+      "starts": 6.0,
+      "period_start": "2026-09-17",
+      "uses": [
+        {
+          "start": "2026-09-26",
+          "end": "2026-10-02",
+          "racer": "堀内 亜海",
+          "grade": "一般",
+          "finishes": "６　６６６　６５５　６６６",
+          "races": 10,
+          "avg_finish": 5.8
+        },
+        {
+          "start": "2026-09-17",
+          "end": "2026-09-21",
+          "racer": "齋藤 智裕",
+          "grade": "一般",
+          "finishes": "５　３６４　２　５",
+          "races": 6,
+          "avg_finish": 4.17
+        },
+        {
+          "start": "2026-08-24",
+          "end": "2026-08-28",
+          "racer": "倉田 茂将",
+          "grade": "一般",
+          "finishes": "５　５　３３１　６４",
+          "races": 7,
+          "avg_finish": 3.86
+        }
+      ],
+      "confidence": "高"
+    },
+    {
+      "number": "55",
+      "score": 28.6,
+      "rank": "D",
+      "two_rate": 12.5,
+      "three_rate": 12.5,
+      "starts": 8.0,
+      "period_start": "2026-09-17",
+      "uses": [
+        {
+          "start": "2026-10-10",
+          "end": "2026-10-15",
+          "racer": "大西 隆洋",
+          "grade": "一般",
+          "finishes": "４　６５",
+          "races": 3,
+          "avg_finish": 5
+        },
+        {
+          "start": "2026-09-17",
+          "end": "2026-09-21",
+          "racer": "吉田 和仁",
+          "grade": "一般",
+          "finishes": "５５４　２６５　４５",
+          "races": 8,
+          "avg_finish": 4.5
+        },
+        {
+          "start": "2026-08-24",
+          "end": "2026-08-28",
+          "racer": "岡崎 凪汰",
+          "grade": "一般",
+          "finishes": "５　４　６５６　１４",
+          "races": 7,
+          "avg_finish": 4.43
+        }
+      ],
+      "confidence": "高"
+    },
+    {
+      "number": "9",
+      "score": 27.1,
+      "rank": "D",
+      "two_rate": 0.0,
+      "three_rate": 28.57,
+      "starts": 7.0,
+      "period_start": "2026-09-17",
+      "uses": [
+        {
+          "start": "2026-09-26",
+          "end": "2026-10-02",
+          "racer": "田中 結",
+          "grade": "一般",
+          "finishes": "６６６　６４６　５６５　６",
+          "races": 10,
+          "avg_finish": 5.6
+        },
+        {
+          "start": "2026-09-17",
+          "end": "2026-09-21",
+          "racer": "中野 和裕",
+          "grade": "一般",
+          "finishes": "４　４６６　６　３３",
+          "races": 7,
+          "avg_finish": 4.57
+        },
+        {
+          "start": "2026-08-17",
+          "end": "2026-08-21",
+          "racer": "秋山 広一",
+          "grade": "一般",
+          "finishes": "２２５３１４２　３２",
+          "races": 9,
+          "avg_finish": 2.67
+        }
+      ],
+      "confidence": "高"
+    },
+    {
+      "number": "43",
+      "score": 26.4,
+      "rank": "D",
+      "two_rate": 0.0,
+      "three_rate": 20.0,
+      "starts": 5.0,
+      "period_start": "2026-09-17",
+      "uses": [
+        {
+          "start": "2026-09-26",
+          "end": "2026-10-02",
+          "racer": "三好 勇人",
+          "grade": "一般",
+          "finishes": "５　５４４",
+          "races": 4,
+          "avg_finish": 4.5
+        },
+        {
+          "start": "2026-09-17",
+          "end": "2026-09-21",
+          "racer": "広瀬 聖仁",
+          "grade": "一般",
+          "finishes": "６６３　６　６欠",
+          "races": 5,
+          "avg_finish": 5.4
+        },
+        {
+          "start": "2026-08-17",
+          "end": "2026-08-21",
+          "racer": "妻鳥 晋也",
+          "grade": "一般",
+          "finishes": "５５６　４３１　４",
+          "races": 7,
+          "avg_finish": 4
+        }
+      ],
+      "confidence": "高"
+    },
+    {
+      "number": "41",
+      "score": 23.5,
+      "rank": "D",
+      "two_rate": 0.0,
+      "three_rate": 0.0,
+      "starts": 4.0,
+      "period_start": "2026-09-17",
+      "uses": [
+        {
+          "start": "2026-09-26",
+          "end": "2026-10-02",
+          "racer": "藤田 浩人",
+          "grade": "一般",
+          "finishes": "５　２５６　５５",
+          "races": 6,
+          "avg_finish": 4.67
+        },
+        {
+          "start": "2026-09-17",
+          "end": "2026-09-21",
+          "racer": "大町 利克",
+          "grade": "一般",
+          "finishes": "６　６６６",
+          "races": 4,
+          "avg_finish": 6
+        },
+        {
+          "start": "2026-08-24",
+          "end": "2026-08-28",
+          "racer": "有山 望",
+          "grade": "一般",
+          "finishes": "１　５　６６４　１２",
+          "races": 7,
+          "avg_finish": 3.57
+        }
+      ],
+      "confidence": "高"
+    }
+  ]
+}

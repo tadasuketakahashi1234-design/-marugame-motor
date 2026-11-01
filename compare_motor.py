@@ -12,57 +12,58 @@ JST = timezone(timedelta(hours=9))
 BASE = "https://boatracecsv.github.io/data/programs/"
 
 
-def get_csv(kind, day):
+def fetch(kind, day):
     url = f"{BASE}{kind}/{day:%Y/%m/%d}.csv"
     try:
-        req = urllib.request.Request(
-            url, headers={"User-Agent": "MotorCompare/1.0"}
+        request = urllib.request.Request(
+            url,
+            headers={"User-Agent": "MotorCompare/2.0"}
         )
-        with urllib.request.urlopen(req, timeout=20) as response:
-            text = response.read().decode("utf-8-sig")
-        return list(csv.DictReader(io.StringIO(text)))
-    except Exception as error:
-        print("SKIP", url, str(error)[:100])
+        with urllib.request.urlopen(request, timeout=20) as response:
+            content = response.read().decode("utf-8-sig")
+        return list(csv.DictReader(io.StringIO(content)))
+    except Exception:
         return []
 
 
-def clean_name(value):
-    return re.sub(r"\s+", "", str(value or "")).replace("　", "")
+def clean(value):
+    return re.sub(r"\s+", "", str(value or ""))
 
 
-def to_float(value):
+def number(value):
     try:
         return float(str(value).replace("%", "").replace(",", ""))
-    except (ValueError, TypeError):
+    except (TypeError, ValueError):
         return None
 
 
-def venue(row):
+def code(row):
     return str(
         row.get("レース場コード", row.get("場コード", ""))
     ).strip().zfill(2)
 
 
-def load_history(code, today):
+def get_history(stadium, today):
     history = {}
     dates = []
 
     for ago in range(95):
         day = today - timedelta(days=ago)
-        rows = get_csv("motor_history", day)
+        rows = fetch("motor_history", day)
 
         selected = [
-            r for r in rows
-            if str(r.get("場コード", "")).zfill(2) == code
+            row for row in rows
+            if str(row.get("場コード", "")).zfill(2) == stadium
         ]
 
         if selected:
             dates.append(day.isoformat())
+
             for row in selected:
                 key = (
                     row.get("モーター番号", ""),
                     row.get("使用終了日", ""),
-                    row.get("使用者名", ""),
+                    row.get("使用者名", "")
                 )
                 history[key] = row
 
@@ -72,97 +73,157 @@ def load_history(code, today):
     return history, dates
 
 
-def load_racer_data(code, today):
+def collect_race_cards(stadium, history, today):
     """
-    直近のrace_cardsから選手の全国勝率を取得。
-    過去の使用時点の実力ではないため、これは試験用。
+    過去のモーター使用期間に対応する出走表を調べる。
+    日付・モーター番号・選手名を使って照合する。
     """
-    racers = {}
+    targets = []
 
-    for ago in range(14):
-        day = today - timedelta(days=ago)
-        rows = get_csv("race_cards", day)
+    for row in history.values():
+        start = row.get("使用開始日", "")
+        end = row.get("使用終了日", "")
+        motor = str(row.get("モーター番号", "")).strip()
+        racer = clean(row.get("使用者名", ""))
+
+        try:
+            start_day = datetime.strptime(start, "%Y-%m-%d").date()
+            end_day = datetime.strptime(end, "%Y-%m-%d").date()
+        except ValueError:
+            continue
+
+        if start_day > today or end_day > today:
+            continue
+
+        targets.append({
+            "start": start_day,
+            "end": end_day,
+            "motor": motor,
+            "racer": racer,
+        })
+
+    if not targets:
+        return {}
+
+    earliest = min(t["start"] for t in targets)
+    latest = min(today, max(t["end"] for t in targets))
+
+    # 同じ選手・モーターでも開催期間が異なれば別扱い。
+    matches = {}
+
+    day = earliest
+    fetched = 0
+
+    while day <= latest:
+        rows = fetch("race_cards", day)
 
         for row in rows:
-            if venue(row) != code:
+            if code(row) != stadium:
                 continue
 
             for boat in range(1, 7):
                 prefix = f"艇{boat}_"
-                name = clean_name(row.get(prefix + "選手名"))
-                rate = to_float(row.get(prefix + "全国勝率"))
-                reg = row.get(prefix + "登録番号", "")
 
-                if name and rate is not None and name not in racers:
-                    racers[name] = {
-                        "rate": rate,
-                        "registration": reg,
-                    }
+                motor = str(
+                    row.get(prefix + "モーター番号", "")
+                ).strip()
 
-        if len(racers) >= 30:
-            break
+                racer = clean(
+                    row.get(prefix + "選手名", "")
+                )
 
-    return racers
+                rate = number(
+                    row.get(prefix + "全国勝率")
+                )
+
+                registration = str(
+                    row.get(prefix + "登録番号", "")
+                ).strip()
+
+                if not motor or not racer or rate is None:
+                    continue
+
+                for target in targets:
+                    if (
+                        target["motor"] == motor
+                        and target["racer"] == racer
+                        and target["start"] <= day <= target["end"]
+                    ):
+                        key = (
+                            motor,
+                            target["start"].isoformat(),
+                            target["end"].isoformat(),
+                            racer
+                        )
+
+                        if key not in matches:
+                            matches[key] = {
+                                "rate": rate,
+                                "registration": registration,
+                                "date": day.isoformat()
+                            }
+
+        fetched += 1
+        day += timedelta(days=1)
+
+    print("調査した日数:", fetched)
+    print("照合できた使用履歴:", len(matches))
+
+    return matches
 
 
-def compare(code, stadium, today):
-    print("\n" + "=" * 55)
-    print(stadium, "選手補正テスト")
-    print("=" * 55)
+def compare(stadium, name, today):
+    print("\n" + "=" * 45)
+    print(name, "選手補正比較テスト")
+    print("=" * 45)
 
-    history, dates = load_history(code, today)
-    racers = load_racer_data(code, today)
+    history, dates = get_history(stadium, today)
 
     print("履歴取得日:", dates)
-    print("選手データ人数:", len(racers))
+    print("取得した使用履歴:", len(history))
+
+    matches = collect_race_cards(
+        stadium, history, today
+    )
 
     groups = {}
 
-    for (_, end, _), row in history.items():
+    for row in history.values():
+        end = row.get("使用終了日", "")
+
         if end > today.isoformat():
             continue
 
-        number = str(row.get("モーター番号", "")).strip()
-        if number:
-            groups.setdefault(number, []).append(row)
+        motor = str(row.get("モーター番号", "")).strip()
+
+        if motor:
+            groups.setdefault(motor, []).append(row)
 
     results = []
     total_uses = 0
     matched_uses = 0
 
-    for number, rows in groups.items():
+    for motor, rows in groups.items():
         rows.sort(
             key=lambda r: r.get("使用終了日", ""),
             reverse=True
         )
 
-        recent = rows[:3]
         raw_parts = []
         corrected_parts = []
         weights = []
         details = []
 
-        for i, row in enumerate(recent):
-            finishes = update.ranks(row.get("着順列", row.get("着順列", "")))
-
-            # motor_historyの実際の列名は「着順列」ではなく
-            # 「着順列」または「着順列」に対応する可能性があるため、
-            # 取得できなければ「着順列」以外の「着順列」も確認する。
-            if not finishes:
-                finishes = update.ranks(row.get("着順列", ""))
+        for i, row in enumerate(rows[:3]):
+            finishes = update.ranks(
+                row.get("着順列", "")
+            )
 
             if not finishes:
-                finishes = update.ranks(row.get("着順列", row.get("着順列", "")))
+                finishes = update.ranks(
+                    row.get("着順列", row.get("着順列", ""))
+                )
 
-            # 実際のmotor_historyの列名は「着順列」ではなく
-            # 「着順列」または「着順列」と異なる場合がある。
-            # 今回確認したCSVの列名「着順列」ではなく「着順列」
-            # を想定せず、実際の「着順列」に対応させる。
-            if not finishes:
-                finishes = update.ranks(row.get("着順列", ""))
-
-            # 画面で確認したmotor_historyの列名は「着順列」ではなく「着順列」。
-            # 上記の取得が空の場合は、着順を表す列を探す。
             if not finishes:
                 for key, value in row.items():
                     if "着順" in key:
@@ -174,19 +235,30 @@ def compare(code, stadium, today):
                 continue
 
             total_uses += 1
+
             avg = statistics.mean(finishes)
             raw = (3.5 - avg) / 2.5 * 100
 
-            name = clean_name(row.get("使用者名"))
-            racer = racers.get(name)
+            racer = clean(row.get("使用者名"))
+            start = row.get("使用開始日", "")
+            end = row.get("使用終了日", "")
 
-            # 全国勝率5.0を中立値とする暫定的な補正。
-            # 1勝率ポイントにつき8点差し引く仮の係数。
-            if racer:
+            key = (motor, start, end, racer)
+            match = matches.get(key)
+
+            if match:
                 matched_uses += 1
-                adjustment = (racer["rate"] - 5.0) * 8.0
+
+                # 試験用の仮補正係数。
+                adjustment = (
+                    match["rate"] - 5.0
+                ) * 8.0
+
                 corrected = raw - adjustment
-                status = f'勝率{racer["rate"]:.2f}'
+
+                status = (
+                    f'全国勝率{match["rate"]:.2f}'
+                )
             else:
                 corrected = raw
                 status = "未照合"
@@ -200,28 +272,31 @@ def compare(code, stadium, today):
             weights.append(weight)
 
             details.append(
-                f"{name}: 平均{avg:.2f}着 / {status}"
+                f"{racer}: 平均{avg:.2f}着 / {status}"
             )
 
         if not weights:
             continue
 
-        raw_score = sum(raw_parts) / sum(weights)
-        corrected_score = sum(corrected_parts) / sum(weights)
-
         results.append({
-            "number": number,
-            "raw": round(raw_score, 1),
-            "corrected": round(corrected_score, 1),
-            "matched": sum("未照合" not in d for d in details),
-            "details": details,
+            "motor": motor,
+            "raw": round(
+                sum(raw_parts) / sum(weights), 1
+            ),
+            "corrected": round(
+                sum(corrected_parts) / sum(weights), 1
+            ),
+            "details": details
         })
 
-    results.sort(key=lambda x: x["corrected"], reverse=True)
+    results.sort(
+        key=lambda row: row["corrected"],
+        reverse=True
+    )
 
-    print("評価対象モーター数:", len(results))
-    print("対象使用履歴数:", total_uses)
-    print("選手照合成功数:", matched_uses)
+    print("評価対象モーター:", len(results))
+    print("対象使用履歴:", total_uses)
+    print("選手照合成功:", matched_uses)
 
     if total_uses:
         print(
@@ -229,24 +304,22 @@ def compare(code, stadium, today):
             f"{matched_uses / total_uses * 100:.1f}%"
         )
 
-    print("\n補正後スコア上位10件（試験値）")
+    print("\n補正後ランキング上位10件")
 
     for row in results[:10]:
         print(
-            f'{row["number"]}号機: '
-            f'従来履歴評価={row["raw"]:.1f} '
-            f'補正後={row["corrected"]:.1f}'
+            f'{row["motor"]}号機 '
+            f'補正前={row["raw"]} '
+            f'補正後={row["corrected"]}'
         )
+
         for detail in row["details"]:
-            print("  ", detail)
+            print(" ", detail)
 
     print(
-        "\n注意: 選手の全国勝率は直近の出走表から取得した"
-        "暫定値です。過去時点の勝率とは限りません。"
-    )
-    print(
-        "進入コース補正、対戦相手補正、"
-        "過去レースでの予測精度検証は未実装です。"
+        "\n注意：補正係数は仮の値です。"
+        "進入コース・対戦相手の補正や"
+        "予測精度の検証は未実施です。"
     )
 
 

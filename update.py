@@ -98,6 +98,7 @@ def main():
             'history_snapshot_dates':found,'stadium':'丸亀','method':'暫定・選手補正なし',
             'warning':'着順と期成績を使った暫定評価です。選手実力・コース・相手関係は未補正。予測確率ではありません。',
             'motors':motors}
+(ROOT/'docs').mkdir(parents=True, exist_ok=True)
     dest=ROOT/'docs'/'data.json';dest.write_text(json.dumps(output,ensure_ascii=False,indent=2),encoding='utf-8')
     print(f'Published {len(motors)} motors, stats {stat_date}, history snapshots {found}')
 

@@ -25,6 +25,12 @@ input{flex:1}
 .stats{display:flex;flex-wrap:wrap;gap:15px;margin-top:12px;font-size:13px}
 .history{border-top:1px solid #e6eaf0;margin-top:12px;padding-top:10px;font-size:13px}
 .history p{margin:7px 0}
+.current{background:#eef7ff;border-radius:10px;padding:12px;margin-top:14px}
+.current h3{font-size:15px;margin:0 0 10px}
+.points{display:grid;grid-template-columns:repeat(3,1fr);gap:6px;margin:12px 0}
+.point{background:white;border-radius:8px;padding:10px 5px;text-align:center}
+.point small{display:block;color:#53647d;font-size:11px}
+.point b{font-size:17px;color:#1465ad}
 .muted{color:#6a7688}
 #error{color:#bb2833}
 </style>
@@ -33,17 +39,18 @@ input{flex:1}
 <header>
 <small>BOAT MOTOR ANALYTICS · 24 OMURA</small>
 <h1>大村 モーター評価</h1>
-<div>全モーターランキング / 過去3節の使用履歴</div>
+<div>今節＋過去3節のモーター評価</div>
 </header>
 <main>
 <div id="meta" class="info">データ読み込み中...</div>
-<div id="warning" class="warning">評価は暫定値です。舟券購入の判断に単独で使用しないでください。</div>
+<div id="warning" class="warning">評価は暫定値です。</div>
 <div class="tools">
 <input id="search" placeholder="モーター番号・選手名で検索">
 <select id="sort">
-<option value="score">評価順</option>
+<option value="score">総合評価順</option>
+<option value="current">今節評価順</option>
+<option value="past">過去3節順</option>
 <option value="number">番号順</option>
-<option value="two">2連対率順</option>
 </select>
 </div>
 <div id="count" class="info"></div>
@@ -54,37 +61,67 @@ input{flex:1}
 let motors=[];
 const $=id=>document.getElementById(id);
 const safe=s=>String(s??'').replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
+const fmt=v=>v==null?'―':Number(v).toFixed(1);
 const pct=v=>v==null?'不明':Number(v).toFixed(1)+'%';
 
 function render(){
  const q=$('search').value.trim().toLowerCase();
  const sort=$('sort').value;
- const arr=motors.filter(m=>String(m.number).includes(q)||(m.uses||[]).some(u=>String(u.racer||'').toLowerCase().includes(q)));
- arr.sort((a,b)=>sort==='number'?Number(a.number)-Number(b.number):sort==='two'?(Number(b.two_rate)||0)-(Number(a.two_rate)||0):(Number(b.score)||0)-(Number(a.score)||0));
+ const arr=motors.filter(m=>
+  String(m.number).includes(q)||
+  (m.uses||[]).some(u=>String(u.racer||'').toLowerCase().includes(q))||
+  (m.current_series_uses||[]).some(u=>String(u.racer||'').toLowerCase().includes(q))
+ );
+ const val=(m,key)=>m[key]==null?-Infinity:Number(m[key]);
+ arr.sort((a,b)=>{
+  if(sort==='number')return Number(a.number)-Number(b.number);
+  const key=sort==='current'?'current_series_score':sort==='past'?'past_three_score':'overall_score';
+  return val(b,key)-val(a,key);
+ });
  $('count').textContent=`表示 ${arr.length} / ${motors.length} モーター`;
  $('list').innerHTML=arr.map(m=>`
  <article class="card">
- <div class="top">
- <div><span class="number">${safe(m.number)}号機</span> <span class="rank">${safe(m.rank)}</span></div>
- <div class="score">${safe(m.score)}点</div>
- </div>
- <div class="stats">
- <span>2連対率 <b>${pct(m.two_rate)}</b></span>
- <span>3連対率 <b>${pct(m.three_rate)}</b></span>
- <span>出走数 <b>${safe(m.starts)}</b></span>
- </div>
- <div class="history">
- <b>直近の使用履歴</b>
- ${(m.uses||[]).length?(m.uses||[]).map(u=>`
- <p><b>${safe(u.racer)}</b> <span class="muted">${safe(u.start)}〜${safe(u.end)}</span><br>
- ${safe(u.grade)} / ${safe(u.races)}走 / 平均着順 ${safe(u.avg_finish)} / 着順 ${safe(u.finishes)}</p>
- `).join(''):'<p class="muted">履歴なし</p>'}
- </div>
+  <div class="top">
+   <div><span class="number">${safe(m.number)}号機</span>
+   <span class="rank">${safe(m.rank)}</span></div>
+   <div class="score">${fmt(m.overall_score??m.score)}点</div>
+  </div>
+  <div class="stats">
+   <span>2連対率 <b>${pct(m.two_rate)}</b></span>
+   <span>3連対率 <b>${pct(m.three_rate)}</b></span>
+   <span>出走数 <b>${safe(m.starts)}</b></span>
+  </div>
+  <section class="current">
+   <h3>今節の成績</h3>
+   ${(m.current_series_uses||[]).length
+    ?(m.current_series_uses||[]).map(u=>`
+      <p><b>使用選手：${safe(u.racer)}</b></p>
+      <p>着順：${safe((u.finishes||[]).join(' → '))}</p>
+      <p>選手全国勝率：${safe(u.racer_win_rate??'不明')}</p>
+     `).join('')
+    :'<p class="muted">今節の着順データなし</p>'}
+   <p>今節の取得済み着順：${safe(m.current_series_races??0)}走
+   / 平均着順：${fmt(m.current_series_avg_finish)}</p>
+   <div class="points">
+    <div class="point"><small>過去3節</small><b>${fmt(m.past_three_score)}点</b></div>
+    <div class="point"><small>今節</small><b>${fmt(m.current_series_score)}点</b></div>
+    <div class="point"><small>総合</small><b>${fmt(m.overall_score??m.score)}点</b></div>
+   </div>
+  </section>
+  <div class="history">
+   <b>過去3節の使用履歴</b>
+   ${(m.uses||[]).length?(m.uses||[]).map(u=>`
+    <p><b>${safe(u.racer)}</b>
+    <span class="muted">${safe(u.start)}〜${safe(u.end)}</span><br>
+    ${safe(u.grade)} / ${safe(u.races)}走 /
+    平均着順 ${safe(u.avg_finish)} /
+    着順 ${safe(u.finishes)}</p>
+   `).join(''):'<p class="muted">履歴なし</p>'}
+  </div>
  </article>`).join('');
 }
 $('search').addEventListener('input',render);
 $('sort').addEventListener('change',render);
-
 fetch('./data.json?cache='+Date.now())
 .then(r=>{if(!r.ok)throw Error('HTTP '+r.status);return r.json()})
 .then(d=>{

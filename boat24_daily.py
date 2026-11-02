@@ -1,6 +1,6 @@
 
 #!/usr/bin/env python3
-"""Forward-only 24-venue prediction ledger."""
+"""24-venue forward prediction ledger."""
 import csv
 import datetime as dt
 import io
@@ -131,9 +131,9 @@ def probabilities(card, ex, mot):
         motor = num(card.get(f"艇{i}_モーター2連対率"))
         e = exs[i - 1]
 
-        s = (w - 5) * 0.62
+        s = (w - 5) * .62
         if local is not None:
-            s += (local - 5) * 0.18
+            s += (local - 5) * .18
 
         s += [1, .35, 0, -.25, -.48, -.65][i - 1]
 
@@ -151,6 +151,7 @@ def probabilities(card, ex, mot):
         )
         for a, b, c in itertools.permutations(range(6), 3)
     ]
+
     peak = max(s for _, s in combos)
     weights = [math.exp((s - peak) * 1.15) for _, s in combos]
     total = sum(weights)
@@ -191,7 +192,8 @@ def settlement(rec, res, pay):
                 "hit": actual in rec["selection"][str(n)],
                 "stake": n * 100,
                 "return": (
-                    money if actual in rec["selection"][str(n)] else 0
+                    money if actual in rec["selection"][str(n)]
+                    else 0
                 ),
             }
             for n in (12, 18)
@@ -223,7 +225,9 @@ def main():
     skipped = {}
 
     for code, card in ix["cards"].items():
-        if len(code) != 12 or code[:8] != NOW.strftime("%Y%m%d"):
+        if len(code) != 12:
+            continue
+        if code[:8] != NOW.strftime("%Y%m%d"):
             continue
 
         try:
@@ -236,6 +240,8 @@ def main():
             continue
 
         rec = preds.get(code)
+        res = ix["results"].get(code)
+        pay = ix["payouts"].get(code)
 
         if rec is None:
             odds = ix["odds"].get(code) or {}
@@ -249,17 +255,21 @@ def main():
                 or deadline(st)
             )
 
-            if not limit:
-                skipped["cutoff_missing"] = (
-                    skipped.get("cutoff_missing", 0) + 1
-                )
-                continue
-
-            if NOW >= limit - dt.timedelta(minutes=2):
+            if limit and NOW >= limit - dt.timedelta(minutes=2):
                 skipped["cutoff_passed"] = (
                     skipped.get("cutoff_passed", 0) + 1
                 )
                 continue
+
+            # Do not create a new forecast after a result exists.
+            if res or pay:
+                skipped["result_already_available"] = (
+                    skipped.get("result_already_available", 0) + 1
+                )
+                continue
+
+            # Unknown cutoff is explicitly marked unverified.
+            verified = bool(limit and NOW < limit)
 
             sources = {}
             for kind in ("ex", "st", "weather", "original"):
@@ -279,6 +289,9 @@ def main():
 
             p = probabilities(card, sources["ex"] or {}, motors)
             ranked = sorted(p, key=p.get, reverse=True)
+            safe_odds = (
+                odds if pre_cutoff(odds, limit) else None
+            )
 
             rec = {
                 "race_code": code,
@@ -286,7 +299,9 @@ def main():
                 "venue": venue,
                 "race": race,
                 "created_at": NOW.isoformat(),
-                "cutoff": limit.isoformat(),
+                "cutoff": limit.isoformat() if limit else None,
+                "cutoff_verified": verified,
+                "evaluation_eligible": verified,
                 "model": "baseline-0.2-UNVALIDATED",
                 "decision": "見送り（確率未検証）",
                 "stage": "provisional",
@@ -296,8 +311,10 @@ def main():
                 },
                 "probabilities": p,
                 "odds": {
-                    c: num(odds.get("3連単_" + c))
-                    if pre_cutoff(odds, limit) else None
+                    c: (
+                        num(safe_odds.get("3連単_" + c))
+                        if safe_odds else None
+                    )
                     for c in ranked
                 },
                 "input_snapshot": {
@@ -308,9 +325,7 @@ def main():
                     "start_exhibition": sources["st"],
                     "weather": sources["weather"],
                     "original_exhibition": sources["original"],
-                    "odds": (
-                        odds if pre_cutoff(odds, limit) else None
-                    ),
+                    "odds": safe_odds,
                     "motor_last_3_series": {
                         "status": "not_available",
                         "reason": "過去3節の個別使用履歴は別途再構築が必要",
@@ -327,6 +342,7 @@ def main():
                 },
                 "result": None,
             }
+
             preds[code] = rec
             made += 1
 
@@ -364,23 +380,15 @@ def main():
             }
             rec["stage"] = "final_available"
 
-        if settlement(
-            rec,
-            ix["results"].get(code),
-            ix["payouts"].get(code),
-        ):
+        if settlement(rec, res, pay):
             settled += 1
-
             if rec.get("final_snapshot"):
                 actual = rec["result"]["combo"]
                 money = rec["result"]["payout_100yen"]
-
                 rec["result"]["paper_final"] = {
                     str(n): {
-                        "hit": (
-                            actual in
-                            rec["final_snapshot"]["selection"][str(n)]
-                        ),
+                        "hit": actual in
+                        rec["final_snapshot"]["selection"][str(n)],
                         "stake": n * 100,
                         "return": (
                             money if actual in
@@ -421,8 +429,8 @@ def main():
             k: len(v) for k, v in data.items()
         },
         "notes": (
-            "Forward-only provisional predictions; "
-            "final snapshots saved when pre-cutoff odds exist."
+            "Unknown-cutoff predictions are unverified "
+            "and must be excluded from performance evaluation."
         ),
     }
 

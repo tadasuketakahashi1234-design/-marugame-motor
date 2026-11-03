@@ -10,6 +10,10 @@ from boat24_validation import validate_initial
 from test_extended_inputs import data
 
 class BatchUpgradeTests(unittest.TestCase):
+ def setUp(self):
+  # Cycle tests mock collection; never launch a real previous collector on CI.
+  from contextlib import nullcontext
+  p=patch('boat24_cycle.preserve_collection_during_rebuild',lambda *args:nullcontext());p.start();self.addCleanup(p.stop)
  def test_catalog_shows_all_twelve_without_creating_past_forecasts(self):
   now=dt.datetime(2026,11,3,14,0,tzinfo=JST);code='202611031512';d={'cards':{code:{}},'title':{code:{'電話投票締切予定':'13:00'}}};records={}
   c=catalog(d,records,now);self.assertEqual(len(c),12);self.assertEqual(c[code]['state'],'closed_no_forecast');self.assertEqual(c['202611031501']['state'],'program_unconfirmed');self.assertFalse(records)
@@ -105,6 +109,9 @@ class OfficialLivePreviewTests(unittest.TestCase):
   d={};apply_live_previews(d,cache,dt.datetime(2026,11,3,14,28,tzinfo=JST));self.assertFalse(d)
 
 class CaptureWindowTests(unittest.TestCase):
+ def setUp(self):
+  from contextlib import nullcontext
+  p=patch('boat24_cycle.preserve_collection_during_rebuild',lambda *args:nullcontext());p.start();self.addCleanup(p.stop)
  def test_capture_repeats_instead_of_stopping_after_first_success(self):
   import tempfile,json
   from pathlib import Path

@@ -90,10 +90,34 @@ def tide_features(row,cutoff):
  elif high<=cutoff<=low:f['上げ潮']=0.;f['下げ潮']=1.
  return f
 
-def collect(codes,cards,now):
+def collect(codes,cards,now,titles=None):
  cache=json.loads(CACHE.read_text()) if CACHE.exists() else {'schema':1,'races':{}}
  if cache.get('date')!=now.date().isoformat():cache={'schema':1,'date':now.date().isoformat(),'races':{}}
  errors={}
+ from boat24_comments import VENUE_SOURCES,parse_venue_comments,parse_pitreport,decorate,race_flags,parse_zenken
+ import hashlib
+ venue_comments={};comment_sources={}
+ titles=titles or {}
+ for venue in sorted({int(c[8:10]) for c in codes}):
+  key=str(venue);stored=cache.get('zenken_lists',{}).get(key,{})
+  if stored.get('date')==now.strftime('%Y%m%d') and stored.get('rows'):continue
+  title=next((titles.get(c,{}).get('タイトル') for c in codes if int(c[8:10])==venue and titles.get(c,{}).get('タイトル')),None)
+  if not title:continue
+  u=f'https://www.boatrace.jp/owpc/pc/race/rankingmotor?hd={now.strftime("%Y%m%d")}&jcd={venue:02d}'
+  try:
+   doc=get(u);rows=parse_zenken(doc,venue,now.strftime('%Y%m%d'),title)
+   cache.setdefault('zenken_lists',{})[key]={'date':now.strftime('%Y%m%d'),'rows':rows,'source':u,'observed_at':dt.datetime.now(JST).isoformat(),'body_sha256':hashlib.sha256(doc.encode()).hexdigest()}
+  except Exception as e:errors['zenken_'+key]=str(e)
+ for venue in sorted({int(c[8:10]) for c in codes} & set(VENUE_SOURCES)):
+  u=VENUE_SOURCES[venue].format(day=now.strftime('%Y%m%d'))
+  saved=cache.get('comment_lists',{}).get(str(venue),{});at=__import__('boat24_integrity').timeparse(saved.get('observed_at'))
+  if at and now-at<dt.timedelta(minutes=10):
+   venue_comments[venue]=saved.get('comments',{});comment_sources[venue]=saved.get('source',u);continue
+  try:
+   doc=get(u);rows=parse_venue_comments(doc,venue,now.strftime('%Y%m%d'));observed=dt.datetime.now(JST).isoformat()
+   cache.setdefault('comment_lists',{})[str(venue)]={'comments':rows,'observed_at':observed,'source':u,'body_sha256':hashlib.sha256(doc.encode()).hexdigest()}
+   venue_comments[venue]=rows;comment_sources[venue]=u
+  except Exception as e:errors['comments_'+str(venue)]=str(e)
  from boat24_water import download,parse_venue_weather
  def surface_job(venue):
   u=f'https://race.boatcast.jp/m_txt/{venue:02d}/bc_sui_{now.strftime("%Y%m%d")}_{venue:02d}.txt'
@@ -108,15 +132,30 @@ def collect(codes,cards,now):
  except Exception as e:errors['tide']=str(e)
  def job(code):
   venue=int(code[8:10]);race=int(code[-2:]);record={'observed_at':dt.datetime.now(JST).isoformat(),'sources':{}}
+  zr=cache.get('zenken_lists',{}).get(str(venue),{})
+  record['zenken']={str(i):{**zr['rows'][str(cards[code].get(f'艇{i}_登録番号'))],'observed_at':zr['observed_at'],'source':zr['source']} for i in range(1,7) if str(cards[code].get(f'艇{i}_登録番号')) in zr.get('rows',{})}
   u=f'https://www.boatrace.jp/owpc/pc/race/beforeinfo?hd={code[:8]}&jcd={venue:02d}&rno={race}'
   try:
    doc=get(u);record['before']=parse_before(doc,code,cards[code]);record['sources']['maintenance']=u
+   record['race_flags']=race_flags(doc,code,cards[code]);record['before_body_sha256']=hashlib.sha256(doc.encode()).hexdigest()
    record['live_previews']=parse_live_previews(doc,code,cards[code],dt.datetime.now(JST).isoformat())
    for row in record['live_previews'].values():row['source_url']=u
   except Exception as e:record['maintenance_error']=str(e)
   if venue==15:
    u=BASE+f'/asp/kyogi/15/pc/yoso05{race:02d}.htm'
-   try:record['comments']=parse_comments(get(u),code,cards[code]);record['sources']['comments']=u
+   try:
+    doc=get(u);record['comments']=decorate(parse_comments(doc,code,cards[code]),u,dt.datetime.now(JST).isoformat(),code[:8]);record['sources']['comments']=u;record['comments_body_sha256']=hashlib.sha256(doc.encode()).hexdigest()
+   except Exception as e:record['comments_error']=str(e)
+  elif venue in venue_comments:
+   rows={str(lane):venue_comments[venue][str(cards[code].get(f'艇{lane}_登録番号'))] for lane in range(1,7) if str(cards[code].get(f'艇{lane}_登録番号')) in venue_comments[venue]}
+   record['comments']=decorate(rows,comment_sources[venue],cache['comment_lists'][str(venue)]['observed_at'],code[:8]);record['sources']['comments']=comment_sources[venue]
+  # The national official report is supported across all 24 venues, but is
+  # published for selected races only. Absence is not a neutral comment.
+  if not record.get('comments'):
+   u=f'https://www.boatrace.jp/owpc/pc/race/pitreport?hd={code[:8]}&jcd={venue:02d}&rno={race}'
+   try:
+    doc=get(u);record['comments']=decorate(parse_pitreport(doc,code,cards[code]),u,dt.datetime.now(JST).isoformat(),code[:8]);record['sources']['comments']=u;record['comments_body_sha256']=hashlib.sha256(doc.encode()).hexdigest()
+    record['comments_status']='available' if record['comments'] else 'not_published_or_not_verified'
    except Exception as e:record['comments_error']=str(e)
   if venue==15:
    u=BASE+f'/replay/replay_movie/tenji/{code[:8]}{race:02d}.htm'
@@ -131,11 +170,13 @@ def collect(codes,cards,now):
  with ThreadPoolExecutor(max_workers=6) as pool:
   for code,rec in pool.map(job,codes):
    old=cache['races'].get(code,{})
-   for key in ('before','comments','wind_direction_text','live_previews'):
+   for key in ('before','comments','wind_direction_text','live_previews','race_flags','zenken'):
     if rec.get(key):rec[key+'_observed_at']=rec['observed_at']
     elif old.get(key):
      rec[key]=old[key];rec[key+'_observed_at']=old.get(key+'_observed_at',old.get('observed_at'))
    cache['races'][code]=rec
+   for key in ('comments_error','maintenance_error'):
+    if rec.get(key):errors[code+'_'+key]=rec[key]
  cache['updated_at']=dt.datetime.now(JST).isoformat();cache['errors']=errors;atomic_write(CACHE,cache)
  return cache
 

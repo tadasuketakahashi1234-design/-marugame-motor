@@ -1,1 +1,5 @@
-{"version": "0173d98d2318776e1d517cb605ccb18d56afb282524372df2d62ff981b44b1ad", "installer": "boat24_repair.yml", "previous_source_commit": "492371b081afedc1cf1ed8bb21537a57f5d6411f"}
+{
+  "version": "source-v6-integrated",
+  "source_managed_by": "git",
+  "previous_source_commit": "a1eec2ef79d6718a05beb677b75bb29d7642c17f"
+}

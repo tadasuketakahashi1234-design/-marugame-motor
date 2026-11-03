@@ -12,16 +12,20 @@ import unicodedata
 from collections import defaultdict
 from boat24_integrity import JST, timeparse, valid_combo
 
-VERSION = 'all-input-context-5-VENUE-WATER'
+VERSION = 'all-input-context-6-INTEGRATED'
 FREEZE_MINUTES = 2
 COMBOS = ['-'.join(map(str,c)) for c in itertools.permutations(range(1,7),3)]
 GROUPS = ('ability','waku','recent','motor','motor_history','exhibition','start','original','weather')
 EXTRA_GROUPS = ('course','style','maintenance','comments','tide','wind','race_conditions','opposition','local_support','behavior')
 ALL_GROUPS = GROUPS + EXTRA_GROUPS
+from boat24_details import DETAIL_GROUPS, LABELS as DETAIL_LABELS
+BASE_GROUPS = ALL_GROUPS
+ALL_GROUPS = BASE_GROUPS + DETAIL_GROUPS
 LABELS = {'behavior':'展示と本番のST差・進入変化の実測学習','race_conditions':'6艇の男女構成・開催条件','opposition':'相手関係・級別構成','local_support':'当地・男女構成別実績と確認走数','course':'選手別・実進入コース別の得意不得意','style':'決まり手・隣艇との関係','maintenance':'整備履歴・部品交換・プロペラ','comments':'選手コメントの気配','tide':'開催場の潮汐推算・水面条件','wind':'開催場の風向・風速とコース別実績','ability':'選手の全国・当地成績','waku':'枠別過去10走','recent':'全国・当地近況',
           'motor':'モーター期成績','motor_history':'過去3節・使用選手補正・今節',
           'exhibition':'展示タイム・体重・チルト','start':'スタート展示・進入',
           'original':'一周・まわり足・直線等','weather':'天候・風速・風向・波高・気温・水温','odds':'3連単オッズ'}
+LABELS.update(DETAIL_LABELS)
 
 
 def number(x):
@@ -140,8 +144,8 @@ def scales(samples):
     return output
 
 
-def distance(a,b,normalizers):
-    distances=[];used={}
+def distance_parts(a,b,normalizers):
+    parts={}
     for group in ALL_GROUPS:
         xs=[]
         for key,value in a.get(group,{}).items():
@@ -156,8 +160,14 @@ def distance(a,b,normalizers):
         if expected:
             xs.extend([1.0]*(expected-len(xs)))
         if xs:
-            part=sum(xs)/len(xs);distances.append(part);
-            if any(k in b.get(group,{}) for k in a.get(group,{})):used[group]=len(xs)
+            parts[group]=(sum(xs)/len(xs),len(xs) if any(k in b.get(group,{}) for k in a.get(group,{})) else 0)
+    return parts
+
+def distance(a,b,normalizers,enabled_groups=None):
+    parts=distance_parts(a,b,normalizers)
+    enabled=set(enabled_groups or ALL_GROUPS)
+    distances=[part for g,(part,_) in parts.items() if g in enabled]
+    used={g:n for g,(_,n) in parts.items() if g in enabled and n}
     return (sum(distances)/len(distances),used) if distances else (float('inf'),{})
 
 
@@ -186,7 +196,15 @@ def predict(features,venue,day,model,odds=None):
         learned_f={g:{k:v for k,v in fields.items() if g+'|'+k in normalizers} for g,fields in f.items()} if normalizers else f
         ranked=[]
         for sample in candidates:
-            d,groups=distance(learned_f,sample['features'],normalizers)
+            cache=model.get('_distance_cache')
+            if cache is None:d,groups=distance(learned_f,sample['features'],normalizers,model.get('enabled_groups'))
+            else:
+                key=(lane,id(sample))
+                if key not in cache:cache[key]=distance_parts(learned_f,sample['features'],normalizers)
+                enabled=set(model.get('enabled_groups') or ALL_GROUPS);parts=cache[key]
+                distances=[v for g,(v,_) in parts.items() if g in enabled]
+                d=sum(distances)/len(distances) if distances else float('inf')
+                groups={g:n for g,(_,n) in parts.items() if g in enabled and n}
             if math.isfinite(d):ranked.append((d,sample,groups))
         ranked.sort(key=lambda x:(x[0],x[1]['date'],x[1]['code']))
         neighbours=ranked[:32]
@@ -225,6 +243,7 @@ def predict(features,venue,day,model,odds=None):
         available=sorted({k for f in features for k in f.get(group,{})})
         active=sorted(used.get(group,set()))
         status='used' if active else 'historical_sample_insufficient' if available else 'missing'
+        if available and not active and model.get('enabled_groups') and group not in model['enabled_groups'] and any(group+'|'+k in normalizers for k in available):status='shadow'
         audit[group]={'label':LABELS[group],'status':status,'available_fields':available,'used_fields':active,
                       'available_lanes':sum(bool(f.get(group)) for f in features),'used_lanes':len(used_lanes[group]),
                       'field_coverage':{k:sum(k in f.get(group,{}) for f in features) for k in available},
@@ -242,8 +261,8 @@ def predict(features,venue,day,model,odds=None):
     audit['wind']['label']=profile.get('name','当該場')+'の風とコース別実績'
     if profile.get('tidal_range')=='なし':
         audit['tide'].update(status='not_applicable',reason='公式の場データで干満差なし',used_fields=[],used_lanes=0)
-    if venue!=15 and not audit['comments']['available_fields']:
-        audit['comments'].update(status='not_implemented',reason='この場のコメント自動取得は未実装')
+    if not audit['comments']['available_fields']:
+        audit['comments']['reason']='公式コメントの掲載・日付と登録番号の照合・取得を確認できていません'
     for item in audit.values():
         if item['status']=='used' and (item.get('unused_fields') or item.get('used_lanes',6)<item.get('available_lanes',6)):item['status']='partial_used'
     selection={str(n):sorted(p,key=lambda c:(-p[c],c))[:n] for n in (12,18)}

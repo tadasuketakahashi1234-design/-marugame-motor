@@ -30,6 +30,8 @@ PATHS={'cards':'programs/race_cards','title':'programs/title','waku':'programs/w
        'results':'results/realtime','payouts':'results/payouts',
        'recent_n':'programs/recent_national','recent_l':'programs/recent_local',
        'history':'programs/motor_history','calendar':'programs/monthly_schedule'}
+PATHS.update({'tokuten':'previews/tokuten_hayami','od1':'previews/od1','od2':'previews/od2'})
+OPTIONAL_SOURCES={'tokuten','od1','od2'}
 MODEL=pathlib.Path('omura/docs/boat24_full_model.json.gz')
 ERRORS={}
 SOURCE_CACHE=pathlib.Path('.boat24_source_cache')
@@ -54,6 +56,9 @@ def fetch(kind,path):
             return rows
         except Exception as exc:
             error=exc
+            if isinstance(exc,urllib.error.HTTPError) and exc.code==404 and kind in OPTIONAL_SOURCES:
+                ERRORS.pop(kind+'/'+path,None)
+                return []
             if isinstance(exc,urllib.error.HTTPError) and exc.code not in (408,429,500,502,503,504):break
             if not attempt:time.sleep(.25)
     ERRORS[kind+'/'+path]=str(error)[:160]
@@ -188,11 +193,17 @@ def race_features(code,card,data,history,asof,previous_motor=None,course_stats=N
                            motors,contexts,previews['ex'],previews['st'],previews['weather'],previews['original'],day)
     if course_stats is not None:add_course_features(features,card,venue,course_stats)
     metadata=add_priority_features(features,card,data.get('title',{}).get(code,{}),data.get('registry',{}),course_stats,venue,day,limit)
-    return {'race_context':metadata,'features':features,'contexts':contexts,'previews':previews,'cutoff':limit,
+    from boat24_details import attach
+    detail=attach(features,code,card,data,previews,limit,effective)
+    return {'race_context':metadata,'features':features,'contexts':contexts,'previews':previews,'cutoff':limit,'asof':effective,'detail':detail,
             'source_times':{k:r.get('取得日時') for k,r in previews.items() if r}}
 
 
 def build_model(today,days=28):
+    from boat24_replay import load_observations,restore_snapshot
+    from boat24_details import SCHEMA,DETAIL_GROUPS
+    from boat24_context import BASE_GROUPS
+    observed,replay_diagnostics=load_observations(today,days)
     registry=load_registry(today)
     tide_book,water_errors=load_tide_book(today,days)
     jobs=[]
@@ -206,7 +217,8 @@ def build_model(today,days=28):
     calendars,histories=calendar_and_history(today)
     history=History(calendars,histories);samples=[];validation=[];initial_validation=[];profile_rows=[];run_rows=[];coverage={}
     prior_motor=[]
-    course_stats=CourseStats();behavior=BehaviorStats();surface=SurfaceStats()
+    from boat24_tactics import Tactics
+    course_stats=CourseStats();behavior=BehaviorStats();surface=SurfaceStats();tactics=Tactics()
     # A prior 28-day warmup supplies real course results before the training window.
     warm=[today-dt.timedelta(days=n) for n in range(days+28,days,-1)]
     def course_day(d):
@@ -226,28 +238,39 @@ def build_model(today,days=28):
             res=data['results'].get(code,{})
             fm={str(res.get(f'{p}着_艇番')):p for p in range(1,7)}
             if len(fm)!=6 or set(fm)!=set('123456'):continue
+            from boat24_settlement import refund_boats
+            if refund_boats(res):continue
             built=race_features(code,card,data,history,dt.datetime.combine(day,dt.time(23,59,59),JST),prior_motor,course_stats)
             if not built:continue
             behavior.attach(built['features'],card)
             surface.attach(built['features'],int(code[8:10]),built['cutoff'],tide_book)
+            tactics.attach(built['features'],card,int(code[8:10]),d)
             surface_pending.append((int(code[8:10]),built['features'],fm))
             initial=race_features(code,card,data,history,dt.datetime.combine(day,dt.time(7),JST),prior_motor,course_stats)
             if initial:
                 behavior.attach(initial['features'],card)
                 surface.attach(initial['features'],int(code[8:10]),initial['cutoff'],tide_book)
+                tactics.attach(initial['features'],card,int(code[8:10]),d)
+            if (code,'preview') in observed:
+                replay=restore_snapshot(observed[(code,'preview')],code,card)
+                built={**built,**replay}
+            if (code,'initial') in observed and initial:
+                initial={**initial,**restore_snapshot(observed[(code,'initial')],code,card)}
+            tactics.attach(built['features'],card,int(code[8:10]),d)
+            if initial:tactics.attach(initial['features'],card,int(code[8:10]),d)
             for phase,snapshot in [('preview',built),('initial',initial)]:
                 if not snapshot:continue
                 for lane,f in enumerate(snapshot['features'],1):
                     course=int(f.get('start',{}).get('展示進入',lane))
-                    samples.append({'phase':phase,'date':d,'code':code,'venue':int(code[8:10]),'course':course,'lane':lane,'finish':fm[str(lane)],'features':f})
+                    samples.append({'phase':phase,'date':d,'code':code,'venue':int(code[8:10]),'course':course,'lane':lane,'finish':fm[str(lane)],'features':f,'snapshot_id':snapshot.get('snapshot_id'),'feature_schema':SCHEMA})
             if offset<=12:
                 actual='-'.join(str(res.get(f'{p}着_艇番')) for p in (1,2,3))
-                if actual in COMBOS and initial:initial_validation.append({'date':d,'venue':int(code[8:10]),'features':initial['features'],'actual':actual})
-                if actual in COMBOS and built['previews']['odds']:validation.append({'date':d,'venue':int(code[8:10]),'features':built['features'],'odds':built['previews']['odds'],'actual':actual})
+                if actual in COMBOS and initial:initial_validation.append({'code':code,'date':d,'venue':int(code[8:10]),'features':initial['features'],'actual':actual,'snapshot_id':initial.get('snapshot_id')})
+                if actual in COMBOS and built['previews']['odds']:validation.append({'code':code,'date':d,'venue':int(code[8:10]),'features':built['features'],'odds':built['previews']['odds'],'actual':actual,'snapshot_id':built.get('snapshot_id')})
         coverage[d]={'cards':len(data['cards']),'results':len(data['results']),'samples':sum(1 for s in samples if s['date']==d),
                      'weather':len(data['weather']),'exhibition':len(data['ex']),'start':len(data['st']),'original':len(data['original'])}
         for venue,features,finishes in surface_pending:surface.add(venue,features,finishes,d)
-        behavior.add(data);course_stats.add(data)
+        behavior.add(data);course_stats.add(data);tactics.add(data)
         prior_motor=data['motor_rows']
         print('context training',d,'samples',len(samples),flush=True)
     if len(samples)<1000 or len({s['date'] for s in samples})<10:raise RuntimeError('Insufficient historical samples; no all-input model published')
@@ -257,7 +280,9 @@ def build_model(today,days=28):
            'tide_book':tide_book,'water_source_errors':water_errors,'surface_state':surface.state,'venue_profiles':PROFILES,'behavior_state':behavior.state,'course_state':course_stats.state,'course_window_days':days+28,
            'registry':registry,'forecast_freeze_minutes':FREEZE_MINUTES,
            'previous_motor_rows':prior_motor,'coverage':coverage,'source_errors':dict(ERRORS),
-           'market_alpha':.25,'market_alpha_origin':'preset_unvalidated','calibration':{'status':'not_calibrated'}}
+           'market_alpha':.25,'market_alpha_origin':'preset_unvalidated','calibration':{'status':'not_calibrated'},
+           'feature_schema':SCHEMA,'replay':replay_diagnostics,'enabled_groups':[g for g in BASE_GROUPS if g!='comments'],
+           'candidate_groups':list(DETAIL_GROUPS),'candidate_policy':'shadow_until_independent_forward_validation','tactical_state':tactics.state}
     model['venue_coverage']={}
     for venue in range(1,25):
         boats=[s for s in samples if s.get('phase')=='preview' and s['venue']==venue and s['lane']==1]
@@ -266,6 +291,11 @@ def build_model(today,days=28):
     model.setdefault('phase_calibration',{})['initial']=validate_initial(model,initial_validation)
     model['calibration']['initial']=model['phase_calibration']['initial']
     model['calibration']['ablations']=ablation_report(model,validation,model['calibration'].get('test_dates',[]))
+    from boat24_experiments import historical_experiments
+    model['integrated_experiments']=historical_experiments(model,validation)
+    from boat24_experiments import prior_forward_evidence
+    model['forward_evidence']=prior_forward_evidence(today)
+    model['approved_candidate_phases']=[r['phase'] for r in model['forward_evidence']['phase_reports'] if r['adoption_approved']]
     import hashlib
     model['generated_at']=dt.datetime.now(JST).isoformat()
     model['model_id']=hashlib.sha256(json.dumps(model,ensure_ascii=False,sort_keys=True,separators=(',',':')).encode()).hexdigest()

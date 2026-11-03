@@ -19,13 +19,17 @@ def build_report(records,legacy=None):
   groups=['all',f"date:{rec['date']}",f"venue:{rec['venue']}",f"field:{ctx.get('field_type','unknown')}",f"phase:{snap.get('phase','legacy')}",f"version:{snap.get('model','unknown')}",f'predicted_winner_entry:{course}']
   for group in groups:
    for name,m in models.items():
-    picks=m['picks'];probs=m.get('probabilities',{});hit=actual in picks;stake=100*len(picks)
-    buckets[(group,name,'available')].append((hit,stake,payout if hit else 0,-math.log(max(probs.get(actual,0),1e-12)) if probs else None))
-    if len(models)==3:buckets[(group,name,'same_races')].append((hit,stake,payout if hit else 0,-math.log(max(probs.get(actual,0),1e-12)) if probs else None))
+    picks=m['picks'];probs=m.get('probabilities',{})
+    from boat24_settlement import amounts
+    settled=amounts([{'combo':k,'stake':100} for k in picks],result.get('winning_trifectas') or {actual:payout},result.get('refund_boats',[]))
+    hit,stake,returned=settled['hit'],settled['stake'],settled['return']
+    loss=-math.log(max(probs.get(actual,0),1e-12)) if probs and not result.get('refund_boats') and len(result.get('winning_trifectas') or {actual:payout})==1 else None
+    buckets[(group,name,'available')].append((hit,stake,returned,loss))
+    if len(models)==3:buckets[(group,name,'same_races')].append((hit,stake,returned,loss))
    allocation=snap.get('allocation',{}).get('tickets',[])
    if allocation:
-    stake=sum(t['stake'] for t in allocation);returns=sum(t['stake']/100*payout for t in allocation if t['combo']==actual)
-    buckets[(group,'allocated_paper','available')].append((returns>0,stake,returns,None))
+    settled=amounts(allocation,result.get('winning_trifectas') or {actual:payout},result.get('refund_boats',[]))
+    buckets[(group,'allocated_paper','available')].append((settled['hit'],settled['stake'],settled['return'],None))
  out=[]
  for (group,model,cohort),rows in sorted(buckets.items()):
   n=len(rows);hits=sum(r[0] for r in rows);stake=sum(r[1] for r in rows);returns=sum(r[2] for r in rows);losses=[r[3] for r in rows if r[3] is not None];rate=hits/n;z=1.96;den=1+z*z/n;center=(rate+z*z/(2*n))/den;margin=z*math.sqrt(rate*(1-rate)/n+z*z/(4*n*n))/den

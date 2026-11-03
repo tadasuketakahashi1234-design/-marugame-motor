@@ -175,7 +175,7 @@ jobs:
           if site.get('build_type')!='legacy':
               raise RuntimeError('This installer expects the existing branch-based Pages setup')
           build=api('/pages/builds','POST')
-          endpoint=build['url'].split('/repos/'+REPO,1)[1]
+          endpoint='/pages/builds/latest'
           for attempt in range(48):
               status=api(endpoint)
               if status.get('status')=='built':

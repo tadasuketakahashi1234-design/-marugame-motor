@@ -45,6 +45,7 @@ jobs:
           node --check omura/docs/boat24_integrated_ui.js
           node tests/integrated_ui_smoke.js
           node tests/ui_smoke.js
+          node tests/no_gami_ui.js
       - name: Load current inputs and preserve original history for validation
         run: |
           python - <<'PY'
@@ -98,6 +99,7 @@ jobs:
           python - <<'PY'
           import json, os, subprocess, time, urllib.request
           from boat24_context import VERSION
+          from boat24_bets import PURCHASE_POLICY
           from boat24_integrity import timeparse
           repo=os.environ['GITHUB_REPOSITORY']
           if os.environ.get('SOURCE_CHANGED')=='true':
@@ -113,13 +115,19 @@ jobs:
               try:
                   html=read(base+'boat24_results.html');assert 'fullForecastPanel' in html and 'boat24_full_ui.js' in html and 'fullReportGroup' in html and 'fullHealth' in html and 'fullVenueCoverage' in html and 'fullLearning' in html and 'boat24_integrated_ui.js' in html
                   integrated=read(base+'boat24_integrated_ui.js');assert 'factorRows' in integrated and '展示・進入・足の詳細' in integrated
-                  script=read(base+'boat24_full_ui.js');assert 'selection_snapshot_id' in script and 'feature_usage' in script and 'probability_verified' in script and 'rounded_target_met' in script and 'displayAudit' in script and 'renderWater' in script
+                  script=read(base+'boat24_full_ui.js');assert all(marker in script for marker in ('selection_snapshot_id','feature_usage','purchaseView','purchaseSnapshot','expected_return','estimated_roi','displayAudit','renderWater',PURCHASE_POLICY)), 'Published UI does not contain the current purchase policy'
                   index=json.loads(read(raw+'boat24_full_index.json'));assert index['model']==VERSION
                   ledger=json.loads(read(raw+'full_history/'+index['latest_day']+'.json'))
                   for record in ledger['records'].values():
                       for snap in record['revisions'].values():
                           assert timeparse(snap['created_at'])<timeparse(snap['cutoff']) and snap['evaluation_eligible']
                           assert set(snap['feature_usage']) >= {'weather','exhibition','start','motor_history','odds'}
+                          plan=snap.get('purchase_plan',{})
+                          if plan.get('policy')==PURCHASE_POLICY and plan.get('status')=='ready':
+                              tickets=plan['tickets'];total=sum(t['stake'] for t in tickets)
+                              assert tickets and len({t['combo'] for t in tickets})==len(tickets)
+                              assert total==plan['budget'] and total<=plan['budget_cap'] and plan['estimated_roi']>1
+                              assert all(t['stake']>0 and t['stake']%100==0 and t['expected_return']>total for t in tickets)
                   break
               except Exception:
                   if attempt==11:raise

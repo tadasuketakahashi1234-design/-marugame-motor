@@ -12,6 +12,11 @@ DIRECTORY=Path('omura/docs/full_history')
 INDEX=Path('omura/docs/boat24_full_index.json')
 from boat24_course import CourseStats, add_course_features
 from boat24_priority import add_priority_features
+from boat24_behavior import BehaviorStats
+from boat24_bets import optimize
+from boat24_operations import catalog,health
+from boat24_supplement import supplement
+from boat24_forward import build_report
 from boat24_official import collect as collect_official, attach as attach_official
 
 MANIFEST=Path('boat24_full_pending.json')
@@ -51,10 +56,17 @@ def make_snapshot(code,card,data,model,history,now,previous=None):
         built=race_features(code,card,mixed,history,now,model.get('previous_motor_rows'))
     add_course_features(built['features'],card,int(code[8:10]),CourseStats(model.get('course_state')))
     built['race_context']=add_priority_features(built['features'],card,title,data['registry'],CourseStats(model.get('course_state')),int(code[8:10]),day,cutoff)
+    behavior=BehaviorStats(model.get('behavior_state')).attach(built['features'],card)
     official=attach_official(built['features'],code,cutoff,data.get('official',{}))
     h=fingerprint(built['features'],built['previews']['odds'],model,{k:official.get(k) for k in ('before','comments','wind_direction_text')}|{'tide_schedule':data.get('official',{}).get('tides',{}).get(day)})
     if previous and previous.get('id')==h:return None,'unchanged_inputs'
     result=predict(built['features'],int(code[8:10]),day,model,built['previews']['odds'])
+    valid_odds={c:number(built['previews']['odds'].get('3連単_'+c)) for c in result['probabilities']}
+    result['allocation']=optimize(result['probabilities'],valid_odds)
+    if len([v for v in valid_odds.values() if v and v>0])==120:
+        z=sum(1/v for v in valid_odds.values());mp={c:1/v/z for c,v in valid_odds.items()}
+        result['market_baseline']={'probabilities':mp,'picks':sorted(mp,key=lambda c:(-mp[c],c))[:12],'observed_at':built['previews']['odds'].get('取得日時')}
+    result['behavior_forecast']=behavior
     required=set(GROUPS)|{'odds'}
     if int(code[8:10])==3:required.remove('original')
     result['complete_inputs']=all(result['feature_usage'][g]['status']=='used' and (g=='odds' or result['feature_usage'][g]['used_lanes']==6) for g in required)
@@ -72,7 +84,7 @@ def make_snapshot(code,card,data,model,history,now,previous=None):
                    'evaluation_eligible':True,'model_generated_at':model['generated_at'],'model_id':model.get('model_id'),
                    'input_snapshot':{'race_context':built['race_context'],'features':built['features'],'previews':built['previews'],
                                      'motor_history':built['contexts'],'official':official,'tide_schedule':data.get('official',{}).get('tides',{}).get(day), 'source_times':built['source_times'],
-                                     'retained_sources':retained,'captured_at':now.isoformat()}})
+                                     'missing_data_reasons':{lane:{'motor':ctx.get('status'),'period_verified':bool(ctx.get('period'))} for lane,ctx in built['contexts'].items()},'retained_sources':retained,'captured_at':now.isoformat()}})
     return json.loads(json.dumps(result,ensure_ascii=False,allow_nan=False)),None
 
 
@@ -104,18 +116,23 @@ def summary(records):
 
 def build_index(directory=DIRECTORY,now=None):
     days={};all_records=[]
+    catalogs={};latest_health={}
     for path in sorted(directory.glob('*.json')):
         data=json.loads(path.read_text());records=list(data.get('records',{}).values());all_records+=records
+        catalogs[path.stem]=data.get('catalog',{})
+        latest_health=data.get('health',{}) or latest_health
         days[path.stem]={'summary':summary(records),'venues':{str(v):summary([r for r in records if r['venue']==v]) for v in range(1,25)}}
-    return {'schema':1,'model':VERSION,'updated_at':(now or dt.datetime.now(JST)).isoformat(),
+    legacy_path=directory.parent/'boat24_ledger.json'
+    legacy=json.loads(legacy_path.read_text()) if legacy_path.exists() else {}
+    return {'catalogs':catalogs,'health':latest_health,'forward_report':build_report(all_records,legacy),'schema':1,'model':VERSION,'updated_at':(now or dt.datetime.now(JST)).isoformat(),
             'latest_day':max(days) if days else None,'days':days,'summary':summary(all_records),
             'venues':{str(v):summary([r for r in all_records if r['venue']==v]) for v in range(1,25)},
-            'warning':'総合モデルは未校正です。過去の旧モデル成績と混ぜず、開始後の実績だけを検証します。'}
+            'warning':'総合予想の保存履歴には過去版も含まれます。版別比較を参照してください。確率は別期間の校正検証条件を満たす場合のみ表示し、収益性は未証明です。'}
 
 
 def merge_day(remote,local):
     # Immutable revision IDs: remote observations always win on collisions.
-    merged=json.loads(json.dumps(local,ensure_ascii=False));merged['records']=json.loads(json.dumps(remote.get('records',{}),ensure_ascii=False))
+    merged=json.loads(json.dumps(local,ensure_ascii=False));merged['catalog']=json.loads(json.dumps({**remote.get('catalog',{}),**local.get('catalog',{})}));merged['records']=json.loads(json.dumps(remote.get('records',{}),ensure_ascii=False))
     for code,incoming in local.get('records',{}).items():
         if code not in merged['records']:merged['records'][code]=incoming;continue
         rec=merged['records'][code]
@@ -126,6 +143,11 @@ def merge_day(remote,local):
             if snap:
                 rec['result']['selection_snapshot_id']=snap['id']
                 rec['result']['paper']=paper(snap['selection'],rec['result']['combo'],rec['result']['payout_100yen'])
+    for code,item in merged.get('catalog',{}).items():
+        if code in merged['records']:
+            item['has_forecast']=True
+            if merged['records'][code].get('result'):item['state']='settled'
+            elif item['state'] in ('waiting_initial','closed_no_forecast','program_unconfirmed','cutoff_unknown'):item['state']='saved'
     assert set(remote.get('records',{}))<=set(merged['records'])
     for code,old in remote.get('records',{}).items():
         for key,value in old.get('revisions',{}).items():
@@ -136,9 +158,17 @@ def merge_day(remote,local):
 def main():
     now=dt.datetime.now(JST);day=now.date().isoformat();model,changed=ensure_model(now)
     ERRORS.clear()
-    data=collect_day(now.date());data['registry']=model.get('registry',{});now=dt.datetime.now(JST)
+    data=collect_day(now.date());now=dt.datetime.now(JST)
+    registry=supplement(data,model.get('registry',{}),now)
+    # Supplements are identity observations only. A new digest prevents treating changed identities as unchanged inputs.
+    if registry!=model.get('registry'):
+        import hashlib
+        model=dict(model,registry=registry);model['model_id']=hashlib.sha256((str(model.get('model_id'))+json.dumps(registry,sort_keys=True,ensure_ascii=False)).encode()).hexdigest()
+        changed=True
+        from boat24_model_io import write_json
+        write_json(MODEL,model)
     if day!=now.date().isoformat():raise RuntimeError('JST date changed during collection')
-    if not data['cards'] and not data['results'] and not data['payouts']:raise RuntimeError('All race sources unavailable; existing all-input forecasts kept')
+    if now.hour>=8 and not data['cards'] and not data['results'] and not data['payouts']:raise RuntimeError('All race sources unavailable; existing all-input forecasts kept')
     candidates=[]
     from boat24_context import deadline
     for code,card in data['cards'].items():
@@ -168,6 +198,8 @@ def main():
         current['revisions'].setdefault(snap['id'],snap)
     for code,rec in records.items():
         settled+=settle(rec,data['results'].get(code),data['payouts'].get(code),dt.datetime.now(JST))
+    ledger['catalog']=catalog(data,records,dt.datetime.now(JST))
+    ledger['health']=health(data,ledger['catalog'],{**ERRORS,**data.get('supplement_errors',{})},dt.datetime.now(JST))
     ledger['updated_at']=dt.datetime.now(JST).isoformat();ledger['diagnostics']={'new_forecasts':made,'updated_forecasts':updated,'new_settlements':settled,'skipped':skipped,'source_errors':dict(ERRORS)}
     atomic_write(path,ledger);touched=[str(path)]
     # Retry unsettled previous dates without requiring their race cards.
@@ -188,6 +220,7 @@ def main():
     atomic_write(INDEX,index)
     if changed:touched.append(str(MODEL))
     touched.append('omura/docs/boat24_official_cache.json')
+    if __import__('boat24_supplement').CACHE.exists():touched.append(str(__import__('boat24_supplement').CACHE))
     atomic_write(MANIFEST,{'paths':touched,'index':str(INDEX),'version':VERSION})
     print(json.dumps({'model':VERSION,'new':made,'updated':updated,'settled':settled,'total_today':len(records),'complete_inputs':summary(list(records.values()))['complete_inputs'],'skipped':skipped},ensure_ascii=False),flush=True)
 

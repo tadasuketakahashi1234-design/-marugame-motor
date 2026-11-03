@@ -19,7 +19,8 @@ from boat24_course import CourseStats, add_course_features
 from boat24_model_io import read_json, write_json
 from boat24_priority import add_priority_features
 from boat24_registry import load_registry
-from boat24_validation import validate_chronologically
+from boat24_behavior import BehaviorStats
+from boat24_validation import validate_chronologically,validate_initial,ablation_report
 
 ROOT='https://boatracecsv.github.io/data/'
 PATHS={'cards':'programs/race_cards','title':'programs/title','waku':'programs/waku10',
@@ -178,6 +179,9 @@ def race_features(code,card,data,history,asof,previous_motor=None,course_stats=N
         # Historical training uses the previous date's period totals; never EOD totals of its target race.
         motors[str(lane)]=prior if prior.get('モーター期起算日')==current.get('モーター期起算日') else {}
         contexts[str(lane)]=history.motor(venue,card.get(f'艇{lane}_モーター番号',''),current.get('モーター期起算日'),day,effective)
+        contexts[str(lane)]['period_source']=current.get('identity_source','daily_motor_csv')
+        contexts[str(lane)]['period_scope']=current.get('identity_scope','motor_row_period')
+        contexts[str(lane)]['individual_totals_available']=bool(motors[str(lane)].get('出走数'))
     features=make_features(card,data.get('waku',{}).get(code),data.get('recent_n',{}).get(code),data.get('recent_l',{}).get(code),
                            motors,contexts,previews['ex'],previews['st'],previews['weather'],previews['original'],day)
     if course_stats is not None:add_course_features(features,card,venue,course_stats)
@@ -197,9 +201,9 @@ def build_model(today,days=28):
         for i,_ in enumerate(pool.map(lambda pair:fetch(*pair),jobs),1):
             if i%60==0:print('training sources',i,'/',len(jobs),flush=True)
     calendars,histories=calendar_and_history(today)
-    history=History(calendars,histories);samples=[];validation=[];profile_rows=[];run_rows=[];coverage={}
+    history=History(calendars,histories);samples=[];validation=[];initial_validation=[];profile_rows=[];run_rows=[];coverage={}
     prior_motor=[]
-    course_stats=CourseStats()
+    course_stats=CourseStats();behavior=BehaviorStats()
     # A prior 28-day warmup supplies real course results before the training window.
     warm=[today-dt.timedelta(days=n) for n in range(days+28,days,-1)]
     def course_day(d):
@@ -220,26 +224,35 @@ def build_model(today,days=28):
             if len(fm)!=6 or set(fm)!=set('123456'):continue
             built=race_features(code,card,data,history,dt.datetime.combine(day,dt.time(23,59,59),JST),prior_motor,course_stats)
             if not built:continue
-            for lane,f in enumerate(built['features'],1):
-                course=int(f.get('start',{}).get('展示進入',lane))
-                samples.append({'date':d,'code':code,'venue':int(code[8:10]),'course':course,'lane':lane,'finish':fm[str(lane)],'features':f})
-            if offset<=6 and built['previews']['odds']:
+            behavior.attach(built['features'],card)
+            initial=race_features(code,card,data,history,dt.datetime.combine(day,dt.time(7),JST),prior_motor,course_stats)
+            if initial:behavior.attach(initial['features'],card)
+            for phase,snapshot in [('preview',built),('initial',initial)]:
+                if not snapshot:continue
+                for lane,f in enumerate(snapshot['features'],1):
+                    course=int(f.get('start',{}).get('展示進入',lane))
+                    samples.append({'phase':phase,'date':d,'code':code,'venue':int(code[8:10]),'course':course,'lane':lane,'finish':fm[str(lane)],'features':f})
+            if offset<=12 and built['previews']['odds']:
                 actual='-'.join(str(res.get(f'{p}着_艇番')) for p in (1,2,3))
+                if actual in COMBOS and initial:initial_validation.append({'date':d,'venue':int(code[8:10]),'features':initial['features'],'actual':actual})
                 if actual in COMBOS:validation.append({'date':d,'venue':int(code[8:10]),'features':built['features'],'odds':built['previews']['odds'],'actual':actual})
         coverage[d]={'cards':len(data['cards']),'results':len(data['results']),'samples':sum(1 for s in samples if s['date']==d),
                      'weather':len(data['weather']),'exhibition':len(data['ex']),'start':len(data['st']),'original':len(data['original'])}
-        course_stats.add(data)
+        behavior.add(data);course_stats.add(data)
         prior_motor=data['motor_rows']
         print('context training',d,'samples',len(samples),flush=True)
     if len(samples)<1000 or len({s['date'] for s in samples})<10:raise RuntimeError('Insufficient historical samples; no all-input model published')
     model={'version':VERSION,'trained_through':(today-dt.timedelta(days=1)).isoformat(),
            'generated_at':dt.datetime.now(JST).isoformat(),'samples':samples,'scales':scales(samples),
            'calendars':calendars,'motor_histories':histories,'profiles':profile_rows,'runs':run_rows,
-           'course_state':course_stats.state,'course_window_days':days+28,
+           'behavior_state':behavior.state,'course_state':course_stats.state,'course_window_days':days+28,
            'registry':registry,'forecast_freeze_minutes':FREEZE_MINUTES,
            'previous_motor_rows':prior_motor,'coverage':coverage,'source_errors':dict(ERRORS),
            'market_alpha':.25,'market_alpha_origin':'preset_unvalidated','calibration':{'status':'not_calibrated'}}
     model['calibration']=validate_chronologically(model,validation)
+    model.setdefault('phase_calibration',{})['initial']=validate_initial(model,initial_validation)
+    model['calibration']['initial']=model['phase_calibration']['initial']
+    model['calibration']['ablations']=ablation_report(model,validation,model['calibration'].get('test_dates',[]))
     import hashlib
     model['model_id']=hashlib.sha256(json.dumps(model,ensure_ascii=False,sort_keys=True,separators=(',',':')).encode()).hexdigest()
     return model

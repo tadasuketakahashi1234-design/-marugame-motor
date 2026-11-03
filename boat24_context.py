@@ -12,13 +12,13 @@ import unicodedata
 from collections import defaultdict
 from boat24_integrity import JST, timeparse, valid_combo
 
-VERSION = 'all-input-context-3-UNVALIDATED'
+VERSION = 'all-input-context-4-VALIDATION-GATED'
 FREEZE_MINUTES = 2
 COMBOS = ['-'.join(map(str,c)) for c in itertools.permutations(range(1,7),3)]
 GROUPS = ('ability','waku','recent','motor','motor_history','exhibition','start','original','weather')
-EXTRA_GROUPS = ('course','style','maintenance','comments','tide','wind','race_conditions','opposition','local_support')
+EXTRA_GROUPS = ('course','style','maintenance','comments','tide','wind','race_conditions','opposition','local_support','behavior')
 ALL_GROUPS = GROUPS + EXTRA_GROUPS
-LABELS = {'race_conditions':'6艇の男女構成・開催条件','opposition':'相手関係・級別構成','local_support':'当地・男女構成別実績と確認走数','course':'選手別・実進入コース別の得意不得意','style':'決まり手・隣艇との関係','maintenance':'整備履歴・部品交換・プロペラ','comments':'選手コメントの気配','tide':'丸亀の公式潮汐表','wind':'丸亀の風向と水面の関係','ability':'選手の全国・当地成績','waku':'枠別過去10走','recent':'全国・当地近況',
+LABELS = {'behavior':'展示と本番のST差・進入変化の実測学習','race_conditions':'6艇の男女構成・開催条件','opposition':'相手関係・級別構成','local_support':'当地・男女構成別実績と確認走数','course':'選手別・実進入コース別の得意不得意','style':'決まり手・隣艇との関係','maintenance':'整備履歴・部品交換・プロペラ','comments':'選手コメントの気配','tide':'丸亀の公式潮汐表','wind':'丸亀の風向と水面の関係','ability':'選手の全国・当地成績','waku':'枠別過去10走','recent':'全国・当地近況',
           'motor':'モーター期成績','motor_history':'過去3節・使用選手補正・今節',
           'exhibition':'展示タイム・体重・チルト','start':'スタート展示・進入',
           'original':'一周・まわり足・直線等','weather':'天候・風速・風向・波高・気温・水温','odds':'3連単オッズ'}
@@ -118,6 +118,7 @@ def make_features(card,waku,recent_n,recent_l,motor_stats,history,ex,st,weather,
         value=st_values[lane-1]
         # Exhibition F is not a race disqualification and is not rewarded as a fast start.
         add('start','ST絶対値相対',abs(value)-st_center if value is not None and st_center is not None else None)
+        add('start','展示ST符号付',value)
         add('start','展示F',int(value<0) if value is not None else None)
         add('start','展示進入',(st or {}).get(f'艇{lane}_コース'))
         for label,values in originals.items():add('original',label+'相対',values[lane-1])
@@ -174,7 +175,9 @@ def plackett_luce(scores,temperature=1.0):
 
 
 def predict(features,venue,day,model,odds=None):
-    pool=model.get('samples',[]);normalizers=model.get('scales',{})
+    phase='preview' if all('展示進入' in f.get('start',{}) and '展示タイム相対' in f.get('exhibition',{}) for f in features) else 'partial' if any(f.get(g) for f in features for g in ('exhibition','start','weather','original')) else 'initial'
+    pool_phase='preview' if all('展示進入' in f.get('start',{}) for f in features) else 'initial'
+    pool=[s for s in model.get('samples',[]) if s.get('phase',pool_phase)==pool_phase];normalizers=model.get('scales',{})
     scores=[];evidence=[];used=defaultdict(set);used_lanes=defaultdict(set)
     for lane,f in enumerate(features,1):
         course=int(f.get('start',{}).get('展示進入',lane))
@@ -210,8 +213,13 @@ def predict(features,venue,day,model,odds=None):
     valid_odds={c:number((odds or {}).get('3連単_'+c)) for c in COMBOS}
     market=normalize({c:1/o for c,o in valid_odds.items() if o and o>0})
     complete_market=len(market)==120
-    alpha=model.get('market_alpha',.25) if complete_market else 0
+    alpha=model.get('market_alpha',.25) if complete_market and phase in ('preview','partial') else 0
     p=normalize({c:(1-alpha)*context[c]+alpha*market.get(c,0) for c in COMBOS})
+    cal=model.get('phase_calibration',{}).get(phase,{})
+    calibration_applied=bool(cal.get('temperature') and bool(alpha>0)==bool(cal.get('requires_market')))
+    if calibration_applied:
+        p=normalize({k:max(v,1e-12)**(1/cal['temperature']) for k,v in p.items()})
+    probability_verified=calibration_applied and cal.get('display_approved',False) and all(e['neighbours']>=8 for e in evidence)
     audit={}
     for group in ALL_GROUPS:
         available=sorted({k for f in features for k in f.get(group,{})})
@@ -235,7 +243,7 @@ def predict(features,venue,day,model,odds=None):
         metrics[n]={'estimated_hit_probability':sum(p[c] for c in picks),
             'synthetic_odds':1/sum(1/o for o in os) if all(o and o>0 for o in os) else None,
             'flat_stake_expected_roi':sum(p[c]*valid_odds[c] for c in picks)/len(picks) if all(o and o>0 for o in os) else None}
-    return {'model':VERSION,'probabilities':p,'selection':selection,'market_metrics':metrics,
+    return {'phase':phase,'probability_verified':probability_verified,'calibration_applied':calibration_applied,'calibration_evidence':cal,'model':VERSION,'probabilities':p,'selection':selection,'market_metrics':metrics,
             'feature_usage':audit,'neighbour_evidence':evidence,
             'model_trained_through':model.get('trained_through'),
             'complete_inputs':all(audit[g]['status']=='used' for g in ('exhibition','start','weather','motor_history','odds')),

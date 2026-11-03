@@ -5,7 +5,7 @@ from pathlib import Path
 import subprocess
 import tempfile
 import time
-from boat24_integrity import JST, atomic_write, timeparse
+from boat24_integrity import JST, atomic_write, timeparse, merge_ledgers
 from boat24_full_update import MANIFEST, merge_day, build_index
 from boat24_official import merge_cache
 from boat24_model_io import read_json, write_json
@@ -26,7 +26,13 @@ def main():
                 paths=[]
                 for path,incoming in local.items():
                     dest=work/path;remote=read_json(dest) if dest.exists() else {}
-                    if path.endswith('boat24_official_cache.json'):
+                    if path.endswith('boat24_ledger.json'):
+                        chosen=merge_ledgers(remote,incoming)
+                    elif path.endswith('boat24_comparison.json'):
+                        chosen=merge_ledgers(remote,incoming,key='records')
+                    elif path.endswith('boat24_identity_cache.json'):
+                        chosen=dict(incoming,records={**remote.get('records',{}),**incoming.get('records',{})})
+                    elif path.endswith('boat24_official_cache.json'):
                         chosen=merge_cache(remote,incoming)
                     elif path.endswith(('boat24_full_model.json','boat24_full_model.json.gz')):
                         a=remote.get('trained_through','');b=incoming.get('trained_through','')

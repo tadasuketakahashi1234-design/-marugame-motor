@@ -1,7 +1,8 @@
 """Deterministic bounded search for 12 tickets; 100-yen paper allocations."""
 import math
 
-PURCHASE_POLICY='no-gami-equal-100-v1'
+LEGACY_PURCHASE_POLICY='no-gami-equal-100-v1'
+PURCHASE_POLICY='balanced-no-gami-v2'
 
 def no_gami_plan(probabilities, odds, count=12):
  """Equal 100-yen tickets: every selected hit must return more than total stake.
@@ -12,7 +13,7 @@ def no_gami_plan(probabilities, odds, count=12):
  from decimal import Decimal, InvalidOperation, ROUND_FLOOR
  from boat24_integrity import valid_combo
  budget=count*100
- base={'policy':PURCHASE_POLICY,'status':'odds_incomplete','budget':budget,
+ base={'policy':LEGACY_PURCHASE_POLICY,'status':'odds_incomplete','budget':budget,
        'stake_per_ticket':100,'count':count,'tickets':[],'paper_only':True}
  quotes={}
  for combo,value in odds.items():
@@ -34,6 +35,100 @@ def no_gami_plan(probabilities, odds, count=12):
              minimum_hit_return=min(t['expected_return'] for t in tickets),
              minimum_hit_profit=min(t['expected_profit'] for t in tickets),
              synthetic_odds=1/sum(1/float(q) for _,_,q,_ in chosen))
+
+
+def _balanced_fixed_budget(probabilities,odds,budget=1200,frontier_limit=256):
+ """Compare variable ticket counts and integer stakes on a Pareto frontier.
+
+ Balance score = hit probability * (estimated ROI - 1). Positive estimated
+ edge and a strictly positive quote-time profit on every hit are mandatory.
+ The bounded frontier is an approximation; never claim a global optimum.
+ """
+ from decimal import Decimal,InvalidOperation,ROUND_FLOOR
+ from boat24_integrity import valid_combo
+ if not isinstance(budget,int) or budget<100 or budget%100 or budget>1200:
+  raise ValueError('Budget must be 100..1200 yen in 100-yen units')
+ if frontier_limit<2:raise ValueError('Frontier limit must retain both extremes')
+ base={'policy':PURCHASE_POLICY,'status':'odds_incomplete','budget':budget,
+       'budget_cap':budget,'tickets':[],'paper_only':True,'search_exact':True,
+       'objective':'hit_probability_times_positive_expected_roi_excess',
+       'probability_verified':False,'method':'bounded_pareto_integer_allocation'}
+ quotes={}
+ for c,value in odds.items():
+  if not valid_combo(c):continue
+  try:q=Decimal(str(value))
+  except (InvalidOperation,ValueError):continue
+  if q.is_finite() and q>0:quotes[c]=(float(q),int((q*10).to_integral_value(rounding=ROUND_FLOOR))*10)
+ if len(quotes)!=120:return base
+ try:ps={c:float(probabilities[c]) for c in quotes}
+ except (KeyError,TypeError,ValueError):return dict(base,status='probabilities_invalid')
+ if any(not math.isfinite(p) or p<0 or p>1 for p in ps.values()) or abs(sum(ps.values())-1)>1e-6:
+  return dict(base,status='probabilities_invalid')
+ if max(ps[c]*pay/100 for c,(_,pay) in quotes.items())<=1+1e-12:
+  return dict(base,status='no_positive_value')
+ units=budget//100;states=[[] for _ in range(units+1)];states[0]=[(0.,0.,())]
+ truncated=False
+ def prune(rows):
+  nonlocal truncated
+  # At equal stake, higher coverage and higher expected payout dominate.
+  rows.sort(key=lambda r:(-r[0],-r[1],r[2]));out=[];best=-1.
+  for row in rows:
+   if row[1]>best+1e-9:out.append(row);best=row[1]
+  if len(out)>frontier_limit:
+   truncated=True
+   indices={round(i*(len(out)-1)/(frontier_limit-1)) for i in range(frontier_limit)}
+   out=[out[i] for i in sorted(indices)]
+  return out
+ for c in sorted(quotes,key=lambda c:(-ps[c],c)):
+  q,pay=quotes[c];p=ps[c]
+  if pay<=0 or p<=0:continue
+  minimum=budget//pay+1
+  if minimum>units:continue
+  previous=states;states=[list(rows) for rows in previous]
+  for spent in range(minimum,units+1):
+   for bet in range(minimum,spent+1):
+    states[spent].extend((hit+p,expected+p*pay*bet,picks+((c,bet),)) for hit,expected,picks in previous[spent-bet])
+   states[spent]=prune(states[spent])
+ feasible=states[units]
+ positive=[r for r in feasible if r[1]>budget+1e-9]
+ if not positive:return dict(base,status='no_positive_value' if feasible else 'no_feasible_plan',search_exact=not truncated)
+ hit,expected,picks=max(positive,key=lambda r:(r[0]*(r[1]/budget-1),r[0],r[1],r[2]))
+ tickets=[{'combo':c,'stake':bet*100,'odds':quotes[c][0],
+           'expected_return':quotes[c][1]*bet,'expected_profit':quotes[c][1]*bet-budget,
+           'estimated_probability':ps[c]} for c,bet in sorted(picks,key=lambda x:(-ps[x[0]],x[0]))]
+ # Recheck the integer constraints after selection, including rounding.
+ assert sum(t['stake'] for t in tickets)==budget
+ assert all(t['expected_profit']>0 for t in tickets)
+ frontier=[{'count':len(picks),'estimated_hit_probability':h,'estimated_roi':e/budget,
+            'balance_score':h*(e/budget-1)} for h,e,picks in positive]
+ return dict(base,status='ready',tickets=tickets,count=len(tickets),
+             search_exact=not truncated,frontier=frontier,
+             estimated_hit_probability=hit,estimated_roi=expected/budget,
+             estimated_profit=expected-budget,balance_score=hit*(expected/budget-1),
+             minimum_hit_return=min(t['expected_return'] for t in tickets),
+             minimum_hit_profit=min(t['expected_profit'] for t in tickets),
+             synthetic_odds=1/sum(1/t['odds'] for t in tickets))
+
+
+def balanced_plan(probabilities,odds,budget=1200,frontier_limit=256):
+ """Budget is a cap, not a spending target; prefer less stake on equal scores."""
+ maximum=_balanced_fixed_budget(probabilities,odds,budget,frontier_limit)
+ if maximum['status'] in ('odds_incomplete','probabilities_invalid','no_positive_value'):
+  return maximum
+ plans=[_balanced_fixed_budget(probabilities,odds,b,frontier_limit) for b in range(100,budget,100)]+[maximum]
+ ready=[p for p in plans if p['status']=='ready']
+ if not ready:return maximum
+ best=dict(max(ready,key=lambda p:(round(p['balance_score'],12),round(p['estimated_hit_probability'],12),round(p['estimated_roi'],12),-p['budget'])))
+ best['budget_cap']=budget
+ best['search_exact']=all(p['search_exact'] for p in plans)
+ best['budgets_compared']=[p['budget'] for p in plans]
+ by_count={}
+ for plan in ready:
+  for row in plan.get('frontier',[]):
+   n=row['count'];candidate=dict(row,budget=plan['budget'])
+   if n not in by_count or (candidate['balance_score'],-candidate['budget'])>(by_count[n]['balance_score'],-by_count[n]['budget']):by_count[n]=candidate
+ best['comparison_by_count']=[by_count[n] for n in sorted(by_count)]
+ return best
 
 def optimize(probabilities,odds,budget=2400,target=7.,count=12):
  valid={k:float(v) for k,v in odds.items() if v is not None and v>0}

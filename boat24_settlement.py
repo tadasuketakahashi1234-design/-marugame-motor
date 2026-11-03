@@ -50,15 +50,29 @@ def settle_record(rec,res,pay,snapshot,now):
     value=canonical(res,pay)
     if value is None:return False
     old=rec.get('result')
+    from boat24_bets import PURCHASE_POLICY
+    plans=[s for s in rec.get('revisions',{}).values()
+           if s.get('purchase_plan',{}).get('policy')==PURCHASE_POLICY
+           and s.get('evaluation_eligible') is True
+           and timeparse(s.get('created_at')) and timeparse(s.get('cutoff'))
+           and timeparse(s['created_at'])<timeparse(s['cutoff'])]
+    purchase=max(plans,key=lambda s:(s['created_at'],s['id'])) if plans else None
+    purchase_id=purchase['id'] if purchase else None
     normalized=lambda r:{'combo':r.get('combo'),'payout_100yen':r.get('payout_100yen'),'winning_trifectas':r.get('winning_trifectas') or {r.get('combo'):r.get('payout_100yen')},'refund_boats':r.get('refund_boats',[])}
-    if old and normalized(old)==value:return False
-    result_id=hashlib.sha256(json.dumps(value,sort_keys=True).encode()).hexdigest()
+    if old and normalized(old)==value and (not purchase or old.get('purchase_snapshot_id')==purchase_id):return False
+    result_id=hashlib.sha256(json.dumps([value,purchase_id],sort_keys=True).encode()).hexdigest() if purchase else hashlib.sha256(json.dumps(value,sort_keys=True).encode()).hexdigest()
     paper={}
     for n,picks in snapshot.get('selection',{}).items():
         if n in ('12','18') and len(picks)==int(n) and len(set(picks))==int(n):paper[n]=amounts([{'combo':k,'stake':100} for k in picks],value['winning_trifectas'],value['refund_boats'])
     plan=snapshot.get('purchase_plan',{})
     if plan.get('status')=='ready' and len(plan.get('tickets',[]))==12:
         paper['no_gami']=amounts(plan['tickets'],value['winning_trifectas'],value['refund_boats'])
+    balanced=(purchase or {}).get('purchase_plan',{})
+    if balanced.get('status')=='ready' and balanced.get('tickets'):
+        paper['balanced']=amounts(balanced['tickets'],value['winning_trifectas'],value['refund_boats'])
+    if purchase:
+        value['purchase_snapshot_id']=purchase_id
+        value['purchase_policy']=PURCHASE_POLICY
     value.update({'id':result_id,'settled_at':now.isoformat(),'selection_snapshot_id':snapshot['id'],'paper':paper,
                   'result_source':copy.deepcopy(res),'payout_source':copy.deepcopy(pay),'labels':{'actual_entry':{str(c):res.get(f'{c}コース_艇番') for c in range(1,7)},'actual_st':{str(c):res.get(f'{c}コース_スタートタイミング') for c in range(1,7)},'finish':{str(p):res.get(f'{p}着_艇番') for p in range(1,7)},'winning_method':res.get('決まり手')}})
     history=rec.setdefault('result_history',{})

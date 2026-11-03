@@ -14,7 +14,7 @@ from boat24_course import CourseStats, add_course_features
 from boat24_priority import add_priority_features
 from boat24_behavior import BehaviorStats
 from boat24_water import SurfaceStats,PROFILES
-from boat24_bets import optimize, no_gami_plan, PURCHASE_POLICY
+from boat24_bets import optimize, balanced_plan, PURCHASE_POLICY
 from boat24_operations import catalog,health
 from boat24_supplement import supplement
 from boat24_forward import build_report
@@ -92,7 +92,7 @@ def make_snapshot(code,card,data,model,history,now,previous=None,clock=None):
     result['details']=detail
     valid_odds={c:number(built['previews']['odds'].get('3連単_'+c)) for c in result['probabilities']}
     result['allocation']=optimize(result['probabilities'],valid_odds)
-    result['purchase_plan']=no_gami_plan(result['probabilities'],valid_odds)
+    result['purchase_plan']=balanced_plan(result['probabilities'],valid_odds)
     quote_time=built['previews']['odds'].get('取得日時')
     result['purchase_plan']['odds_observed_at']=quote_time
     stamp=timeparse(quote_time)
@@ -148,7 +148,7 @@ def summary(records):
         stake=sum(b['stake'] for b in bets);returns=sum(b['return'] for b in bets);hits=sum(b['hit'] for b in bets)
         output[str(n)]={'races':len(bets),'hits':hits,'stake':stake,'return':returns,'profit':returns-stake,
                         'hit_rate':hits/len(bets) if bets else None,'roi':returns/stake if stake else None}
-    bets=[r['result']['paper']['no_gami'] for r in settled if 'no_gami' in r['result'].get('paper',{})]
+    bets=[r['result']['paper']['balanced'] for r in settled if r['result'].get('purchase_policy')==PURCHASE_POLICY and 'balanced' in r['result'].get('paper',{})]
     stake=sum(b['stake'] for b in bets);returns=sum(b['return'] for b in bets)
     output['no_gami']={'races':len(bets),'hits':sum(b['hit'] for b in bets),'stake':stake,'return':returns,'profit':returns-stake,'roi':returns/stake if stake else None}
     return output
@@ -166,7 +166,7 @@ def build_index(directory=DIRECTORY,now=None):
     legacy=json.loads(legacy_path.read_text()) if legacy_path.exists() else {}
     from boat24_experiments import paired_report
     from boat24_factors import CATALOG
-    return {'integrated_learning':paired_report(all_records),'factor_catalog':CATALOG,'catalogs':catalogs,'health':latest_health,'forward_report':build_report(all_records,legacy),'schema':1,'model':VERSION,'updated_at':(now or dt.datetime.now(JST)).isoformat(),
+    return {'purchase_policy':PURCHASE_POLICY,'integrated_learning':paired_report(all_records),'factor_catalog':CATALOG,'catalogs':catalogs,'health':latest_health,'forward_report':build_report(all_records,legacy),'schema':1,'model':VERSION,'updated_at':(now or dt.datetime.now(JST)).isoformat(),
             'latest_day':max(days) if days else None,'days':days,'summary':summary(all_records),
             'venues':{str(v):summary([r for r in all_records if r['venue']==v]) for v in range(1,25)},
             'warning':'総合予想の保存履歴には過去版も含まれます。版別比較を参照してください。確率は別期間の校正検証条件を満たす場合のみ表示し、収益性は未証明です。'}

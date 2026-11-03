@@ -1,6 +1,40 @@
 """Deterministic bounded search for 12 tickets; 100-yen paper allocations."""
 import math
 
+PURCHASE_POLICY='no-gami-equal-100-v1'
+
+def no_gami_plan(probabilities, odds, count=12):
+ """Equal 100-yen tickets: every selected hit must return more than total stake.
+
+ This is a quote-time payout constraint, not a claim about expected value.
+ Never replace missing/ineligible tickets with longshots just to fill the list.
+ """
+ from decimal import Decimal, InvalidOperation, ROUND_FLOOR
+ from boat24_integrity import valid_combo
+ budget=count*100
+ base={'policy':PURCHASE_POLICY,'status':'odds_incomplete','budget':budget,
+       'stake_per_ticket':100,'count':count,'tickets':[],'paper_only':True}
+ quotes={}
+ for combo,value in odds.items():
+  if not valid_combo(combo):continue
+  try:q=Decimal(str(value))
+  except (InvalidOperation,ValueError):continue
+  if q.is_finite() and q>0:quotes[combo]=q
+ if len(quotes)!=120:return base
+ candidates=[]
+ for combo,q in quotes.items():
+  probability=probabilities.get(combo)
+  if probability is None or not math.isfinite(probability) or probability<=0:continue
+  payout=int((q*10).to_integral_value(rounding=ROUND_FLOOR))*10
+  if payout>budget:candidates.append((combo,probability,q,payout))
+ if len(candidates)<count:return dict(base,status='no_feasible_plan')
+ chosen=sorted(candidates,key=lambda row:(-row[1],row[0]))[:count]
+ tickets=[{'combo':c,'stake':100,'odds':float(q),'expected_return':p,'expected_profit':p-budget} for c,_,q,p in chosen]
+ return dict(base,status='ready',tickets=tickets,
+             minimum_hit_return=min(t['expected_return'] for t in tickets),
+             minimum_hit_profit=min(t['expected_profit'] for t in tickets),
+             synthetic_odds=1/sum(1/float(q) for _,_,q,_ in chosen))
+
 def optimize(probabilities,odds,budget=2400,target=7.,count=12):
  valid={k:float(v) for k,v in odds.items() if v is not None and v>0}
  if len(valid)!=120:return {'status':'odds_incomplete','budget':budget,'target':target,'tickets':[]}

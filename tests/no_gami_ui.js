@@ -1,0 +1,15 @@
+const fs=require('fs'),vm=require('vm'),assert=require('assert');
+const src=fs.readFileSync('omura/docs/boat24_full_ui.js','utf8');
+const context={Date,Number,Math,Set,esc:String,num:String};
+vm.createContext(context);
+vm.runInContext(src.slice(src.indexOf('function purchaseView('),src.indexOf('function records()')),context);
+const tickets=Array.from({length:12},(_,i)=>({combo:String(i),stake:100,odds:12.1,expected_return:1210}));
+const s={cutoff:new Date(Date.now()+600000).toISOString(),purchase_plan:{policy:'no-gami-equal-100-v1',status:'ready',tickets,odds_observed_at:new Date().toISOString()}};
+assert(context.purchaseView(s).html.includes('各100円'));
+assert(context.purchaseView(s).metrics.includes('＋10円'));
+s.purchase_plan.odds_observed_at=new Date(Date.now()-301000).toISOString();
+assert(context.purchaseView(s).html.includes('見送り'));
+s.purchase_plan.odds_observed_at=new Date().toISOString();tickets[0].odds=11.9;
+assert(context.purchaseView(s).html.includes('見送り'));
+assert(context.purchaseView({cutoff:s.cutoff}).html.includes('保存待ち'));
+console.log('PASS: no-gami plan display, stale quotes, invalid payout, legacy snapshots');

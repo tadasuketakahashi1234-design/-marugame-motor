@@ -14,7 +14,7 @@ from boat24_course import CourseStats, add_course_features
 from boat24_priority import add_priority_features
 from boat24_behavior import BehaviorStats
 from boat24_water import SurfaceStats,PROFILES
-from boat24_bets import optimize
+from boat24_bets import optimize, no_gami_plan, PURCHASE_POLICY
 from boat24_operations import catalog,health
 from boat24_supplement import supplement
 from boat24_forward import build_report
@@ -72,7 +72,7 @@ def make_snapshot(code,card,data,model,history,now,previous=None,clock=None):
     # fetched again or the wall clock advanced. Freshness is still displayed.
     digest_features=[{k:v for k,v in f.items() if k!='data_quality'} for f in built['features']]
     comments_identity={lane:{k:c.get(k) for k in ('racer','comment','source')} for lane,c in official.get('comments',{}).items()}
-    h=fingerprint(digest_features,built['previews']['odds'],model,{'before':official.get('before'),'comments':comments_identity,'race_flags':official.get('race_flags')})
+    h=fingerprint(digest_features,built['previews']['odds'],model,{'before':official.get('before'),'comments':comments_identity,'race_flags':official.get('race_flags'),'purchase_policy':PURCHASE_POLICY})
     if previous and previous.get('id')==h:return None,'unchanged_inputs'
     result=predict(built['features'],int(code[8:10]),day,model,built['previews']['odds'])
     baseline=result
@@ -92,6 +92,12 @@ def make_snapshot(code,card,data,model,history,now,previous=None,clock=None):
     result['details']=detail
     valid_odds={c:number(built['previews']['odds'].get('3連単_'+c)) for c in result['probabilities']}
     result['allocation']=optimize(result['probabilities'],valid_odds)
+    result['purchase_plan']=no_gami_plan(result['probabilities'],valid_odds)
+    quote_time=built['previews']['odds'].get('取得日時')
+    result['purchase_plan']['odds_observed_at']=quote_time
+    stamp=timeparse(quote_time)
+    if not stamp or not dt.timedelta(0)<=now-stamp<=dt.timedelta(minutes=5):
+        result['purchase_plan'].update(status='odds_stale',tickets=[])
     if len([v for v in valid_odds.values() if v and v>0])==120:
         z=sum(1/v for v in valid_odds.values());mp={c:1/v/z for c,v in valid_odds.items()}
         result['market_baseline']={'probabilities':mp,'picks':sorted(mp,key=lambda c:(-mp[c],c))[:12],'observed_at':built['previews']['odds'].get('取得日時')}
@@ -142,6 +148,9 @@ def summary(records):
         stake=sum(b['stake'] for b in bets);returns=sum(b['return'] for b in bets);hits=sum(b['hit'] for b in bets)
         output[str(n)]={'races':len(bets),'hits':hits,'stake':stake,'return':returns,'profit':returns-stake,
                         'hit_rate':hits/len(bets) if bets else None,'roi':returns/stake if stake else None}
+    bets=[r['result']['paper']['no_gami'] for r in settled if 'no_gami' in r['result'].get('paper',{})]
+    stake=sum(b['stake'] for b in bets);returns=sum(b['return'] for b in bets)
+    output['no_gami']={'races':len(bets),'hits':sum(b['hit'] for b in bets),'stake':stake,'return':returns,'profit':returns-stake,'roi':returns/stake if stake else None}
     return output
 
 

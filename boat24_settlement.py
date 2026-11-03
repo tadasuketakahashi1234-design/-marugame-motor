@@ -56,6 +56,9 @@ def settle_record(rec,res,pay,snapshot,now):
     paper={}
     for n,picks in snapshot.get('selection',{}).items():
         if n in ('12','18') and len(picks)==int(n) and len(set(picks))==int(n):paper[n]=amounts([{'combo':k,'stake':100} for k in picks],value['winning_trifectas'],value['refund_boats'])
+    plan=snapshot.get('purchase_plan',{})
+    if plan.get('status')=='ready' and len(plan.get('tickets',[]))==12:
+        paper['no_gami']=amounts(plan['tickets'],value['winning_trifectas'],value['refund_boats'])
     value.update({'id':result_id,'settled_at':now.isoformat(),'selection_snapshot_id':snapshot['id'],'paper':paper,
                   'result_source':copy.deepcopy(res),'payout_source':copy.deepcopy(pay),'labels':{'actual_entry':{str(c):res.get(f'{c}コース_艇番') for c in range(1,7)},'actual_st':{str(c):res.get(f'{c}コース_スタートタイミング') for c in range(1,7)},'finish':{str(p):res.get(f'{p}着_艇番') for p in range(1,7)},'winning_method':res.get('決まり手')}})
     history=rec.setdefault('result_history',{})

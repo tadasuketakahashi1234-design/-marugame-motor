@@ -16,6 +16,8 @@ from boat24_priority import add_priority_features
 from boat24_behavior import BehaviorStats
 from boat24_water import SurfaceStats,PROFILES
 from boat24_bets import optimize, balanced_plan, PURCHASE_POLICY
+from boat24_offers import register_offers,report as offer_report,PROTOCOL_ID
+from boat24_official_results import attach_results, CACHE as RESULT_CACHE
 from boat24_operations import catalog,health
 from boat24_supplement import supplement
 from boat24_forward import build_report
@@ -73,7 +75,7 @@ def make_snapshot(code,card,data,model,history,now,previous=None,clock=None):
     # fetched again or the wall clock advanced. Freshness is still displayed.
     digest_features=[{k:v for k,v in f.items() if k!='data_quality'} for f in built['features']]
     comments_identity={lane:{k:c.get(k) for k in ('racer','comment','source')} for lane,c in official.get('comments',{}).items()}
-    h=fingerprint(digest_features,built['previews']['odds'],model,{'before':official.get('before'),'comments':comments_identity,'race_flags':official.get('race_flags'),'purchase_policy':PURCHASE_POLICY})
+    h=fingerprint(digest_features,built['previews']['odds'],model,{'before':official.get('before'),'comments':comments_identity,'race_flags':official.get('race_flags'),'purchase_policy':PURCHASE_POLICY,'purchase_protocol':PROTOCOL_ID})
     if previous and previous.get('id')==h:return None,'unchanged_inputs'
     result=predict(built['features'],int(code[8:10]),day,model,built['previews']['odds'])
     baseline=result
@@ -94,6 +96,7 @@ def make_snapshot(code,card,data,model,history,now,previous=None,clock=None):
     valid_odds={c:number(built['previews']['odds'].get('3連単_'+c)) for c in result['probabilities']}
     result['allocation']=optimize(result['probabilities'],valid_odds)
     result['purchase_plan']=balanced_plan(result['probabilities'],valid_odds)
+    result['purchase_plan']['protocol_id']=PROTOCOL_ID
     quote_time=built['previews']['odds'].get('取得日時')
     result['purchase_plan']['odds_observed_at']=quote_time
     stamp=timeparse(quote_time)
@@ -134,7 +137,7 @@ def settle(rec,res,pay,now):
     from boat24_settlement import settle_record
     # Keep ambiguous legacy refund cases pending until an actual course/boat map
     # proves which tickets are refundable.
-    if res and any(res.get(f'{i}コース_F') for i in range(1,7)) and not any(res.get(f'{i}コース_艇番') for i in range(1,7)):
+    if res and not res.get('official_refund_verified') and any(res.get(f'{i}コース_F') for i in range(1,7)) and not any(res.get(f'{i}コース_艇番') for i in range(1,7)):
         rec['result_pending_reason']='返還艇を照合できないため集計対象外・精算保留'
         return False
     return settle_record(rec,res,pay,latest(rec),now)
@@ -151,7 +154,7 @@ def summary(records):
                         'hit_rate':hits/len(bets) if bets else None,'roi':returns/stake if stake else None}
     bets=[r['result']['paper']['balanced'] for r in settled if r['result'].get('purchase_policy')==PURCHASE_POLICY and 'balanced' in r['result'].get('paper',{})]
     stake=sum(b['stake'] for b in bets);returns=sum(b['return'] for b in bets)
-    output['no_gami']={'races':len(bets),'hits':sum(b['hit'] for b in bets),'stake':stake,'return':returns,'profit':returns-stake,'roi':returns/stake if stake else None}
+    output['no_gami']={'selection_rule':'first_ready_per_race','refund_unverified':sum(not r['result'].get('refund_verified') for r in settled if 'balanced' in r['result'].get('paper',{})),'races':len(bets),'hits':sum(b['hit'] for b in bets),'stake':stake,'return':returns,'profit':returns-stake,'roi':returns/stake if stake else None}
     return output
 
 
@@ -167,7 +170,7 @@ def build_index(directory=DIRECTORY,now=None):
     legacy=json.loads(legacy_path.read_text()) if legacy_path.exists() else {}
     from boat24_experiments import paired_report
     from boat24_factors import CATALOG
-    return {'purchase_policy':PURCHASE_POLICY,'integrated_learning':paired_report(all_records),'factor_catalog':CATALOG,'catalogs':catalogs,'health':latest_health,'forward_report':build_report(all_records,legacy),'schema':1,'model':VERSION,'updated_at':(now or dt.datetime.now(JST)).isoformat(),
+    return {'purchase_policy':PURCHASE_POLICY,'integrated_learning':paired_report(all_records),'factor_catalog':CATALOG,'catalogs':catalogs,'health':latest_health,'purchase_forward_report':offer_report(all_records),'forward_report':build_report(all_records,legacy),'schema':1,'model':VERSION,'updated_at':(now or dt.datetime.now(JST)).isoformat(),
             'latest_day':max(days) if days else None,'days':days,'summary':summary(all_records),
             'venues':{str(v):summary([r for r in all_records if r['venue']==v]) for v in range(1,25)},
             'warning':'総合予想の保存履歴には過去版も含まれます。版別比較を参照してください。確率は別期間の校正検証条件を満たす場合のみ表示し、収益性は未証明です。'}
@@ -181,6 +184,8 @@ def merge_day(remote,local):
         rec=merged['records'][code]
         if incoming.get('result_pending_reason') and not rec.get('result'):rec['result_pending_reason']=incoming['result_pending_reason']
         for key,revision in incoming.get('revisions',{}).items():rec.setdefault('revisions',{}).setdefault(key,revision)
+        for key,value in incoming.get('offers',{}).items():rec.setdefault('offers',{}).setdefault(key,value)
+        register_offers(rec)
         for key,value in incoming.get('result_history',{}).items():rec.setdefault('result_history',{}).setdefault(key,value)
         new_result=incoming.get('result') or {};old_result=rec.get('result') or {}
         if new_result.get('id') and timeparse(new_result.get('settled_at')) and (not timeparse(old_result.get('settled_at')) or timeparse(new_result['settled_at'])>timeparse(old_result['settled_at'])):
@@ -245,10 +250,12 @@ def main():
             records[code]=current;made+=1
         else:updated+=1
         current['revisions'].setdefault(snap['id'],snap)
+    official_errors=attach_results(data,set(records)&(set(data['results'])|set(data['payouts'])),dt.datetime.now(JST)) if data.get('_live_collection') else {}
     for code,rec in records.items():
+        register_offers(rec)
         settled+=settle(rec,data['results'].get(code),data['payouts'].get(code),dt.datetime.now(JST))
     ledger['catalog']=catalog(data,records,dt.datetime.now(JST))
-    ledger['health']=health(data,ledger['catalog'],{**ERRORS,**data.get('supplement_errors',{}),**data.get('official',{}).get('errors',{})},dt.datetime.now(JST))
+    ledger['health']=health(data,ledger['catalog'],{**ERRORS,**official_errors,**data.get('supplement_errors',{}),**data.get('official',{}).get('errors',{})},dt.datetime.now(JST))
     ledger['updated_at']=dt.datetime.now(JST).isoformat();ledger['diagnostics']={'new_forecasts':made,'updated_forecasts':updated,'new_settlements':settled,'skipped':skipped,'source_errors':dict(ERRORS)}
     path=write_history(path,ledger);write_view(path,ledger);touched=[str(path)]
     # Retry unsettled previous dates without requiring their race cards.
@@ -262,14 +269,17 @@ def main():
     for old_path,old in pending[:14]:
         with ThreadPoolExecutor(max_workers=2) as pool:
             res,pay=list(pool.map(lambda k:by_code(fetch(k,day_key(old_path).replace('-','/'))),('results','payouts')))
+        past={'results':res,'payouts':pay}
+        if data.get('_live_collection'):attach_results(past,set(old['records'])&(set(res)|set(pay)),dt.datetime.now(JST))
         for code,rec in old['records'].items():settle(rec,res.get(code),pay.get(code),dt.datetime.now(JST))
         old_path=write_history(old_path,old);write_view(old_path,old);touched.append(str(old_path))
     index=build_index(now=dt.datetime.now(JST));index['backfill_cursor']=day_key(pending[:14][-1][0]) if pending else ''
-    index['diagnostics']=ledger['diagnostics'];index['training']={'through':model['trained_through'],'samples':len(model['samples']),'market_prior':model['market_alpha'],'validation':model['calibration'],'source_errors':model.get('source_errors',{}),'venue_coverage':model.get('venue_coverage',{}),'venue_profiles':model.get('venue_profiles',PROFILES),'water_source_errors':model.get('water_source_errors',{}),'surface_summary':{'venues_with_wind_history':sorted({k.split('|')[0] for k in model.get('surface_state',{}).get('wind',{})}),'venues_with_tide_data':sorted(model.get('tide_book',{}))},'course_window_days':model.get('course_window_days')}
+    index['diagnostics']=ledger['diagnostics'];index['training']={'frozen_for_forward_evaluation':__import__('os').environ.get('BOAT24_FREEZE_MODEL')=='1','through':model['trained_through'],'samples':len(model['samples']),'market_prior':model['market_alpha'],'validation':model['calibration'],'source_errors':model.get('source_errors',{}),'venue_coverage':model.get('venue_coverage',{}),'venue_profiles':model.get('venue_profiles',PROFILES),'water_source_errors':model.get('water_source_errors',{}),'surface_summary':{'venues_with_wind_history':sorted({k.split('|')[0] for k in model.get('surface_state',{}).get('wind',{})}),'venues_with_tide_data':sorted(model.get('tide_book',{}))},'course_window_days':model.get('course_window_days')}
     index['training'].update({'integrated_experiments':model.get('integrated_experiments',{}),'replay':model.get('replay',{}),'candidate_policy':model.get('candidate_policy'),'feature_schema':model.get('feature_schema'),'learned_fields':sorted(model.get('scales',{})),'approved_candidate_phases':model.get('approved_candidate_phases',[])})
     atomic_write(INDEX,index)
     if changed:touched.append(str(MODEL))
     touched.append('omura/docs/boat24_official_cache.json')
+    if RESULT_CACHE.exists():touched.append(str(RESULT_CACHE))
     if __import__('boat24_supplement').CACHE.exists():touched.append(str(__import__('boat24_supplement').CACHE))
     atomic_write(MANIFEST,{'paths':touched,'index':str(INDEX),'version':VERSION})
     print(json.dumps({'model':VERSION,'new':made,'updated':updated,'settled':settled,'total_today':len(records),'complete_inputs':summary(list(records.values()))['complete_inputs'],'skipped':skipped},ensure_ascii=False),flush=True)

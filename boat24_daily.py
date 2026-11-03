@@ -168,6 +168,9 @@ def probabilities(card, ex, mot):
     }
 
 def settlement(rec, res, pay):
+    if res and res.get('official_refund_verified') is True:
+        from boat24_settlement import settle_legacy
+        return settle_legacy(rec,res,pay,NOW)
     if rec.get("result") is not None or not res or not pay:
         return False
     code = rec.get("race_code")

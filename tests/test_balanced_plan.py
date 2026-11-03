@@ -44,6 +44,7 @@ class BalancedPlanTests(unittest.TestCase):
  def test_settlement_records_current_policy_once(self):
   a,b,c=self.codes[:3];self.p.update({a:.3,b:.3,c:.4});self.odds.update({a:5,b:4})
   plan=balanced_plan(self.p,self.odds)
+  plan['odds_observed_at']='2026-11-03T10:00:00+09:00'
   snap={'id':'balanced','created_at':'2026-11-03T10:00:00+09:00','cutoff':'2026-11-03T11:00:00+09:00','evaluation_eligible':True,'purchase_plan':plan,'selection':{}}
   rec={'race_code':'202611031901','venue':19,'revisions':{'balanced':snap}}
   res={'レースコード':rec['race_code'],'1着_艇番':'1','2着_艇番':'2','3着_艇番':'3'}

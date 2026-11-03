@@ -53,6 +53,10 @@ def result_paper(rec, final=False):
     if not valid_combo(result.get('combo')) or not isinstance(money, (int, float)) or not math.isfinite(money) or money <= 0:
         return {}
     snapshot = rec.get('final_snapshot') or {} if final else rec
+    if result.get('refund_verified'):
+        from boat24_settlement import amounts
+        winners=result.get('winning_trifectas') or {result['combo']:int(money)}
+        return {str(n):amounts([{'combo':c,'stake':100} for c in picks],winners,result.get('refund_boats',[])) for n in (12,18) if len(picks:=snapshot.get('selection',{}).get(str(n),[]))==n and len(set(picks))==n and all(valid_combo(c) for c in picks)}
     return paper(snapshot.get('selection') or {}, result['combo'], money)
 
 
@@ -109,6 +113,9 @@ def merge_ledgers(remote, collected, key='predictions'):
             if same and not current.get('final_snapshot') and incoming.get('final_snapshot'):
                 current['final_snapshot'] = copy.deepcopy(incoming['final_snapshot'])
                 current['stage'] = incoming.get('stage')
+            if incoming.get('result',{} ) and incoming['result'].get('refund_verified') and (not current.get('result') or incoming['result'].get('settled_at','')>current['result'].get('settled_at','')):
+                for h,v in incoming.get('result_history',{}).items():current.setdefault('result_history',{}).setdefault(h,copy.deepcopy(v))
+                current['result']=copy.deepcopy(incoming['result'])
             if not current.get('result') and incoming.get('result'):
                 current['result'] = copy.deepcopy(incoming['result'])
                 current['result']['paper'] = result_paper(current)

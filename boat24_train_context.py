@@ -72,6 +72,7 @@ def collect_day(day):
     path=day.strftime('%Y/%m/%d');kinds=[k for k in PATHS if k not in ('history','calendar')]
     with ThreadPoolExecutor(max_workers=8) as pool:rows=dict(zip(kinds,pool.map(lambda k:fetch(k,path),kinds)))
     rows['motor_rows']=rows['motor'];rows={k:(v if k in ('motor','motor_rows') else by_code(v)) for k,v in rows.items()}
+    rows['_live_collection']=True
     return rows
 
 
@@ -306,11 +307,11 @@ def ensure_model(now):
     yesterday=(now.date()-dt.timedelta(days=1)).isoformat()
     if MODEL.exists():
         previous=read_json(MODEL)
-        if previous.get('version')==VERSION and previous.get('trained_through')==yesterday:return previous,False
+        if previous.get('version')==VERSION and (previous.get('trained_through')==yesterday or os.environ.get('BOAT24_FREEZE_MODEL')=='1' and previous.get('trained_through','9999')<now.date().isoformat() and previous.get('model_id')):return previous,False
     legacy=MODEL.with_suffix('')
     if legacy.exists():
         previous=read_json(legacy)
-        if previous.get('version')==VERSION and previous.get('trained_through')==yesterday:
+        if previous.get('version')==VERSION and (previous.get('trained_through')==yesterday or os.environ.get('BOAT24_FREEZE_MODEL')=='1' and previous.get('trained_through','9999')<now.date().isoformat() and previous.get('model_id')):
             write_json(MODEL,previous)
             return previous,True
     model=build_model(now.date(),int(os.environ.get('BOAT24_CONTEXT_DAYS','28')))

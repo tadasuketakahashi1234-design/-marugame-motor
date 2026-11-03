@@ -38,6 +38,9 @@ def main():
                         chosen=merge_ledgers(remote,incoming,key='records')
                     elif path.endswith('boat24_identity_cache.json'):
                         chosen=dict(incoming,records={**remote.get('records',{}),**incoming.get('records',{})})
+                    elif path.endswith('boat24_official_results.json'):
+                        from boat24_official_results import merge_cache as merge_results
+                        chosen=merge_results(remote,incoming)
                     elif path.endswith('boat24_official_cache.json'):
                         chosen=merge_cache(remote,incoming)
                     elif path.endswith(('boat24_full_model.json','boat24_full_model.json.gz')):

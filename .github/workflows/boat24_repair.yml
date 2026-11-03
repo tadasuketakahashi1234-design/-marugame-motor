@@ -18,6 +18,8 @@ jobs:
   update-and-verify:
     runs-on: ubuntu-latest
     timeout-minutes: 360
+    env:
+      BOAT24_FREEZE_MODEL: '1'
     steps:
       - uses: actions/checkout@v4
         with:
@@ -61,6 +63,8 @@ jobs:
               Path(os.environ['RUNNER_TEMP'],'boat24-before-'+kind+'.json').write_bytes(Path('omura/docs',filename).read_bytes())
 
           PY
+      - name: Recover history and official settlements before model training
+        run: python boat24_recover.py
       - name: Capture and publish all six improvements with repeated observations
         run: python boat24_cycle.py --seconds 180
       - name: Verify all original forecast and comparison records
@@ -155,4 +159,5 @@ jobs:
             boat24_full_pending.json
             omura/docs/boat24_official_cache.json
             omura/docs/boat24_identity_cache.json
+            omura/docs/boat24_official_results.json
           retention-days: 30

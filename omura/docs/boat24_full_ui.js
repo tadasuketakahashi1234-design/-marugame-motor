@@ -3,6 +3,8 @@
 'use strict';
 const $=id=>document.getElementById(id),esc=x=>String(x??'―').replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
 const names=['全24場','桐生','戸田','江戸川','平和島','多摩川','浜名湖','蒲郡','常滑','津','三国','びわこ','住之江','尼崎','鳴門','丸亀','児島','宮島','徳山','下関','若松','芦屋','福岡','唐津','大村'];
+const linkedVenue=typeof location==='undefined'?null:new URLSearchParams(location.search).get('venue');
+if(linkedVenue!==null&&/^(?:[0-9]|1[0-9]|2[0-4])$/.test(linkedVenue))$('venue').value=String(Number(linkedVenue));
 const raceStates={waiting_initial:'展示前予想の保存待ち',program_unconfirmed:'番組未確認',cancelled:'中止・順延',cutoff_unknown:'締切時刻未確認',closed_no_forecast:'締切済み・新モデル予想なし',result_pending:'結果・払戻金待ち',saved:'予想保存済み',settled:'結果確定'};
 const statuses={shadow:'候補予想で検証中',not_applicable:'対象外',not_implemented:'取得処理が未実装',partial_used:'一部を計算に使用',not_contributing_market_only:'検証で市場のみ採用・文脈は未採用',used:'計算に使用',missing:'未取得',partial:'一部のみ取得',historical_sample_insufficient:'参照できる過去標本が不足'};
 const pct=x=>x==null?'未集計':(100*x).toFixed(1)+'%',num=x=>x==null?'未取得':Number(x).toFixed(2);
@@ -83,5 +85,5 @@ async function loadDay(){
 async function load(){try{await resolveLiveRef();index=await getJSON('boat24_full_index.json');if(!$('fullDate').value)$('fullDate').value=index.latest_day||'';await loadDay()}catch(e){$('fullStatus').textContent=e.message+'。総合モデルの初回データ作成を待っています。'}}
 setInterval(()=>{if(!document.hidden)load()},60000);
 $('fullReportGroup')?.addEventListener('change',renderReport);
-$('fullDate').addEventListener('change',loadDay);$('venue').addEventListener('change',render);$('fullReload').addEventListener('click',load);load();
+$('fullDate').addEventListener('change',loadDay);$('venue').addEventListener('change',render);$('fullReload').addEventListener('click',load);$('reload')?.addEventListener('click',load);load();
 })();

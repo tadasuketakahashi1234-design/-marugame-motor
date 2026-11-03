@@ -8,6 +8,7 @@ import math
 import os
 from pathlib import Path
 from zoneinfo import ZoneInfo
+from boat24_integrity import atomic_write, eligible, timeparse as parse_time
 
 JST = ZoneInfo('Asia/Tokyo')
 LEDGER = Path('omura/docs/boat24_ledger.json')
@@ -76,7 +77,11 @@ def selection(probabilities, n):
 
 
 def score_predictions(records, variant):
-    settled = [r for r in records.values() if r.get('actual') and r.get(variant)]
+    settled = [r for r in records.values() if r.get('actual') and r.get(variant)
+               and parse_time(r.get('created_at')) and parse_time(r.get('cutoff'))
+               and parse_time(r['created_at']) < parse_time(r['cutoff'])
+               and numeric(r.get('payout_100yen')) is not None
+               and numeric(r.get('payout_100yen')) > 0]
     result = {'evaluated_races': len(settled)}
     if not settled:
         return result
@@ -117,7 +122,7 @@ def main():
             cutoff = timeparse(rec.get('cutoff'))
             # Strictly forbid using a motor report created after the forecast or race cutoff.
             # A shadow forecast is created NOW, not retroactively at baseline forecast time.
-            if not cutoff or now >= cutoff or not motor_time or motor_time > now:
+            if not eligible(rec) or rec.get("result") or not cutoff or now >= cutoff or not motor_time or motor_time > now:
                 skipped += 1
                 continue
             # Report must exist before the original forecast; no retrospective features.
@@ -155,10 +160,7 @@ def main():
             'Motor replacement dates and official series boundaries unverified',
             'ROI is hypothetical flat-stake paper trading, not live execution',
             'No edge claim until sufficient forward holdout validation']}
-    OUT.parent.mkdir(parents=True, exist_ok=True)
-    tmp = OUT.with_suffix('.json.tmp')
-    tmp.write_text(json.dumps(report, ensure_ascii=False, separators=(',', ':')), encoding='utf-8')
-    os.replace(tmp, OUT)
+    atomic_write(OUT, report)
     print(json.dumps(report['diagnostics'], ensure_ascii=False))
 
 

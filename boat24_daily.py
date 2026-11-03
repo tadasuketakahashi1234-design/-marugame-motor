@@ -1,6 +1,9 @@
 
 #!/usr/bin/env python3
 """24-venue forward prediction ledger."""
+from concurrent.futures import ThreadPoolExecutor
+from boat24_integrity import atomic_write, eligible, paper, summarize, valid_combo
+
 import csv
 import datetime as dt
 import io
@@ -9,7 +12,6 @@ import json
 import math
 import os
 import pathlib
-import tempfile
 import urllib.request
 from zoneinfo import ZoneInfo
 
@@ -18,10 +20,12 @@ NOW = dt.datetime.now(JST)
 DAY = NOW.strftime("%Y-%m-%d")
 DATEPATH = NOW.strftime("%Y/%m/%d")
 ROOT = "https://boatracecsv.github.io/data/"
+SOURCE_ERRORS = {}
 OUT = pathlib.Path("omura/docs/boat24_ledger.json")
 
 KINDS = {
     "cards": "programs/race_cards",
+    "title": "programs/title",
     "waku": "programs/waku10",
     "motor": "programs/motor_stats",
     "ex": "previews/tkz",
@@ -44,12 +48,14 @@ def load(kind, path=DATEPATH):
                 io.StringIO(f.read().decode("utf-8-sig"))
             ))
     except Exception as e:
+        SOURCE_ERRORS[f"{kind}/{path}"] = str(e)[:200]
         print("unavailable", kind, str(e)[:100])
         return []
 
 def num(x):
     try:
-        return float(str(x).replace(",", "").replace("円", "").strip())
+        value = float(str(x).replace(",", "").replace("円", "").strip())
+        return value if math.isfinite(value) else None
     except (ValueError, TypeError):
         return None
 
@@ -76,18 +82,18 @@ def timestamp(s):
 def deadline(row):
     if not row:
         return None
-    v = row.get("締切時刻") or row.get("締切予定時刻")
+    v = row.get("締切時刻") or row.get("締切予定時刻") or row.get("電話投票締切予定")
     t = timestamp(v)
     if t:
         return t
     if v and ":" in str(v):
         try:
             return dt.datetime.combine(
-                NOW.date(),
+                dt.date.fromisoformat(row["レース日"]) if row.get("レース日") else dt.datetime.strptime(str(row["レースコード"])[:8], "%Y%m%d").date(),
                 dt.time.fromisoformat(str(v).strip()[:5]),
                 JST,
             )
-        except ValueError:
+        except (ValueError, KeyError):
             pass
     return None
 
@@ -164,42 +170,27 @@ def probabilities(card, ex, mot):
 def settlement(rec, res, pay):
     if rec.get("result") is not None or not res or not pay:
         return False
-
-    vals = [
-        str(res.get(f"{i}着_艇番", "")).strip()
-        for i in (1, 2, 3)
-    ]
-    if any(v not in "123456" or len(v) != 1 for v in vals):
+    code = rec.get("race_code")
+    if any(row.get("レースコード") != code for row in (res, pay)):
         return False
-    if len(set(vals)) != 3:
+    actual = "-".join(str(res.get(f"{i}着_艇番", "")).strip() for i in (1, 2, 3))
+    money = num(pay.get("3連単_払戻金"))
+    if not valid_combo(actual) or money is None or money <= 0 or not money.is_integer():
         return False
-
-    money = num(next(
-        (v for k, v in pay.items()
-         if "3連単" in k and "払戻" in k),
-        None,
-    ))
-    if money is None:
+    # Do not combine a result with an inconsistent payout snapshot.
+    if pay.get("3連単_組番") != actual:
         return False
-
-    actual = "-".join(vals)
     rec["result"] = {
-        "combo": actual,
-        "payout_100yen": money,
+        "combo": actual, "payout_100yen": int(money),
         "settled_at": NOW.isoformat(),
-        "paper": {
-            str(n): {
-                "hit": actual in rec["selection"][str(n)],
-                "stake": n * 100,
-                "return": (
-                    money if actual in rec["selection"][str(n)]
-                    else 0
-                ),
-            }
-            for n in (12, 18)
-        },
+        "source_result_at": res.get("取得日時"),
+        "source_payout_at": pay.get("取得日時"),
+        "paper": paper(rec.get("selection", {}), actual, int(money)),
     }
+    if rec.get("final_snapshot"):
+        rec["result"]["paper_final"] = paper(rec["final_snapshot"].get("selection", {}), actual, int(money))
     return True
+
 
 def main():
     if OUT.exists():
@@ -213,7 +204,17 @@ def main():
         }
 
     preds = old.setdefault("predictions", {})
-    data = {k: load(k) for k in KINDS}
+    global NOW, DAY, DATEPATH
+    NOW = dt.datetime.now(JST)
+    DAY, DATEPATH = NOW.strftime("%Y-%m-%d"), NOW.strftime("%Y/%m/%d")
+    with ThreadPoolExecutor(max_workers=6) as pool:
+        data = dict(zip(KINDS, pool.map(lambda k: load(k, DATEPATH), KINDS)))
+    # The capture time must be AFTER network IO, never the process startup time.
+    NOW = dt.datetime.now(JST)
+    if NOW.strftime("%Y-%m-%d") != DAY:
+        raise RuntimeError("JST date changed during collection; retry next run")
+    if not any(data.values()):
+        raise RuntimeError("All sources unavailable; preserving the existing ledger")
     ix = {
         k: index(v)
         for k, v in data.items() if k != "motor"
@@ -225,6 +226,7 @@ def main():
     skipped = {}
 
     for code, card in ix["cards"].items():
+        NOW = dt.datetime.now(JST)
         if len(code) != 12:
             continue
         if code[:8] != NOW.strftime("%Y%m%d"):
@@ -248,12 +250,14 @@ def main():
             ex = ix["ex"].get(code) or {}
             st = ix["st"].get(code) or {}
 
-            limit = (
-                deadline(card)
-                or deadline(odds)
-                or deadline(ex)
-                or deadline(st)
-            )
+            title = ix["title"].get(code) or {}
+            if title.get("中止状態") or title.get("電話投票締切予定") in ("確定", "中止", "順延"):
+                skipped["closed_or_cancelled"] = skipped.get("closed_or_cancelled", 0) + 1
+                continue
+            limit = deadline(odds) or deadline(ex) or deadline(st) or deadline(card) or deadline(title)
+            if not limit:
+                skipped["cutoff_unknown"] = skipped.get("cutoff_unknown", 0) + 1
+                continue
 
             if limit and NOW >= limit - dt.timedelta(minutes=2):
                 skipped["cutoff_passed"] = (
@@ -301,6 +305,8 @@ def main():
                 "created_at": NOW.isoformat(),
                 "cutoff": limit.isoformat() if limit else None,
                 "cutoff_verified": verified,
+                "cutoff_verified_at": NOW.isoformat(),
+                "cutoff_source": "live_preview_or_program_title",
                 "evaluation_eligible": verified,
                 "model": "baseline-0.2-UNVALIDATED",
                 "decision": "見送り（確率未検証）",
@@ -346,12 +352,27 @@ def main():
             preds[code] = rec
             made += 1
 
+        # Existing unknown-cutoff forecasts can be verified only while still pre-race.
+        # Their creation time, input snapshot, probabilities and picks stay unchanged.
+        observed = next((deadline(ix[k].get(code)) for k in ("odds", "ex", "st", "title")
+                         if deadline(ix[k].get(code))), None)
+        if not rec.get("cutoff") and observed:
+            rec["cutoff"] = observed.isoformat()
+            rec["cutoff_source"] = "observed_after_initial_forecast"
+            created = timestamp(rec.get("created_at"))
+            verified = bool(created and created <= NOW < observed and not res and not pay)
+            rec["cutoff_verified"] = verified
+            rec["evaluation_eligible"] = verified
+            if verified:
+                rec["cutoff_verified_at"] = NOW.isoformat()
         limit = timestamp(rec.get("cutoff"))
 
         if (
             limit
             and rec.get("final_snapshot") is None
-            and NOW < limit
+            and eligible(rec)
+            and not res and not pay
+            and limit - dt.timedelta(minutes=15) <= NOW < limit - dt.timedelta(minutes=2)
             and pre_cutoff(ix["odds"].get(code), limit)
         ):
             odds_now = ix["odds"][code]
@@ -380,49 +401,33 @@ def main():
             }
             rec["stage"] = "final_available"
 
-        if settlement(rec, res, pay):
+    # Settle independently of today's card coverage, including cancelled/missing cards.
+    for code, rec in preds.items():
+        if rec.get("date") == DAY and settlement(rec, ix["results"].get(code), ix["payouts"].get(code)):
             settled += 1
-            if rec.get("final_snapshot"):
-                actual = rec["result"]["combo"]
-                money = rec["result"]["payout_100yen"]
-                rec["result"]["paper_final"] = {
-                    str(n): {
-                        "hit": actual in
-                        rec["final_snapshot"]["selection"][str(n)],
-                        "stake": n * 100,
-                        "return": (
-                            money if actual in
-                            rec["final_snapshot"]["selection"][str(n)]
-                            else 0
-                        ),
-                    }
-                    for n in (12, 18)
-                }
 
-    pending_days = sorted({
-        v["date"]
-        for v in preds.values()
-        if v.get("result") is None and v["date"] != DAY
-    })[-14:]
-
-    for day in pending_days:
+    pending_days = sorted({v["date"] for v in preds.values()
+                           if not v.get("result") and v.get("date") and v["date"] < DAY})
+    # Rotate older pending dates rather than permanently dropping days older than 14.
+    cursor = old.get("diagnostics", {}).get("backfill_cursor", "")
+    rotated = [d for d in pending_days if d > cursor] + [d for d in pending_days if d <= cursor]
+    batch = rotated[:14]
+    for day in batch:
         path = day.replace("-", "/")
-        results = index(load("results", path))
-        payouts = index(load("payouts", path))
-
+        with ThreadPoolExecutor(max_workers=2) as pool:
+            results, payouts = list(pool.map(lambda k: index(load(k, path)), ("results", "payouts")))
         for code, rec in preds.items():
-            if rec["date"] == day:
-                if settlement(
-                    rec,
-                    results.get(code),
-                    payouts.get(code),
-                ):
-                    settled += 1
+            if rec.get("date") == day and settlement(rec, results.get(code), payouts.get(code)):
+                settled += 1
 
     old["schema"] = 2
     old["updated_at"] = NOW.isoformat()
     old["diagnostics"] = {
+        "source_errors": SOURCE_ERRORS,
         "new_predictions": made,
+        "backfill_cursor": batch[-1] if batch else "",
+        "backfill_dates_checked": batch,
+        "pending_dates": len(pending_days),
         "new_settlements": settled,
         "skipped": skipped,
         "source_counts": {
@@ -434,20 +439,9 @@ def main():
         ),
     }
 
-    OUT.parent.mkdir(parents=True, exist_ok=True)
-
-    with tempfile.NamedTemporaryFile(
-        mode="w",
-        encoding="utf-8",
-        dir=OUT.parent,
-        delete=False,
-    ) as f:
-        json.dump(
-            old, f, ensure_ascii=False, separators=(",", ":")
-        )
-        name = f.name
-
-    os.replace(name, OUT)
+    old["summary"] = summarize(preds)
+    old["summary_final"] = summarize(preds, True)
+    atomic_write(OUT, old)
 
     print(json.dumps({
         "new": made,

@@ -5,6 +5,7 @@ import json
 import time
 from pathlib import Path
 from boat24_integrity import JST,atomic_write
+from boat24_history_io import history_path,read_history,write_history
 from boat24_migration import preserve_collection_during_rebuild
 
 def main(seconds=180):
@@ -23,17 +24,17 @@ def main(seconds=180):
    with preserve_collection_during_rebuild(boat24_full_update.MODEL,__import__('boat24_context').VERSION):boat24_full_update.main()
   except Exception as exc:
    if seconds<3600:raise
-   today=dt.datetime.now(JST).date().isoformat();dayfile=boat24_full_update.DIRECTORY/(today+'.json')
+   today=dt.datetime.now(JST).date().isoformat();dayfile=history_path(boat24_full_update.DIRECTORY,today)
    if dayfile.exists():
-    ledger=json.loads(dayfile.read_text());h=ledger.setdefault('health',{});h.update({'state':'degraded','attempt_at':dt.datetime.now(JST).isoformat(),'collection_mode':'live_watch'});h.setdefault('source_errors',{})['collector']=str(exc);atomic_write(dayfile,ledger)
+    ledger=read_history(dayfile);h=ledger.setdefault('health',{});h.update({'state':'degraded','attempt_at':dt.datetime.now(JST).isoformat(),'collection_mode':'live_watch'});h.setdefault('source_errors',{})['collector']=str(exc);dayfile=write_history(dayfile,ledger)
     index=json.loads(boat24_full_update.INDEX.read_text());atomic_write(boat24_full_update.MANIFEST,{'paths':[str(dayfile)],'index':str(boat24_full_update.INDEX)});boat24_full_publish.main()
    print('Live capture failed; retry while retaining history:',str(exc),flush=True)
    if time.monotonic()-start+60>=seconds:raise
    time.sleep(30);continue
   if seconds>=3600:
-   today=dt.datetime.now(JST).date().isoformat();dayfile=boat24_full_update.DIRECTORY/(today+'.json');ledger=json.loads(dayfile.read_text());ledger.setdefault('health',{})['collection_mode']='live_watch';atomic_write(dayfile,ledger)
+   today=dt.datetime.now(JST).date().isoformat();dayfile=history_path(boat24_full_update.DIRECTORY,today);ledger=read_history(dayfile);ledger.setdefault('health',{})['collection_mode']='live_watch';dayfile=write_history(dayfile,ledger)
   if legacy_error:
-   today=dt.datetime.now(JST).date().isoformat();dayfile=boat24_full_update.DIRECTORY/(today+'.json');ledger=json.loads(dayfile.read_text());ledger.setdefault('health',{}).setdefault('source_errors',{})['legacy_collector']=legacy_error;ledger['health']['state']='degraded';atomic_write(dayfile,ledger)
+   today=dt.datetime.now(JST).date().isoformat();dayfile=history_path(boat24_full_update.DIRECTORY,today);ledger=read_history(dayfile);ledger.setdefault('health',{}).setdefault('source_errors',{})['legacy_collector']=legacy_error;ledger['health']['state']='degraded';dayfile=write_history(dayfile,ledger)
   manifest=json.loads(boat24_full_update.MANIFEST.read_text());manifest['paths']+=(['omura/docs/boat24_ledger.json','omura/docs/boat24_comparison.json'] if legacy else []);atomic_write(boat24_full_update.MANIFEST,manifest)
   boat24_full_publish.main()
   if time.monotonic()-start+60>=seconds:

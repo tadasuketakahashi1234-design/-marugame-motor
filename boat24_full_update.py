@@ -10,6 +10,7 @@ from boat24_train_context import (MODEL, ERRORS, collect_day, ensure_model, Hist
 
 DIRECTORY=Path('omura/docs/full_history')
 INDEX=Path('omura/docs/boat24_full_index.json')
+from boat24_history_io import day_paths,day_key,history_path,read_history,write_history,write_view
 from boat24_course import CourseStats, add_course_features
 from boat24_priority import add_priority_features
 from boat24_behavior import BehaviorStats
@@ -157,11 +158,11 @@ def summary(records):
 def build_index(directory=DIRECTORY,now=None):
     days={};all_records=[]
     catalogs={};latest_health={}
-    for path in sorted(directory.glob('*.json')):
-        data=json.loads(path.read_text());records=list(data.get('records',{}).values());all_records+=records
-        catalogs[path.stem]=data.get('catalog',{})
+    for path in day_paths(directory):
+        data=read_history(path);records=list(data.get('records',{}).values());all_records+=records
+        catalogs[day_key(path)]=data.get('catalog',{})
         latest_health=data.get('health',{}) or latest_health
-        days[path.stem]={'summary':summary(records),'venues':{str(v):summary([r for r in records if r['venue']==v]) for v in range(1,25)}}
+        days[day_key(path)]={'view_path':'day_views/'+day_key(path)+'.json','archive_path':'full_history/'+path.name,'summary':summary(records),'venues':{str(v):summary([r for r in records if r['venue']==v]) for v in range(1,25)}}
     legacy_path=directory.parent/'boat24_ledger.json'
     legacy=json.loads(legacy_path.read_text()) if legacy_path.exists() else {}
     from boat24_experiments import paired_report
@@ -228,8 +229,8 @@ def main():
     profiles,runs=profiles_and_runs(data,day,CourseStats(model.get('course_state')))
     for p in profiles:history.add_profile(p)
     for r in runs:history.add_run(r)
-    DIRECTORY.mkdir(parents=True,exist_ok=True);path=DIRECTORY/(day+'.json')
-    ledger=json.loads(path.read_text()) if path.exists() else {'schema':1,'date':day,'model':VERSION,'records':{}}
+    DIRECTORY.mkdir(parents=True,exist_ok=True);path=history_path(DIRECTORY,day)
+    ledger=read_history(path) if path.exists() else {'schema':1,'date':day,'model':VERSION,'records':{}}
     records=ledger['records'];made=updated=settled=0;skipped={}
     for code,card in data['cards'].items():
         if not code.startswith(now.strftime('%Y%m%d')) or len(code)!=12:continue
@@ -249,21 +250,21 @@ def main():
     ledger['catalog']=catalog(data,records,dt.datetime.now(JST))
     ledger['health']=health(data,ledger['catalog'],{**ERRORS,**data.get('supplement_errors',{}),**data.get('official',{}).get('errors',{})},dt.datetime.now(JST))
     ledger['updated_at']=dt.datetime.now(JST).isoformat();ledger['diagnostics']={'new_forecasts':made,'updated_forecasts':updated,'new_settlements':settled,'skipped':skipped,'source_errors':dict(ERRORS)}
-    atomic_write(path,ledger);touched=[str(path)]
+    path=write_history(path,ledger);write_view(path,ledger);touched=[str(path)]
     # Retry unsettled previous dates without requiring their race cards.
     pending=[]
-    for old_path in sorted(DIRECTORY.glob('*.json')):
-        if old_path.stem>=day:continue
-        old=json.loads(old_path.read_text())
-        if old_path.stem>=(now.date()-dt.timedelta(days=14)).isoformat() or any(not r.get('result') for r in old.get('records',{}).values()):pending.append((old_path,old))
+    for old_path in day_paths(DIRECTORY):
+        if day_key(old_path)>=day:continue
+        old=read_history(old_path)
+        if day_key(old_path)>=(now.date()-dt.timedelta(days=14)).isoformat() or any(not r.get('result') for r in old.get('records',{}).values()):pending.append((old_path,old))
     old_index=json.loads(INDEX.read_text()) if INDEX.exists() else {};cursor=old_index.get('backfill_cursor','')
-    pending=[p for p in pending if p[0].stem>cursor]+[p for p in pending if p[0].stem<=cursor]
+    pending=[p for p in pending if day_key(p[0])>cursor]+[p for p in pending if day_key(p[0])<=cursor]
     for old_path,old in pending[:14]:
         with ThreadPoolExecutor(max_workers=2) as pool:
-            res,pay=list(pool.map(lambda k:by_code(fetch(k,old_path.stem.replace('-','/'))),('results','payouts')))
+            res,pay=list(pool.map(lambda k:by_code(fetch(k,day_key(old_path).replace('-','/'))),('results','payouts')))
         for code,rec in old['records'].items():settle(rec,res.get(code),pay.get(code),dt.datetime.now(JST))
-        atomic_write(old_path,old);touched.append(str(old_path))
-    index=build_index(now=dt.datetime.now(JST));index['backfill_cursor']=pending[:14][-1][0].stem if pending else ''
+        old_path=write_history(old_path,old);write_view(old_path,old);touched.append(str(old_path))
+    index=build_index(now=dt.datetime.now(JST));index['backfill_cursor']=day_key(pending[:14][-1][0]) if pending else ''
     index['diagnostics']=ledger['diagnostics'];index['training']={'through':model['trained_through'],'samples':len(model['samples']),'market_prior':model['market_alpha'],'validation':model['calibration'],'source_errors':model.get('source_errors',{}),'venue_coverage':model.get('venue_coverage',{}),'venue_profiles':model.get('venue_profiles',PROFILES),'water_source_errors':model.get('water_source_errors',{}),'surface_summary':{'venues_with_wind_history':sorted({k.split('|')[0] for k in model.get('surface_state',{}).get('wind',{})}),'venues_with_tide_data':sorted(model.get('tide_book',{}))},'course_window_days':model.get('course_window_days')}
     index['training'].update({'integrated_experiments':model.get('integrated_experiments',{}),'replay':model.get('replay',{}),'candidate_policy':model.get('candidate_policy'),'feature_schema':model.get('feature_schema'),'learned_fields':sorted(model.get('scales',{})),'approved_candidate_phases':model.get('approved_candidate_phases',[])})
     atomic_write(INDEX,index)

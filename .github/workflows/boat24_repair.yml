@@ -117,7 +117,8 @@ jobs:
                   integrated=read(base+'boat24_integrated_ui.js');assert 'factorRows' in integrated and '展示・進入・足の詳細' in integrated
                   script=read(base+'boat24_full_ui.js');assert all(marker in script for marker in ('selection_snapshot_id','feature_usage','purchaseView','purchaseSnapshot','expected_return','estimated_roi','displayAudit','renderWater',PURCHASE_POLICY)), 'Published UI does not contain the current purchase policy'
                   index=json.loads(read(raw+'boat24_full_index.json'));assert index['model']==VERSION
-                  ledger=json.loads(read(raw+'full_history/'+index['latest_day']+'.json'))
+                  entry=index['days'][index['latest_day']]
+                  ledger=json.loads(read(raw+entry.get('view_path','full_history/'+index['latest_day']+'.json')))
                   for record in ledger['records'].values():
                       for snap in record['revisions'].values():
                           assert timeparse(snap['created_at'])<timeparse(snap['cutoff']) and snap['evaluation_eligible']
@@ -148,6 +149,7 @@ jobs:
             omura/docs/boat24_ledger.json
             omura/docs/boat24_comparison.json
             omura/docs/full_history/
+            omura/docs/day_views/
             omura/docs/boat24_full_index.json
             omura/docs/boat24_full_model.json*
             boat24_full_pending.json

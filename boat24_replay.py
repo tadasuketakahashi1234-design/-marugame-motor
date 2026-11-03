@@ -1,3 +1,4 @@
+from boat24_history_io import day_paths,day_key,read_history
 """Prior-day saved observations become learning cases, once per race and phase.
 
 Never rewrite forecasts or substitute post-race information into a snapshot.
@@ -10,11 +11,11 @@ from boat24_integrity import timeparse
 
 def load_observations(today,days=28,directory=Path('omura/docs/full_history')):
     selected={};diagnostics={'races':0,'snapshots':0,'rejected':0,'source':'immutable_pre_cutoff_snapshots'}
-    for path in sorted(directory.glob('*.json')):
-        if not (today-dt.timedelta(days=days)).isoformat()<=path.stem<today.isoformat():continue
-        doc=json.loads(path.read_text())
+    for path in day_paths(directory):
+        if not (today-dt.timedelta(days=days)).isoformat()<=day_key(path)<today.isoformat():continue
+        doc=read_history(path)
         for code,rec in doc.get('records',{}).items():
-            if len(code)!=12 or not code.isdigit() or code[:8]!=path.stem.replace('-',''):continue
+            if len(code)!=12 or not code.isdigit() or code[:8]!=day_key(path).replace('-',''):continue
             valid=[]
             for s in rec.get('revisions',{}).values():
                 t=timeparse(s.get('created_at'));cut=timeparse(s.get('cutoff'));capt=timeparse(s.get('input_snapshot',{}).get('captured_at') or s.get('created_at'))

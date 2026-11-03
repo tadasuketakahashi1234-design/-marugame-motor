@@ -1,3 +1,4 @@
+from boat24_history_io import day_paths,day_key,read_history
 """Paired temporal experiments in the same product and immutable race history."""
 import copy
 import hashlib
@@ -114,6 +115,6 @@ def paired_report(records):
 
 def prior_forward_evidence(today,directory=Path('omura/docs/full_history')):
     records=[]
-    for p in sorted(directory.glob('*.json')):
-        if p.stem<today.isoformat():records+=list(json.loads(p.read_text()).get('records',{}).values())
+    for p in day_paths(directory):
+        if day_key(p)<today.isoformat():records+=list(read_history(p).get('records',{}).values())
     return paired_report(records)

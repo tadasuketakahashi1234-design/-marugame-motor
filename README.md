@@ -1,3 +1,5 @@
+総合予想の入力使用と検証仕様は [ALL_INPUT_MODEL.md](ALL_INPUT_MODEL.md) を参照してください。
+
 全国24場の予想保存・結果取得・回収率の運用は [BOAT24_OPERATIONS.md](BOAT24_OPERATIONS.md) を参照してください。
 
 # 丸亀モーター評価ダッシュボード

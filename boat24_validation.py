@@ -23,8 +23,8 @@ def validate_chronologically(model,cases):
  cut=len(dates)//3 if len(dates)>=9 else len(dates)//2
  tune_dates=dates[:cut];calibration_dates=dates[cut:2*cut] if len(dates)>=9 else [];test_dates=dates[2*cut:] if calibration_dates else dates[cut:]
  vm=dict(model);vm['scales']=scales([s for s in model['samples'] if s['date']<tune_dates[0]])
- def observations(part):
-  for c in balanced(part):
+ def observations(part,cap=90):
+  for c in balanced(part,cap=cap):
    base=predict(c['features'],c['venue'],c['date'],vm,{})
    if any(e['neighbours']<8 for e in base['neighbour_evidence']):continue
    odds={k:number(c['odds'].get('3連単_'+k)) for k in COMBOS}
@@ -32,7 +32,7 @@ def validate_chronologically(model,cases):
    z=sum(1/v for v in odds.values());market={k:1/v/z for k,v in odds.items()}
    yield c,[e.get('mean_finish_estimate',3.5) for e in base['neighbour_evidence']],market
  calibration=list(observations([c for c in cases if c['date'] in calibration_dates]))
- tune=list(observations([c for c in cases if c['date'] in tune_dates]));test=list(observations([c for c in cases if c['date'] in test_dates]))
+ tune=list(observations([c for c in cases if c['date'] in tune_dates]));test=list(observations([c for c in cases if c['date'] in test_dates],cap=480))
  grid=(0,.25,.5,.75,1);temperatures=(.5,1.,2.)
  def loss(rows,alpha,temp):
   if not rows:return None
@@ -58,7 +58,8 @@ def validate_chronologically(model,cases):
   cal_loss-=math.log(max(p[c['actual']],1e-12));raw_loss-=math.log(max(raw[c['actual']],1e-12))
  ece=sum(abs(b['hits']-b['sum_probability']) for b in cbins.values())/len(test) if test else None
  approved=bool(ct and len(test)>=90 and len(calibration_dates)>=3 and len(test_dates)>=3 and cal_loss<=raw_loss and ece<=.10)
- model.setdefault('phase_calibration',{})['preview']={'temperature':ct,'requires_market':True,'display_approved':approved,'calibration_dates':calibration_dates,'test_dates':test_dates,'calibration_races':len(calibration),'test_races':len(test),'test_top12_ece':ece,'test_calibrated_logloss':cal_loss/len(test) if test else None,'warning':'Short historical validation; profitability is not established.'}
+ venue_counts={str(v):sum(c['venue']==v for c,_,_ in test) for v in range(1,25)}
+ model.setdefault('phase_calibration',{})['preview']={'venue_test_races':venue_counts,'temperature':ct,'requires_market':True,'display_approved':approved,'calibration_dates':calibration_dates,'test_dates':test_dates,'calibration_races':len(calibration),'test_races':len(test),'test_top12_ece':ece,'test_calibrated_logloss':cal_loss/len(test) if test else None,'warning':'Short historical validation; profitability is not established.'}
  bins=defaultdict(lambda:{'races':0,'hits':0,'sum_probability':0})
  for c,scores,m in test:
   p=plackett_luce(scores,model['temperature'])
@@ -73,9 +74,9 @@ def validate_initial(model,cases):
  if len(dates)<9:return out
  cut=len(dates)//3;blocks=[dates[:cut],dates[cut:2*cut],dates[2*cut:]];vm=dict(model,market_alpha=0,phase_calibration={});vm['scales']=scales([s for s in model['samples'] if s['date']<blocks[0][0]])
  rows=[]
- for days in blocks:
+ for block_index,days in enumerate(blocks):
   part=[]
-  for c in balanced([c for c in cases if c['date'] in days]):
+  for c in balanced([c for c in cases if c['date'] in days],cap=480 if block_index==2 else 90):
    prediction=predict(c['features'],c['venue'],c['date'],vm,{})
    if all(e['neighbours']>=8 for e in prediction['neighbour_evidence']):part.append((c,prediction['probabilities']))
   rows.append(part)
@@ -88,7 +89,7 @@ def validate_initial(model,cases):
   q=transform(p,temp or 1);picks=sorted(q,key=lambda k:-q[k])[:12];prob=sum(q[k] for k in picks);b=bins[str(min(9,int(prob*10)))];b['races']+=1;b['hits']+=c['actual'] in picks;b['sum_probability']+=prob
   loss-=math.log(max(q[c['actual']],1e-12));raw-=math.log(max(p[c['actual']],1e-12))
  n=len(rows[2]);ece=sum(abs(b['hits']-b['sum_probability']) for b in bins.values())/n if n else None
- return {**out,'temperature':temp,'display_approved':bool(temp and n>=90 and loss<=raw and ece<=.10),'development_dates':blocks[0],'calibration_dates':blocks[1],'test_dates':blocks[2],'calibration_races':len(rows[1]),'test_races':n,'test_top12_ece':ece,'test_calibrated_logloss':loss/n if n else None,'top12_reliability_bins':dict(bins)}
+ return {**out,'venue_test_races':{str(v):sum(c['venue']==v for c,_ in rows[2]) for v in range(1,25)},'temperature':temp,'display_approved':bool(temp and n>=90 and loss<=raw and ece<=.10),'development_dates':blocks[0],'calibration_dates':blocks[1],'test_dates':blocks[2],'calibration_races':len(rows[1]),'test_races':n,'test_top12_ece':ece,'test_calibrated_logloss':loss/n if n else None,'top12_reliability_bins':dict(bins)}
 
 def ablation_report(model,cases,test_dates):
  """Fixed final-period diagnostics only, never used to choose weights."""
@@ -96,7 +97,7 @@ def ablation_report(model,cases,test_dates):
  rows=balanced([c for c in cases if c['date'] in test_dates],cap=24);totals=defaultdict(float)
  vm=dict(model,phase_calibration={});vm['scales']=scales([s for s in model['samples'] if s['date']<min(test_dates)]) if test_dates else {}
  for c in rows:
-  for group in ('none','behavior','motor_history','course','race_conditions'):
+  for group in ('none','behavior','motor_history','course','race_conditions','wind','tide'):
    features=copy.deepcopy(c['features'])
    if group!='none':
     for f in features:f[group]={}

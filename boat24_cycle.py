@@ -5,6 +5,7 @@ import json
 import time
 from pathlib import Path
 from boat24_integrity import JST,atomic_write
+from boat24_migration import preserve_collection_during_rebuild
 
 def main(seconds=180):
  import boat24_daily,boat24_compare,boat24_full_update,boat24_full_publish
@@ -18,7 +19,8 @@ def main(seconds=180):
    try:boat24_daily.main();boat24_compare.main()
    except Exception as exc:
     legacy=False;legacy_error=str(exc);print('Legacy collector failed; continue new forecasts:',legacy_error,flush=True)
-  try:boat24_full_update.main()
+  try:
+   with preserve_collection_during_rebuild(boat24_full_update.MODEL,__import__('boat24_context').VERSION):boat24_full_update.main()
   except Exception as exc:
    if seconds<3600:raise
    today=dt.datetime.now(JST).date().isoformat();dayfile=boat24_full_update.DIRECTORY/(today+'.json')

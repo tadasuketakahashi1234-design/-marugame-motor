@@ -12,13 +12,13 @@ import unicodedata
 from collections import defaultdict
 from boat24_integrity import JST, timeparse, valid_combo
 
-VERSION = 'all-input-context-4-VALIDATION-GATED'
+VERSION = 'all-input-context-5-VENUE-WATER'
 FREEZE_MINUTES = 2
 COMBOS = ['-'.join(map(str,c)) for c in itertools.permutations(range(1,7),3)]
 GROUPS = ('ability','waku','recent','motor','motor_history','exhibition','start','original','weather')
 EXTRA_GROUPS = ('course','style','maintenance','comments','tide','wind','race_conditions','opposition','local_support','behavior')
 ALL_GROUPS = GROUPS + EXTRA_GROUPS
-LABELS = {'behavior':'展示と本番のST差・進入変化の実測学習','race_conditions':'6艇の男女構成・開催条件','opposition':'相手関係・級別構成','local_support':'当地・男女構成別実績と確認走数','course':'選手別・実進入コース別の得意不得意','style':'決まり手・隣艇との関係','maintenance':'整備履歴・部品交換・プロペラ','comments':'選手コメントの気配','tide':'丸亀の公式潮汐表','wind':'丸亀の風向と水面の関係','ability':'選手の全国・当地成績','waku':'枠別過去10走','recent':'全国・当地近況',
+LABELS = {'behavior':'展示と本番のST差・進入変化の実測学習','race_conditions':'6艇の男女構成・開催条件','opposition':'相手関係・級別構成','local_support':'当地・男女構成別実績と確認走数','course':'選手別・実進入コース別の得意不得意','style':'決まり手・隣艇との関係','maintenance':'整備履歴・部品交換・プロペラ','comments':'選手コメントの気配','tide':'開催場の潮汐推算・水面条件','wind':'開催場の風向・風速とコース別実績','ability':'選手の全国・当地成績','waku':'枠別過去10走','recent':'全国・当地近況',
           'motor':'モーター期成績','motor_history':'過去3節・使用選手補正・今節',
           'exhibition':'展示タイム・体重・チルト','start':'スタート展示・進入',
           'original':'一周・まわり足・直線等','weather':'天候・風速・風向・波高・気温・水温','odds':'3連単オッズ'}
@@ -219,7 +219,7 @@ def predict(features,venue,day,model,odds=None):
     calibration_applied=bool(cal.get('temperature') and bool(alpha>0)==bool(cal.get('requires_market')))
     if calibration_applied:
         p=normalize({k:max(v,1e-12)**(1/cal['temperature']) for k,v in p.items()})
-    probability_verified=calibration_applied and cal.get('display_approved',False) and all(e['neighbours']>=8 for e in evidence)
+    probability_verified=calibration_applied and cal.get('display_approved',False) and cal.get('venue_test_races',{}).get(str(venue),0)>=20 and all(e['neighbours']>=8 for e in evidence)
     audit={}
     for group in ALL_GROUPS:
         available=sorted({k for f in features for k in f.get(group,{})})
@@ -236,6 +236,16 @@ def predict(features,venue,day,model,odds=None):
     audit['odds']={'label':LABELS['odds'],'status':'used' if alpha>0 else 'partial' if market else 'missing',
                    'valid_combinations':len(market),'market_blend':alpha,
                    'weight_origin':model.get('market_alpha_origin','preset_unvalidated')}
+    from boat24_water import PROFILES
+    profile=PROFILES.get(str(venue),{})
+    audit['tide']['label']=profile.get('name','当該場')+'の潮汐推算'
+    audit['wind']['label']=profile.get('name','当該場')+'の風とコース別実績'
+    if profile.get('tidal_range')=='なし':
+        audit['tide'].update(status='not_applicable',reason='公式の場データで干満差なし',used_fields=[],used_lanes=0)
+    if venue!=15 and not audit['comments']['available_fields']:
+        audit['comments'].update(status='not_implemented',reason='この場のコメント自動取得は未実装')
+    for item in audit.values():
+        if item['status']=='used' and (item.get('unused_fields') or item.get('used_lanes',6)<item.get('available_lanes',6)):item['status']='partial_used'
     selection={str(n):sorted(p,key=lambda c:(-p[c],c))[:n] for n in (12,18)}
     metrics={}
     for n,picks in selection.items():

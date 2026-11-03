@@ -94,6 +94,16 @@ def collect(codes,cards,now):
  cache=json.loads(CACHE.read_text()) if CACHE.exists() else {'schema':1,'races':{}}
  if cache.get('date')!=now.date().isoformat():cache={'schema':1,'date':now.date().isoformat(),'races':{}}
  errors={}
+ from boat24_water import download,parse_venue_weather
+ def surface_job(venue):
+  u=f'https://race.boatcast.jp/m_txt/{venue:02d}/bc_sui_{now.strftime("%Y%m%d")}_{venue:02d}.txt'
+  try:
+   body,_=download(u+'?v='+str(int(dt.datetime.now(JST).timestamp()//30)));row=parse_venue_weather(body,venue,dt.datetime.now(JST));row['source']=u;return str(venue).zfill(2),row,None
+  except Exception as e:return str(venue).zfill(2),None,str(e)
+ with ThreadPoolExecutor(max_workers=6) as pool:
+  for venue,row,error in pool.map(surface_job,sorted({int(c[8:10]) for c in codes})):
+   if row:cache.setdefault('venue_weather',{})[venue]=row
+   else:errors['weather_'+venue]=error
  try:cache['tides']=parse_tides(get(TIDE));cache['tide_observed_at']=dt.datetime.now(JST).isoformat();cache['tide_url']=TIDE
  except Exception as e:errors['tide']=str(e)
  def job(code):
@@ -146,12 +156,6 @@ def attach(features,code,cutoff,cache,model_generated_at=None):
     f['maintenance']['プロペラ新']=int('新' in b.get('propeller',''));f['maintenance']['部品交換あり']=int(bool(b.get('parts')))
    c=rec.get('comments',{}).get(str(lane)) if comments_time and comments_time<cutoff else None
    if c and c.get('comment'):f['comments']['コメント気配']=comment_signals(c['comment'])
-  # Cardinal mapping from CSV is not assumed. A verified literal direction is required.
-  wind_time=timeparse(rec.get('wind_direction_text_observed_at',rec.get('observed_at')))
-  direction=rec.get('wind_direction_text') if wind_time and wind_time<cutoff else None
-  speed=number(f.get('weather',{}).get('風速(m)'))
-  if int(code[8:10])==15 and direction in ('北','北西','北東','南','南西','南東') and speed is not None:
-   f['wind']['向かい風成分']=speed*(1 if direction.startswith('北') else -1)
  return rec
 
 def merge_cache(remote,incoming):
@@ -163,6 +167,9 @@ def merge_cache(remote,incoming):
  for code,rec in incoming.get('races',{}).items():
   if code not in races or races[code].get('observed_at','')<=rec.get('observed_at',''):races[code]=copy.deepcopy(rec)
  chosen['races']=races
+ chosen['venue_weather']=copy.deepcopy(remote.get('venue_weather',{}))
+ for v,row in incoming.get('venue_weather',{}).items():
+  if row.get('observed_at','')>=chosen['venue_weather'].get(v,{}).get('observed_at',''):chosen['venue_weather'][v]=copy.deepcopy(row)
  return chosen
 
 def parse_live_previews(doc,code,card,observed):
@@ -216,6 +223,18 @@ def apply_live_previews(data,cache,now):
  from boat24_integrity import timeparse
  used={}
  for code,rec in cache.get('races',{}).items():
+  surface=cache.get('venue_weather',{}).get(code[8:10],{})
+  if surface:
+   old=data.get('weather',{}).get(code,{})
+   limit=next((deadline(data.get(k,{}).get(code),now.date().isoformat()) for k in ('odds','ex','st','title') if deadline(data.get(k,{}).get(code),now.date().isoformat())),None)
+   observed=timeparse(surface.get('observed_at'));measured=timeparse(surface.get('measured_at'))
+   if limit and observed and measured and measured<=observed<=now and observed<limit-dt.timedelta(minutes=FREEZE_MINUTES):
+    old_measure=str(old.get('気象観測時刻',''));old_at=timeparse(old.get('取得日時'));old_measured=timeparse(old_measure)
+    if re.fullmatch(r'\d{4}',old_measure):
+     try:old_measured=now.replace(hour=int(old_measure[:2]),minute=int(old_measure[2:]),second=0,microsecond=0)
+     except ValueError:old_measured=None
+    if (not old_at or observed>old_at) and (not old_measured or measured>=old_measured):
+     data.setdefault('weather',{})[code]={**surface['numeric'],'レースコード':code,'締切時刻':limit.isoformat(),'取得日時':observed.isoformat(),'気象観測時刻':surface['measured_at'],'情報源':'BOATCAST公式・'+surface.get('wind_direction_literal','')+'風 '+(surface.get('wind_quality_literal') or ''),'source_url':surface['source']}
   for kind,row in rec.get('live_previews',{}).items():
    observed=timeparse(row.get('取得日時'));limit=deadline(row,now.date().isoformat());old=data.get(kind,{}).get(code,{})
    if not observed or not limit or observed>now or observed>=limit-dt.timedelta(minutes=FREEZE_MINUTES):continue

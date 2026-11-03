@@ -1,0 +1,305 @@
+{
+  "schema": 1,
+  "venues": {
+    "1": {
+      "name": "桐生",
+      "water_type": "淡水",
+      "tidal_range": "なし",
+      "source": "https://www.boatrace.jp/owpc/pc/data/stadium?jcd=01",
+      "source_sha256": "0c5aeb157704f39c677b229e8b311db1cd0e72c5e0851f7dcc55330ad3614d01",
+      "verified_on": "2026-11-03",
+      "source_memo_asof": "2026-06-30",
+      "tide_source": null
+    },
+    "2": {
+      "name": "戸田",
+      "water_type": "淡水",
+      "tidal_range": "なし",
+      "source": "https://www.boatrace.jp/owpc/pc/data/stadium?jcd=02",
+      "source_sha256": "dcc592e66893f8a6f931148f45462ccfc6c0147a6ca99870677120ed0f468868",
+      "verified_on": "2026-11-03",
+      "source_memo_asof": "2026-06-30",
+      "tide_source": null
+    },
+    "3": {
+      "name": "江戸川",
+      "water_type": "汽水",
+      "tidal_range": "あり",
+      "source": "https://www.boatrace.jp/owpc/pc/data/stadium?jcd=03",
+      "source_sha256": "0621d4678e22e05e782d83561cc2ca12a8a827782693a68baf1ccadf57169048",
+      "verified_on": "2026-11-03",
+      "source_memo_asof": "2026-06-30",
+      "tide_source": {
+        "kind": "jma_astronomical_nearby_station",
+        "station": "TK",
+        "name": "東京",
+        "scope": "近隣港の天文潮位。レース水面の実測潮位・流速ではない"
+      }
+    },
+    "4": {
+      "name": "平和島",
+      "water_type": "海水",
+      "tidal_range": "あり",
+      "source": "https://www.boatrace.jp/owpc/pc/data/stadium?jcd=04",
+      "source_sha256": "f38c210729ba6f4757c6bcf7028849247101f407f475bf6ef43d78237c42cb57",
+      "verified_on": "2026-11-03",
+      "source_memo_asof": "2026-06-30",
+      "tide_source": {
+        "kind": "jma_astronomical_nearby_station",
+        "station": "TK",
+        "name": "東京",
+        "scope": "近隣港の天文潮位。レース水面の実測潮位・流速ではない"
+      }
+    },
+    "5": {
+      "name": "多摩川",
+      "water_type": "淡水",
+      "tidal_range": "なし",
+      "source": "https://www.boatrace.jp/owpc/pc/data/stadium?jcd=05",
+      "source_sha256": "8f69e582ecbd7c344faae0bd08616c72a89bfe1fe5976d1b2c785bf5b57b248a",
+      "verified_on": "2026-11-03",
+      "source_memo_asof": "2026-06-30",
+      "tide_source": null
+    },
+    "6": {
+      "name": "浜名湖",
+      "water_type": "汽水",
+      "tidal_range": "あり",
+      "source": "https://www.boatrace.jp/owpc/pc/data/stadium?jcd=06",
+      "source_sha256": "f868163d1a0950a683ddb8164d9362267281167c5350f6cbfd95d9d203524743",
+      "verified_on": "2026-11-03",
+      "source_memo_asof": "2026-06-30",
+      "tide_source": {
+        "kind": "jma_astronomical_nearby_station",
+        "station": "MI",
+        "name": "舞阪",
+        "scope": "近隣港の天文潮位。レース水面の実測潮位・流速ではない"
+      }
+    },
+    "7": {
+      "name": "蒲郡",
+      "water_type": "汽水",
+      "tidal_range": "なし",
+      "source": "https://www.boatrace.jp/owpc/pc/data/stadium?jcd=07",
+      "source_sha256": "a7e6d2891012f38c578d13844e969906d864d5b81379816cb3028c0c42953c16",
+      "verified_on": "2026-11-03",
+      "source_memo_asof": "2026-06-30",
+      "tide_source": null
+    },
+    "8": {
+      "name": "常滑",
+      "water_type": "海水",
+      "tidal_range": "なし",
+      "source": "https://www.boatrace.jp/owpc/pc/data/stadium?jcd=08",
+      "source_sha256": "3c3e3c2d6da24622d33e82e15b66c628d9a50cfd071b84def32d09cde9f98651",
+      "verified_on": "2026-11-03",
+      "source_memo_asof": "2026-06-30",
+      "tide_source": null
+    },
+    "9": {
+      "name": "津",
+      "water_type": "汽水",
+      "tidal_range": "なし",
+      "source": "https://www.boatrace.jp/owpc/pc/data/stadium?jcd=09",
+      "source_sha256": "edef57afcf4085df06f3a36cb99660dd59b6e5c18fadaff31db59bcb738f6dbc",
+      "verified_on": "2026-11-03",
+      "source_memo_asof": "2026-06-30",
+      "tide_source": null
+    },
+    "10": {
+      "name": "三国",
+      "water_type": "淡水",
+      "tidal_range": "なし",
+      "source": "https://www.boatrace.jp/owpc/pc/data/stadium?jcd=10",
+      "source_sha256": "aea3c9127835620e990a79052ef9399cc1cdfbdd6e1bc6d952aa1b16f9243213",
+      "verified_on": "2026-11-03",
+      "source_memo_asof": "2026-06-30",
+      "tide_source": null
+    },
+    "11": {
+      "name": "びわこ",
+      "water_type": "淡水",
+      "tidal_range": "なし",
+      "source": "https://www.boatrace.jp/owpc/pc/data/stadium?jcd=11",
+      "source_sha256": "9ca92a54bb80ec68fcd6d8b7c56030536549e770c0fd41f117f5d5df9051567e",
+      "verified_on": "2026-11-03",
+      "source_memo_asof": "2026-06-30",
+      "tide_source": null
+    },
+    "12": {
+      "name": "住之江",
+      "water_type": "淡水",
+      "tidal_range": "なし",
+      "source": "https://www.boatrace.jp/owpc/pc/data/stadium?jcd=12",
+      "source_sha256": "e739ee2f0ad21284611b312e92d2ccab36176982bcde6e751d93e35ee4c86a88",
+      "verified_on": "2026-11-03",
+      "source_memo_asof": "2026-06-30",
+      "tide_source": null
+    },
+    "13": {
+      "name": "尼崎",
+      "water_type": "淡水",
+      "tidal_range": "なし",
+      "source": "https://www.boatrace.jp/owpc/pc/data/stadium?jcd=13",
+      "source_sha256": "4d7dd19cc1b1caa23c88d09bf4061281c93cb80f4901cf5d82ead80094c53dc1",
+      "verified_on": "2026-11-03",
+      "source_memo_asof": "2026-06-30",
+      "tide_source": null
+    },
+    "14": {
+      "name": "鳴門",
+      "water_type": "海水",
+      "tidal_range": "あり",
+      "source": "https://www.boatrace.jp/owpc/pc/data/stadium?jcd=14",
+      "source_sha256": "34d5a16b33b8291781143ae069f9bff3d5134eea3791906e0d1c9d446d22b1ce",
+      "verified_on": "2026-11-03",
+      "source_memo_asof": "2026-06-30",
+      "tide_source": {
+        "kind": "jma_astronomical_nearby_station",
+        "station": "KM",
+        "name": "小松島",
+        "scope": "近隣港の天文潮位。レース水面の実測潮位・流速ではない"
+      }
+    },
+    "15": {
+      "name": "丸亀",
+      "water_type": "海水",
+      "tidal_range": "あり",
+      "source": "https://www.boatrace.jp/owpc/pc/data/stadium?jcd=15",
+      "source_sha256": "2a65008fa8d744b600b4f1b5d31f29e203cc6a86e45fbea7bfe187bb3f80923f",
+      "verified_on": "2026-11-03",
+      "source_memo_asof": "2026-06-30",
+      "tide_source": {
+        "kind": "jma_astronomical_nearby_station",
+        "station": "TX",
+        "name": "多度津",
+        "scope": "近隣港の天文潮位。レース水面の実測潮位・流速ではない"
+      }
+    },
+    "16": {
+      "name": "児島",
+      "water_type": "海水",
+      "tidal_range": "あり",
+      "source": "https://www.boatrace.jp/owpc/pc/data/stadium?jcd=16",
+      "source_sha256": "1757f298e6a2afaf3e7ec2e702679139160de1b5d5bccef9e0f3392bb9027ce1",
+      "verified_on": "2026-11-03",
+      "source_memo_asof": "2026-06-30",
+      "tide_source": {
+        "kind": "jma_astronomical_nearby_station",
+        "station": "UN",
+        "name": "宇野",
+        "scope": "近隣港の天文潮位。レース水面の実測潮位・流速ではない"
+      }
+    },
+    "17": {
+      "name": "宮島",
+      "water_type": "海水",
+      "tidal_range": "あり",
+      "source": "https://www.boatrace.jp/owpc/pc/data/stadium?jcd=17",
+      "source_sha256": "313576d6ce17f8c80e191d0076b2440191bbc636cc7a5454853b2efb03a6524b",
+      "verified_on": "2026-11-03",
+      "source_memo_asof": "2026-06-30",
+      "tide_source": {
+        "kind": "jma_astronomical_nearby_station",
+        "station": "Q8",
+        "name": "広島",
+        "scope": "近隣港の天文潮位。レース水面の実測潮位・流速ではない"
+      }
+    },
+    "18": {
+      "name": "徳山",
+      "water_type": "海水",
+      "tidal_range": "あり",
+      "source": "https://www.boatrace.jp/owpc/pc/data/stadium?jcd=18",
+      "source_sha256": "1729308a1f49671e63b4eab0f3f2f25213b63adc159cba704777548dfe3b228b",
+      "verified_on": "2026-11-03",
+      "source_memo_asof": "2026-06-30",
+      "tide_source": {
+        "kind": "jma_astronomical_nearby_station",
+        "station": "QA",
+        "name": "徳山",
+        "scope": "近隣港の天文潮位。レース水面の実測潮位・流速ではない"
+      }
+    },
+    "19": {
+      "name": "下関",
+      "water_type": "海水",
+      "tidal_range": "あり",
+      "source": "https://www.boatrace.jp/owpc/pc/data/stadium?jcd=19",
+      "source_sha256": "8095ab80fa5c5d207515338206df9261ca2a80536822f7f1b93a2c88aed327ff",
+      "verified_on": "2026-11-03",
+      "source_memo_asof": "2026-06-30",
+      "tide_source": {
+        "kind": "jma_astronomical_nearby_station",
+        "station": "CF",
+        "name": "長府",
+        "scope": "近隣港の天文潮位。レース水面の実測潮位・流速ではない"
+      }
+    },
+    "20": {
+      "name": "若松",
+      "water_type": "海水",
+      "tidal_range": "あり",
+      "source": "https://www.boatrace.jp/owpc/pc/data/stadium?jcd=20",
+      "source_sha256": "3c8d6c39c44894db8e9aadbd4763494dcab00ad6a55586d8e72fbf0bcd9218f4",
+      "verified_on": "2026-11-03",
+      "source_memo_asof": "2026-06-30",
+      "tide_source": {
+        "kind": "jma_astronomical_nearby_station",
+        "station": "N0",
+        "name": "砂津",
+        "scope": "近隣港の天文潮位。レース水面の実測潮位・流速ではない"
+      }
+    },
+    "21": {
+      "name": "芦屋",
+      "water_type": "淡水",
+      "tidal_range": "なし",
+      "source": "https://www.boatrace.jp/owpc/pc/data/stadium?jcd=21",
+      "source_sha256": "427df708dcaa62c5df42db7ebc9359de42177a4bc3144e3601f65888e6d8a073",
+      "verified_on": "2026-11-03",
+      "source_memo_asof": "2026-06-30",
+      "tide_source": null
+    },
+    "22": {
+      "name": "福岡",
+      "water_type": "汽水",
+      "tidal_range": "あり",
+      "source": "https://www.boatrace.jp/owpc/pc/data/stadium?jcd=22",
+      "source_sha256": "9ad36e7394b4dfe2b009c902021f8efe9b106e566c862adb766b848e05cee986",
+      "verified_on": "2026-11-03",
+      "source_memo_asof": "2026-06-30",
+      "tide_source": {
+        "kind": "jma_astronomical_nearby_station",
+        "station": "QF",
+        "name": "博多",
+        "scope": "近隣港の天文潮位。レース水面の実測潮位・流速ではない"
+      }
+    },
+    "23": {
+      "name": "唐津",
+      "water_type": "淡水",
+      "tidal_range": "なし",
+      "source": "https://www.boatrace.jp/owpc/pc/data/stadium?jcd=23",
+      "source_sha256": "6c3e9bcb303067419f5265b9ffb7cdeb639714dac6cd218aa9adfff7bab4da88",
+      "verified_on": "2026-11-03",
+      "source_memo_asof": "2026-06-30",
+      "tide_source": null
+    },
+    "24": {
+      "name": "大村",
+      "water_type": "海水",
+      "tidal_range": "あり",
+      "source": "https://www.boatrace.jp/owpc/pc/data/stadium?jcd=24",
+      "source_sha256": "d339913b09c0746b2593e06e7e15960f1ab7fa5ce8bf9f3695de4c266239726f",
+      "verified_on": "2026-11-03",
+      "source_memo_asof": "2026-06-30",
+      "tide_source": {
+        "kind": "jcg_astronomical_local",
+        "area": "4250",
+        "name": "大村（大村湾）",
+        "scope": "大村地点の潮汐推算。レース水面の実測値ではない"
+      }
+    }
+  }
+}

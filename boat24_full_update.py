@@ -13,6 +13,7 @@ INDEX=Path('omura/docs/boat24_full_index.json')
 from boat24_course import CourseStats, add_course_features
 from boat24_priority import add_priority_features
 from boat24_behavior import BehaviorStats
+from boat24_water import SurfaceStats,PROFILES
 from boat24_bets import optimize
 from boat24_operations import catalog,health
 from boat24_supplement import supplement
@@ -58,6 +59,8 @@ def make_snapshot(code,card,data,model,history,now,previous=None):
     built['race_context']=add_priority_features(built['features'],card,title,data['registry'],CourseStats(model.get('course_state')),int(code[8:10]),day,cutoff)
     behavior=BehaviorStats(model.get('behavior_state')).attach(built['features'],card)
     official=attach_official(built['features'],code,cutoff,data.get('official',{}))
+    water=SurfaceStats(model.get('surface_state')).attach(built['features'],int(code[8:10]),cutoff,model.get('tide_book',{}))
+    water['latest_official_wind']=data.get('official',{}).get('venue_weather',{}).get(code[8:10],{})
     h=fingerprint(built['features'],built['previews']['odds'],model,{k:official.get(k) for k in ('before','comments','wind_direction_text')}|{'tide_schedule':data.get('official',{}).get('tides',{}).get(day)})
     if previous and previous.get('id')==h:return None,'unchanged_inputs'
     result=predict(built['features'],int(code[8:10]),day,model,built['previews']['odds'])
@@ -67,6 +70,7 @@ def make_snapshot(code,card,data,model,history,now,previous=None):
         z=sum(1/v for v in valid_odds.values());mp={c:1/v/z for c,v in valid_odds.items()}
         result['market_baseline']={'probabilities':mp,'picks':sorted(mp,key=lambda c:(-mp[c],c))[:12],'observed_at':built['previews']['odds'].get('取得日時')}
     result['behavior_forecast']=behavior
+    result['water_context']=water
     required=set(GROUPS)|{'odds'}
     if int(code[8:10])==3:required.remove('original')
     result['complete_inputs']=all(result['feature_usage'][g]['status']=='used' and (g=='odds' or result['feature_usage'][g]['used_lanes']==6) for g in required)
@@ -79,6 +83,7 @@ def make_snapshot(code,card,data,model,history,now,previous=None):
         original_keys=set().union(*(set(f['original']) for f in built['features']))
         result['complete_inputs']=result['complete_inputs'] and bool(original_keys) and all(set(f['original'])==original_keys for f in built['features'])
     result['extended_inputs_complete']=all(result['feature_usage'][g]['status']=='used' and not result['feature_usage'][g].get('unused_fields') for g in ('course','style','maintenance')) and (int(code[8:10])!=15 or all(result['feature_usage'][g]['status']=='used' and not result['feature_usage'][g].get('unused_fields') for g in ('comments','tide','wind')))
+    result['extended_inputs_complete']=result['extended_inputs_complete'] and result['feature_usage']['wind']['status']=='used' and (PROFILES[str(int(code[8:10]))]['tidal_range']=='なし' or result['feature_usage']['tide']['status']=='used')
     result['complete_inputs']=result['complete_inputs'] and result['extended_inputs_complete'] and built['race_context']['unknown_sex_count']==0 and all(result['feature_usage'][g]['status']=='used' and result['feature_usage'][g]['used_lanes']==6 for g in ('race_conditions','opposition','local_support')) and all(f['local_support'].get('当地公式成績未確認')==0 for f in built['features'])
     result.update({'id':h,'created_at':now.isoformat(),'cutoff':cutoff.isoformat(),
                    'evaluation_eligible':True,'model_generated_at':model['generated_at'],'model_id':model.get('model_id'),
@@ -200,7 +205,7 @@ def main():
     for code,rec in records.items():
         settled+=settle(rec,data['results'].get(code),data['payouts'].get(code),dt.datetime.now(JST))
     ledger['catalog']=catalog(data,records,dt.datetime.now(JST))
-    ledger['health']=health(data,ledger['catalog'],{**ERRORS,**data.get('supplement_errors',{})},dt.datetime.now(JST))
+    ledger['health']=health(data,ledger['catalog'],{**ERRORS,**data.get('supplement_errors',{}),**data.get('official',{}).get('errors',{})},dt.datetime.now(JST))
     ledger['updated_at']=dt.datetime.now(JST).isoformat();ledger['diagnostics']={'new_forecasts':made,'updated_forecasts':updated,'new_settlements':settled,'skipped':skipped,'source_errors':dict(ERRORS)}
     atomic_write(path,ledger);touched=[str(path)]
     # Retry unsettled previous dates without requiring their race cards.
@@ -217,7 +222,7 @@ def main():
         for code,rec in old['records'].items():settle(rec,res.get(code),pay.get(code),dt.datetime.now(JST))
         atomic_write(old_path,old);touched.append(str(old_path))
     index=build_index(now=dt.datetime.now(JST));index['backfill_cursor']=pending[:14][-1][0].stem if pending else ''
-    index['diagnostics']=ledger['diagnostics'];index['training']={'through':model['trained_through'],'samples':len(model['samples']),'market_prior':model['market_alpha'],'validation':model['calibration'],'source_errors':model.get('source_errors',{}),'course_window_days':model.get('course_window_days')}
+    index['diagnostics']=ledger['diagnostics'];index['training']={'through':model['trained_through'],'samples':len(model['samples']),'market_prior':model['market_alpha'],'validation':model['calibration'],'source_errors':model.get('source_errors',{}),'venue_coverage':model.get('venue_coverage',{}),'venue_profiles':model.get('venue_profiles',PROFILES),'water_source_errors':model.get('water_source_errors',{}),'surface_summary':{'venues_with_wind_history':sorted({k.split('|')[0] for k in model.get('surface_state',{}).get('wind',{})}),'venues_with_tide_data':sorted(model.get('tide_book',{}))},'course_window_days':model.get('course_window_days')}
     atomic_write(INDEX,index)
     if changed:touched.append(str(MODEL))
     touched.append('omura/docs/boat24_official_cache.json')

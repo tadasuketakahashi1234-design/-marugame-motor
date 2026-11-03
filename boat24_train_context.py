@@ -20,6 +20,7 @@ from boat24_model_io import read_json, write_json
 from boat24_priority import add_priority_features
 from boat24_registry import load_registry
 from boat24_behavior import BehaviorStats
+from boat24_water import load_tide_book,SurfaceStats,PROFILES
 from boat24_validation import validate_chronologically,validate_initial,ablation_report
 
 ROOT='https://boatracecsv.github.io/data/'
@@ -40,10 +41,11 @@ def fetch(kind,path):
     historical=len(path)==10 and path.replace('/','-')<dt.datetime.now(JST).date().isoformat()
     if historical and cache.exists():
         return list(csv.DictReader(io.StringIO(cache.read_text(encoding='utf-8'))))
+    if len(path)==10 and path.replace('/','-')==dt.datetime.now(JST).date().isoformat():url+='?v='+str(int(time.time()//30))
     error=None
     for attempt in range(2):
         try:
-            req=urllib.request.Request(url,headers={'User-Agent':'boat24-context-research/2.1'})
+            req=urllib.request.Request(url,headers={'User-Agent':'boat24-context-research/5.0','Cache-Control':'no-cache'})
             with urllib.request.urlopen(req,timeout=15) as res:
                 raw=res.read().decode('utf-8-sig');rows=list(csv.DictReader(io.StringIO(raw)))
             if historical:
@@ -192,6 +194,7 @@ def race_features(code,card,data,history,asof,previous_motor=None,course_stats=N
 
 def build_model(today,days=28):
     registry=load_registry(today)
+    tide_book,water_errors=load_tide_book(today,days)
     jobs=[]
     for offset in range(days+28,0,-1):
         path=(today-dt.timedelta(days=offset)).strftime('%Y/%m/%d')
@@ -203,7 +206,7 @@ def build_model(today,days=28):
     calendars,histories=calendar_and_history(today)
     history=History(calendars,histories);samples=[];validation=[];initial_validation=[];profile_rows=[];run_rows=[];coverage={}
     prior_motor=[]
-    course_stats=CourseStats();behavior=BehaviorStats()
+    course_stats=CourseStats();behavior=BehaviorStats();surface=SurfaceStats()
     # A prior 28-day warmup supplies real course results before the training window.
     warm=[today-dt.timedelta(days=n) for n in range(days+28,days,-1)]
     def course_day(d):
@@ -213,6 +216,7 @@ def build_model(today,days=28):
         for data in pool.map(course_day,warm):course_stats.add(data)
     for offset in range(days,0,-1):
         day=today-dt.timedelta(days=offset);data=collect_day(day);data['registry']=registry;d=day.isoformat()
+        surface_pending=[]
         profiles,runs=profiles_and_runs(data,d,course_stats)
         # Profiles/results are inserted with source timestamps; each target filters them by its own cutoff.
         for p in profiles:history.add_profile(p)
@@ -225,19 +229,24 @@ def build_model(today,days=28):
             built=race_features(code,card,data,history,dt.datetime.combine(day,dt.time(23,59,59),JST),prior_motor,course_stats)
             if not built:continue
             behavior.attach(built['features'],card)
+            surface.attach(built['features'],int(code[8:10]),built['cutoff'],tide_book)
+            surface_pending.append((int(code[8:10]),built['features'],fm))
             initial=race_features(code,card,data,history,dt.datetime.combine(day,dt.time(7),JST),prior_motor,course_stats)
-            if initial:behavior.attach(initial['features'],card)
+            if initial:
+                behavior.attach(initial['features'],card)
+                surface.attach(initial['features'],int(code[8:10]),initial['cutoff'],tide_book)
             for phase,snapshot in [('preview',built),('initial',initial)]:
                 if not snapshot:continue
                 for lane,f in enumerate(snapshot['features'],1):
                     course=int(f.get('start',{}).get('展示進入',lane))
                     samples.append({'phase':phase,'date':d,'code':code,'venue':int(code[8:10]),'course':course,'lane':lane,'finish':fm[str(lane)],'features':f})
-            if offset<=12 and built['previews']['odds']:
+            if offset<=12:
                 actual='-'.join(str(res.get(f'{p}着_艇番')) for p in (1,2,3))
                 if actual in COMBOS and initial:initial_validation.append({'date':d,'venue':int(code[8:10]),'features':initial['features'],'actual':actual})
-                if actual in COMBOS:validation.append({'date':d,'venue':int(code[8:10]),'features':built['features'],'odds':built['previews']['odds'],'actual':actual})
+                if actual in COMBOS and built['previews']['odds']:validation.append({'date':d,'venue':int(code[8:10]),'features':built['features'],'odds':built['previews']['odds'],'actual':actual})
         coverage[d]={'cards':len(data['cards']),'results':len(data['results']),'samples':sum(1 for s in samples if s['date']==d),
                      'weather':len(data['weather']),'exhibition':len(data['ex']),'start':len(data['st']),'original':len(data['original'])}
+        for venue,features,finishes in surface_pending:surface.add(venue,features,finishes,d)
         behavior.add(data);course_stats.add(data)
         prior_motor=data['motor_rows']
         print('context training',d,'samples',len(samples),flush=True)
@@ -245,15 +254,20 @@ def build_model(today,days=28):
     model={'version':VERSION,'trained_through':(today-dt.timedelta(days=1)).isoformat(),
            'generated_at':dt.datetime.now(JST).isoformat(),'samples':samples,'scales':scales(samples),
            'calendars':calendars,'motor_histories':histories,'profiles':profile_rows,'runs':run_rows,
-           'behavior_state':behavior.state,'course_state':course_stats.state,'course_window_days':days+28,
+           'tide_book':tide_book,'water_source_errors':water_errors,'surface_state':surface.state,'venue_profiles':PROFILES,'behavior_state':behavior.state,'course_state':course_stats.state,'course_window_days':days+28,
            'registry':registry,'forecast_freeze_minutes':FREEZE_MINUTES,
            'previous_motor_rows':prior_motor,'coverage':coverage,'source_errors':dict(ERRORS),
            'market_alpha':.25,'market_alpha_origin':'preset_unvalidated','calibration':{'status':'not_calibrated'}}
+    model['venue_coverage']={}
+    for venue in range(1,25):
+        boats=[s for s in samples if s.get('phase')=='preview' and s['venue']==venue and s['lane']==1]
+        model['venue_coverage'][str(venue)]={'training_races':len(boats),'wind_races':sum(bool(s['features'].get('wind')) for s in boats),'tide_races':sum(bool(s['features'].get('tide')) for s in boats),'days':len({s['date'] for s in boats}),'latest_day':max((s['date'] for s in boats),default=None)}
     model['calibration']=validate_chronologically(model,validation)
     model.setdefault('phase_calibration',{})['initial']=validate_initial(model,initial_validation)
     model['calibration']['initial']=model['phase_calibration']['initial']
     model['calibration']['ablations']=ablation_report(model,validation,model['calibration'].get('test_dates',[]))
     import hashlib
+    model['generated_at']=dt.datetime.now(JST).isoformat()
     model['model_id']=hashlib.sha256(json.dumps(model,ensure_ascii=False,sort_keys=True,separators=(',',':')).encode()).hexdigest()
     return model
 

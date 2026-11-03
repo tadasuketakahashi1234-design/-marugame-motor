@@ -21,3 +21,6 @@ const history=context.renderOfferHistory({offers:{issued:offered},result:{purcha
 assert(history.includes('5950円'));assert(history.includes('4750円'));assert(history.includes('主集計対象'));
 assert(history.includes('公式確認'));assert(context.renderOfferHistory({}).includes('公式照合待ち'));
 console.log('PASS: saved offer history and first-offer settlement remain visible after skip');
+
+const research=context.renderOfferHistory({result:{refund_verified:true,refund_boats:['2'],paper:{'12':{stake:1200,return:1380,refund:600}},result_source:{official_result_source:'https://www.boatrace.jp/owpc/pc/race/raceresult?hd=20261103&jcd=09&rno=12'}}});
+assert(research.includes('1380円（返還 600円含む）'));assert(research.includes('公式結果・返還の確認元'));

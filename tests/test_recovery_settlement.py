@@ -62,6 +62,39 @@ class RecoveryTests(unittest.TestCase):
         for model in ('a','b'):
             s=snapshot(model=model);rec={'race_code':CODE,'revisions':{'first':s}};settle_record(rec,*sources(),s,AT);recs.append(rec)
         rows=report(recs)['rows'];self.assertEqual(len(rows),2);self.assertTrue(all(r['races']==1 for r in rows))
+    def test_frozen_model_does_not_wait_for_daily_retraining_or_accept_future_data(self):
+        import tempfile
+        import os
+        from boat24_train_context import ensure_model
+        from boat24_context import VERSION
+        with tempfile.TemporaryDirectory() as tmp:
+            path=Path(tmp)/'model.json.gz'
+            from boat24_model_io import write_json
+            model={'version':VERSION,'trained_through':'2026-11-01','model_id':'fixed'};write_json(path,model)
+            with patch('boat24_train_context.MODEL',path),patch.dict(os.environ,{'BOAT24_FREEZE_MODEL':'1'}),patch('boat24_train_context.build_model') as train:
+                self.assertEqual(ensure_model(AT),(model,False));train.assert_not_called()
+                model['trained_through']='2026-11-04';write_json(path,model)
+                train.return_value={'version':VERSION,'trained_through':'2026-11-02'}
+                ensure_model(AT);train.assert_called_once()
+
+    def test_recovery_publishes_small_history_before_official_network(self):
+        import tempfile
+        import boat24_recover
+        events=[]
+        with tempfile.TemporaryDirectory() as tmp:
+            with patch('boat24_recover.DIRECTORY',Path(tmp)/'full_history'),patch('boat24_recover.day_paths',return_value=[]),patch('boat24_recover.publish',side_effect=lambda *args:events.append('publish')),patch('boat24_recover.collect_results',side_effect=lambda *args,**kwargs:(events.append('official') or ({},{}))):
+                boat24_recover.main()
+        self.assertEqual(events,['publish','official','publish'])
+
+    def test_past_official_confirmation_is_cached_without_blocking_live_capture(self):
+        import tempfile
+        from boat24_official_results import collect_results
+        code='202611021501';row={'observed_at':(AT-dt.timedelta(hours=8)).isoformat(),'race_code':code}
+        with tempfile.TemporaryDirectory() as tmp:
+            path=Path(tmp)/'cache.json';path.write_text(json.dumps({'records':{code:row}}))
+            with patch('boat24_official_results.get') as fetch:
+                rows,_=collect_results([code],AT,path);fetch.assert_not_called();self.assertEqual(rows[code],row)
+
     def test_official_cache_keeps_newest_verified_observation(self):
         r={'records':{CODE:{'observed_at':'2026-11-03T22:00:00+09:00','result':{'official_refund_boats':['3']}}}}
         l={'records':{CODE:{'observed_at':'2026-11-03T21:00:00+09:00','result':{'official_refund_boats':[]}}}}

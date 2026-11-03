@@ -16,7 +16,7 @@ def register_offers(rec):
     for s in sorted(rec.get('revisions',{}).values(),key=lambda s:(s.get('created_at',''),s.get('id',''))):
         p=s.get('purchase_plan',{});created=timeparse(s.get('created_at'));cutoff=timeparse(s.get('cutoff'));quote=timeparse(p.get('odds_observed_at'));computed=timeparse(s.get('computed_at')) or created
         if p.get('policy')!=PURCHASE_POLICY or p.get('status')!='ready' or not s.get('evaluation_eligible') or not created or not cutoff or not quote:continue
-        if not (quote<=created<cutoff-dt.timedelta(seconds=120)) or created-quote>dt.timedelta(seconds=300) or computed<created or computed>=cutoff-dt.timedelta(seconds=120):continue
+        if not (quote<=created<cutoff-dt.timedelta(seconds=120)) or created-quote>dt.timedelta(seconds=300) or computed<created or computed-quote>dt.timedelta(seconds=300) or computed>=cutoff-dt.timedelta(seconds=120):continue
         ts=p.get('tickets',[]);budget=p.get('budget')
         if not ts or not isinstance(budget,int) or not 0<budget<=1200 or len({t.get('combo') for t in ts})!=len(ts):continue
         valid=True

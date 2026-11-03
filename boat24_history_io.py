@@ -26,7 +26,7 @@ def history_path(directory,day):
     plain=Path(directory)/(day+'.json');zipped=Path(str(plain)+'.gz')
     return zipped if zipped.exists() else plain
 
-def read_history(path):
+def _read_archive(path):
     path=Path(path);value=read_json(path)
     storage=value.get('history_storage',{})
     if storage.get('schema')==2:
@@ -39,11 +39,15 @@ def read_history(path):
             if record.get('race_code')!=code:raise ValueError('Archive race code mismatch')
             records[code]=record
         value={k:v for k,v in value.items() if k!='history_storage'};value['records']=records
+    return value
+
+def read_history(path):
+    path=Path(path);value=_read_archive(path)
     other=Path(str(path)[:-3]) if path.suffix=='.gz' else Path(str(path)+'.gz')
     if other.exists():
         from boat24_full_update import merge_day
         # A legacy collector may have written one final plain observation.
-        a,b=read_json(other),value
+        a,b=_read_archive(other),value
         value=merge_day(a,b) if a.get('updated_at','')<=b.get('updated_at','') else merge_day(b,a)
     return value
 
@@ -82,8 +86,12 @@ def compact_day(doc):
         if valid:keep.add(max(valid,key=lambda s:(s['created_at'],s['id']))['id'])
         plans=[s for s in valid if s.get('purchase_plan')]
         if plans:keep.add(max(plans,key=lambda s:(s['created_at'],s['id']))['id'])
-        for offer in record.get('offers',{}).values():
-            if offer.get('snapshot_id') in revisions:keep.add(offer['snapshot_id'])
+        # Offer metadata retains every portfolio. Keep only the headline offer's
+        # large input snapshot here; all other inputs are available per race.
+        pointer=record.get('result',{}).get('selection_snapshot_id') if record.get('result') else None
+        if pointer in revisions:keep.add(pointer)
+        offers=sorted(record.get('offers',{}).values(),key=lambda o:(o['created_at'],o['snapshot_id']))
+        if offers and offers[0]['snapshot_id'] in revisions:keep.add(offers[0]['snapshot_id'])
         rec['revisions']={k:copy.deepcopy(revisions[k]) for k in keep if k in revisions}
         rec['revision_count']=len(revisions)
         rec['revision_history']=[{k:s.get(k) for k in ('id','created_at','cutoff','phase','model','complete_inputs')} for s in sorted(revisions.values(),key=lambda s:(s['created_at'],s['id']))]

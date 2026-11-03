@@ -54,7 +54,7 @@ def main():
                         if had_original and not original.exists():paths.append(str(original.relative_to(work)))
                     else:write_json(dest,chosen);paths.append(path)
                 index=build_index(work/'omura/docs/full_history',dt.datetime.now(JST))
-                for key in ('training','diagnostics','backfill_cursor'):
+                for key in ('training','diagnostics','backfill_cursor','recovery'):
                     if key in old_index:index[key]=old_index[key]
                 atomic_write(work/manifest['index'],index);paths.append(manifest['index'])
                 git('add','-A','--',*paths,cwd=work)

@@ -35,6 +35,24 @@ class HistoryStorage(unittest.TestCase):
         self.assertLess(len(record['revisions']),len(doc['records'][CODE]['revisions']))
         self.assertEqual(len(record['revision_history']),32)
 
+    def test_many_offers_do_not_copy_every_large_input_into_view(self):
+        doc=document();record=doc['records'][CODE];record['offers']={}
+        for i in range(30):
+            key=str(i);record['revisions'][key]=snapshot(key,i)
+            record['offers'][key]={'snapshot_id':key,'created_at':record['revisions'][key]['created_at'],'tickets':[{'combo':'1-2-3','stake':100}]}
+        view=compact_day(doc)['records'][CODE]
+        self.assertEqual(len(view['offers']),30)
+        self.assertLessEqual(len(view['revisions']),3)
+        self.assertIn('0',view['revisions'])
+
+    def test_sharded_manifest_and_legacy_gzip_are_both_read(self):
+        with tempfile.TemporaryDirectory() as tmp:
+            p=Path(tmp)/(DAY+'.json');doc=document()
+            with patch('boat24_history_io.COMPRESS_AFTER_BYTES',1):write_history(p,doc)
+            legacy=copy.deepcopy(doc);legacy['records'][CODE]['revisions']={'extra':snapshot('extra',30)}
+            legacy['updated_at']=DAY+'T17:30:00+09:00';write_json(str(p)+'.gz',legacy)
+            self.assertEqual(set(read_history(str(p)+'.gz')['records'][CODE]['revisions']),{'old','new','extra'})
+
     def test_publisher_replaces_large_plain_file_with_archive_and_view(self):
         from boat24_full_publish import main,git as actual_git
         def run(*args,cwd):return subprocess.check_output(['git',*args],cwd=cwd,text=True,stderr=subprocess.DEVNULL).strip()

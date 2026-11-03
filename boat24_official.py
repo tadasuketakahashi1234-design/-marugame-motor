@@ -99,7 +99,10 @@ def collect(codes,cards,now):
  def job(code):
   venue=int(code[8:10]);race=int(code[-2:]);record={'observed_at':dt.datetime.now(JST).isoformat(),'sources':{}}
   u=f'https://www.boatrace.jp/owpc/pc/race/beforeinfo?hd={code[:8]}&jcd={venue:02d}&rno={race}'
-  try:record['before']=parse_before(get(u),code,cards[code]);record['sources']['maintenance']=u
+  try:
+   doc=get(u);record['before']=parse_before(doc,code,cards[code]);record['sources']['maintenance']=u
+   record['live_previews']=parse_live_previews(doc,code,cards[code],dt.datetime.now(JST).isoformat())
+   for row in record['live_previews'].values():row['source_url']=u
   except Exception as e:record['maintenance_error']=str(e)
   if venue==15:
    u=BASE+f'/asp/kyogi/15/pc/yoso05{race:02d}.htm'
@@ -115,10 +118,10 @@ def collect(codes,cards,now):
    except Exception as e:record['wind_error']=str(e)
   record['observed_at']=dt.datetime.now(JST).isoformat()
   return code,record
- with ThreadPoolExecutor(max_workers=3) as pool:
+ with ThreadPoolExecutor(max_workers=6) as pool:
   for code,rec in pool.map(job,codes):
    old=cache['races'].get(code,{})
-   for key in ('before','comments','wind_direction_text'):
+   for key in ('before','comments','wind_direction_text','live_previews'):
     if rec.get(key):rec[key+'_observed_at']=rec['observed_at']
     elif old.get(key):
      rec[key]=old[key];rec[key+'_observed_at']=old.get(key+'_observed_at',old.get('observed_at'))
@@ -161,3 +164,62 @@ def merge_cache(remote,incoming):
   if code not in races or races[code].get('observed_at','')<=rec.get('observed_at',''):races[code]=copy.deepcopy(rec)
  chosen['races']=races
  return chosen
+
+def parse_live_previews(doc,code,card,observed):
+ """Parse the verified target race's exhibition; never use previous-result ST cells."""
+ from boat24_context import number
+ if not parse_before(doc,code,card):return {}
+ cutoff=None
+ for row in re.findall(r'<tr\b[^>]*>(.*?)</tr>',doc,re.S|re.I):
+  c=cells(row)
+  if len(c)==13 and '締切予定時刻' in c[0]:cutoff=c[int(code[-2:])]
+ if not cutoff or not re.fullmatch(r'\d{1,2}:\d{2}',cutoff):return {}
+ base={'レースコード':code,'締切時刻':cutoff,'取得日時':observed,'情報源':'BOAT RACE公式・対象Rと全6登録番号照合'};ex=dict(base);st=dict(base);lanes=set()
+ for body in re.findall(r'<tbody\b[^>]*>(.*?)</tbody>',doc,re.S|re.I):
+  lane=re.search(r'class="is-boatColor([1-6])\b',body);rid=re.search(r'toban=(\d+)',body);rows=re.findall(r'<tr\b[^>]*>(.*?)</tr>',body,re.S|re.I)
+  if not lane or not rid or not rows:continue
+  lane=int(lane[1]);c=cells(rows[0])
+  if len(c)<8 or str(card.get(f'艇{lane}_登録番号'))!=rid[1]:continue
+  time=number(c[4]);weight=number(c[3].replace('kg',''));tilt=number(c[5])
+  if time is None or not 5<=time<=9:continue
+  ex[f'艇{lane}_展示タイム']=str(time)
+  if weight is not None:ex[f'艇{lane}_体重(kg)']=str(weight)
+  if tilt is not None:ex[f'艇{lane}_チルト']=str(tilt)
+  if len(rows)>=3:
+   adjust=number(cells(rows[2])[0]) if cells(rows[2]) else None
+   if adjust is not None:ex[f'艇{lane}_体重調整(kg)']=str(adjust)
+  lanes.add(lane)
+ if lanes!=set(range(1,7)):return {}
+ course=0;boats=[]
+ for block in re.findall(r'<div class="table1_boatImage1">(.*?)</div>',doc,re.S):
+  boat=re.search(r'table1_boatImage1Number[^>]*>\s*([1-6])\s*</span>',block);value=re.search(r'table1_boatImage1Time[^>]*>(.*?)</span>',block,re.S)
+  if not boat or not value:continue
+  course+=1;lane=int(boat[1]);v=text(value[1]);timing=number(v[1:] if v.startswith('F') else v)
+  if timing is None or not 0<=abs(timing)<=1:return {'ex':ex}
+  st[f'艇{lane}_コース']=str(course);st[f'艇{lane}_スタート展示']=str(-timing if v.startswith('F') else timing);boats.append(lane)
+ out={'ex':ex}
+ if len(boats)==6 and set(boats)==set(range(1,7)):out['st']=st
+ # The latest venue weather may be labelled for the previous race; preserve that label.
+ wm=re.search(r'水面気象情報\s*(\d+)R時点',text(doc));weather=dict(base)
+ if wm:
+  weather['参考レース']=int(wm[1]);weather['情報源']+='・水面気象は'+wm[1]+'R時点'
+  for marker,key,unit in [('is-direction','気温(℃)','℃'),('is-wind','風速(m)','m'),('is-waterTemperature','水温(℃)','℃'),('is-wave','波の高さ(cm)','cm')]:
+   block=re.search(r'<div class="weather1_bodyUnit '+marker+r'">(.*?)</div>\s*</div>',doc,re.S)
+   if block:
+    value=re.search(r'weather1_bodyUnitLabelData[^>]*>(.*?)</span>',block[1],re.S);v=number(text(value[1]).replace(unit,'')) if value else None
+    if v is not None:weather[key]=str(v)
+  if len(weather)>len(base)+1:out['weather']=weather
+ return out
+
+def apply_live_previews(data,cache,now):
+ from boat24_context import deadline,FREEZE_MINUTES
+ from boat24_integrity import timeparse
+ used={}
+ for code,rec in cache.get('races',{}).items():
+  for kind,row in rec.get('live_previews',{}).items():
+   observed=timeparse(row.get('取得日時'));limit=deadline(row,now.date().isoformat());old=data.get(kind,{}).get(code,{})
+   if not observed or not limit or observed>now or observed>=limit-dt.timedelta(minutes=FREEZE_MINUTES):continue
+   if kind=='weather' and old:continue
+   prior=timeparse(old.get('取得日時'))
+   if not prior or observed>prior:data.setdefault(kind,{})[code]=row;used.setdefault(code,[]).append(kind)
+ return used

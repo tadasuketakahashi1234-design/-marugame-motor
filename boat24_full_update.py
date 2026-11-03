@@ -17,7 +17,7 @@ from boat24_bets import optimize
 from boat24_operations import catalog,health
 from boat24_supplement import supplement
 from boat24_forward import build_report
-from boat24_official import collect as collect_official, attach as attach_official
+from boat24_official import collect as collect_official, attach as attach_official, apply_live_previews
 
 MANIFEST=Path('boat24_full_pending.json')
 
@@ -174,8 +174,9 @@ def main():
     for code,card in data['cards'].items():
         limit=next((deadline(data.get(k,{}).get(code),day) for k in ('odds','ex','st','title') if deadline(data.get(k,{}).get(code),day)),None)
         if limit and now<limit-dt.timedelta(minutes=2) and not data['results'].get(code) and not data['payouts'].get(code):candidates.append((limit,code))
-    candidates=[code for limit,code in sorted(candidates) if limit<=now+dt.timedelta(minutes=30)][:16]
+    candidates=[code for limit,code in sorted(candidates) if limit<=now+dt.timedelta(minutes=30)][:32]
     data['official']=collect_official(candidates,data['cards'],now)
+    apply_live_previews(data,data['official'],dt.datetime.now(JST))
     history=History(model['calendars'],model['motor_histories'],model['profiles'],model['runs'])
     profiles,runs=profiles_and_runs(data,day,CourseStats(model.get('course_state')))
     for p in profiles:history.add_profile(p)

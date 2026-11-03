@@ -81,3 +81,47 @@ class SupplementCacheTests(unittest.TestCase):
    path=Path(t)/'cache.json';path.write_text(json.dumps({'motors':{'15':{'observed_at':(now-dt.timedelta(minutes=31)).isoformat(),'rows':[]}}}))
    with patch('boat24_supplement.CACHE',path),patch('boat24_supplement.motor_identity',return_value=[{'場コード':'15','モーター番号':'58','モーター期起算日':'2026-09-17','identity_observed_at':now.isoformat()}]) as fetch:supplement(d,{'records':{'4001':{'sex':'male'}}},now)
    fetch.assert_called_once_with(15,now)
+
+class OfficialLivePreviewTests(unittest.TestCase):
+ def fixture(self):
+  card={f'艇{i}_登録番号':str(4000+i) for i in range(1,7)}
+  header='<a href="?hd=20261103"></a><li class="is-active2">11月3日</li><tr><td>締切予定時刻</td>'+''.join('<td class="'+('is-activeColor1' if i==9 else '')+'">14:29</td>' for i in range(1,13))+'</tr>'
+  bodies=''.join(f'<tbody><tr><td class="is-boatColor{i}">{i}</td><td><a href="?toban={4000+i}"></a></td><td>選手</td><td>52.0kg</td><td>{6.6+i*.01}</td><td>-0.5</td><td></td><td></td></tr><tr></tr><tr><td>0.5</td></tr></tbody>' for i in range(1,7))
+  start=''.join(f'<div class="table1_boatImage1"><span class="table1_boatImage1Number is-type{i}">{i}</span><span class="table1_boatImage1Time">'+('F.01' if i==1 else '.12')+'</span></div>' for i in range(1,7))
+  return card,header+bodies+start
+ def test_verified_exhibition_and_signed_F_are_parsed(self):
+  from boat24_official import parse_live_previews
+  c,h=self.fixture();r=parse_live_previews(h,'202611030209',c,'2026-11-03T14:20:00+09:00');self.assertAlmostEqual(float(r['ex']['艇1_展示タイム']),6.61);self.assertEqual(r['st']['艇1_スタート展示'],'-0.01');self.assertEqual(r['st']['艇6_コース'],'6');self.assertEqual(r['ex']['艇1_体重調整(kg)'],'0.5')
+ def test_other_race_or_changed_registration_is_rejected(self):
+  from boat24_official import parse_live_previews
+  c,h=self.fixture();self.assertFalse(parse_live_previews(h,'202611030208',c,'2026-11-03T14:20:00+09:00'));c['艇6_登録番号']='9999';self.assertFalse(parse_live_previews(h,'202611030209',c,'2026-11-03T14:20:00+09:00'))
+ def test_missing_exhibition_is_not_filled_with_previous_race_ST(self):
+  from boat24_official import parse_live_previews
+  c,h=self.fixture();self.assertFalse(parse_live_previews(h.replace('<td>6.609999999999999</td>','<td></td>').replace('<td>6.61</td>','<td></td>'),'202611030209',c,'2026-11-03T14:20:00+09:00'))
+ def test_official_preview_applies_before_freeze_and_never_after(self):
+  from boat24_official import parse_live_previews,apply_live_previews
+  c,h=self.fixture();code='202611030209';r=parse_live_previews(h,code,c,'2026-11-03T14:20:00+09:00');d={};cache={'races':{code:{'live_previews':r}}};apply_live_previews(d,cache,dt.datetime(2026,11,3,14,21,tzinfo=JST));self.assertEqual(d['ex'][code]['情報源'],'BOAT RACE公式・対象Rと全6登録番号照合')
+  for row in r.values():row['取得日時']='2026-11-03T14:27:00+09:00'
+  d={};apply_live_previews(d,cache,dt.datetime(2026,11,3,14,28,tzinfo=JST));self.assertFalse(d)
+
+class CaptureWindowTests(unittest.TestCase):
+ def test_capture_repeats_instead_of_stopping_after_first_success(self):
+  import tempfile,json
+  from pathlib import Path
+  import boat24_cycle,boat24_full_update
+  now=dt.datetime(2026,11,3,14,tzinfo=JST)
+  with tempfile.TemporaryDirectory() as t:
+   manifest=Path(t)/'manifest.json';manifest.write_text(json.dumps({'paths':[],'index':'index.json'}))
+   with patch('boat24_cycle.dt.datetime') as clock,patch('boat24_cycle.time.monotonic',side_effect=[0,0,10,10,60,180]),patch('boat24_cycle.time.sleep') as sleep,patch('boat24_daily.main'),patch('boat24_compare.main'),patch('boat24_full_update.MANIFEST',manifest),patch('boat24_full_update.main') as capture,patch('boat24_full_publish.main') as publish:
+    clock.now.return_value=now;boat24_cycle.main(180)
+   self.assertEqual(capture.call_count,2);self.assertEqual(publish.call_count,2);sleep.assert_called_once_with(50)
+ def test_long_watch_retries_source_failure_and_preserves_saved_records(self):
+  import tempfile,json
+  from pathlib import Path
+  import boat24_cycle
+  now=dt.datetime(2026,11,3,14,tzinfo=JST)
+  with tempfile.TemporaryDirectory() as t:
+   directory=Path(t);day=directory/'2026-11-03.json';day.write_text(json.dumps({'records':{'existing':{'revisions':{'immutable':{'value':1}}}},'health':{}}));index=directory/'index';index.write_text('{}');manifest=directory/'manifest';manifest.write_text(json.dumps({'paths':[str(day)],'index':str(index)}))
+   with patch('boat24_cycle.dt.datetime') as clock,patch('boat24_cycle.time.monotonic',side_effect=[0,0,10,60,4000]),patch('boat24_cycle.time.sleep'),patch('boat24_daily.main'),patch('boat24_compare.main'),patch('boat24_full_update.DIRECTORY',directory),patch('boat24_full_update.INDEX',index),patch('boat24_full_update.MANIFEST',manifest),patch('boat24_full_update.main',side_effect=[RuntimeError('source timeout'),None]) as capture,patch('boat24_full_publish.main') as publish:
+    clock.now.return_value=now;boat24_cycle.main(4000)
+   saved=json.loads(day.read_text());self.assertEqual(saved['records']['existing']['revisions']['immutable']['value'],1);self.assertEqual(capture.call_count,2);self.assertEqual(publish.call_count,2);self.assertEqual(saved['health']['collection_mode'],'live_watch')

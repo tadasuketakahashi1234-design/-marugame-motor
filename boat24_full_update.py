@@ -196,8 +196,9 @@ def merge_day(remote,local):
     # Immutable revision IDs: remote observations always win on collisions.
     merged=json.loads(json.dumps(local,ensure_ascii=False));merged['catalog']=json.loads(json.dumps({**remote.get('catalog',{}),**local.get('catalog',{})}));merged['records']=json.loads(json.dumps(remote.get('records',{}),ensure_ascii=False))
     merged['updated_at']=max(remote.get('updated_at',''),local.get('updated_at',''))
-    for field,stamp in (('health','attempt_at'),('quote_health','attempt_at')):
+    for field,stamp in (('health','attempt_at'),('quote_health','attempt_at'),('result_health','attempt_at')):
         if remote.get(field,{}).get(stamp,'')>local.get(field,{}).get(stamp,''):merged[field]=remote[field]
+    if remote.get('settlement_updated_at','')>local.get('settlement_updated_at',''):merged['settlement_updated_at']=remote['settlement_updated_at']
     for code,incoming in local.get('records',{}).items():
         if code not in merged['records']:merged['records'][code]=incoming;continue
         rec=merged['records'][code]
@@ -271,7 +272,14 @@ def main():
             records[code]=current;made+=1
         else:updated+=1
         current['revisions'].setdefault(snap['id'],snap)
-    official_errors=attach_results(data,set(records)&(set(data['results'])|set(data['payouts'])),dt.datetime.now(JST)) if data.get('_live_collection') else {}
+    result_now=dt.datetime.now(JST)
+    due=[]
+    for code,rec in records.items():
+        snap=latest(rec);limit=timeparse((snap or {}).get('cutoff'))
+        if not rec.get('result') and limit and result_now>=limit+dt.timedelta(seconds=90):due.append((limit,code))
+    priority_results=[code for limit,code in sorted(due,reverse=True)]
+    result_codes=(set(records)&(set(data['results'])|set(data['payouts'])))|set(priority_results)
+    official_errors=attach_results(data,result_codes,result_now,priority_codes=priority_results) if data.get('_live_collection') else {}
     for code,rec in records.items():
         register_offers(rec)
         settled+=settle(rec,data['results'].get(code),data['payouts'].get(code),dt.datetime.now(JST))

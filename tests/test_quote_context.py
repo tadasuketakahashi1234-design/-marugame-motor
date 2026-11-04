@@ -18,6 +18,11 @@ class QuoteContextTests(unittest.TestCase):
         before=copy.deepcopy(r)
         self.assertIs(newest_context(r),self.fresh)
         self.assertEqual(r,before)
+    def test_display_selection_uses_newest_context_and_preserves_result_pointer(self):
+        from boat24_full_update import latest
+        record={'revisions':{'fresh':self.fresh,'old':self.old},'result':{'selection_snapshot_id':'old'}}
+        self.assertIs(latest(record),self.fresh)
+        self.assertEqual(record['result']['selection_snapshot_id'],'old')
     def test_new_quote_on_same_context_is_preferred(self):
         s=snapshot('repriced','17:38:00','17:36:52')
         self.assertIs(newest_context({'revisions':{'fresh':self.fresh,'repriced':s}}),s)

@@ -13,7 +13,8 @@ async function resolveLiveRef(force=false){
  if(!force&&Date.now()-refChecked<60000)return;refChecked=Date.now();
  try{const r=await fetch('https://api.github.com/repos/tadasuketakahashi1234-design/-marugame-motor/git/ref/heads/main?t='+Date.now(),{cache:'no-store',signal:AbortSignal.timeout(8000)});if(!r.ok){liveRef='main';return}const d=await r.json();const sha=d.object?.sha||d.sha;if(/^[a-f0-9]{40}$/.test(sha||''))liveRef=sha}catch(e){liveRef='main'}
 }
-const latest=r=>r.revisions?.[r.result?.selection_snapshot_id]||Object.values(r.revisions||{}).filter(s=>s.evaluation_eligible&&Date.parse(s.created_at)<Date.parse(s.cutoff)).sort((a,b)=>b.created_at.localeCompare(a.created_at)||b.id.localeCompare(a.id))[0];
+const contextOrder=(a,b)=>Date.parse(b.context_snapshot_at||b.created_at)-Date.parse(a.context_snapshot_at||a.created_at)||b.created_at.localeCompare(a.created_at)||b.id.localeCompare(a.id);
+const latest=r=>Object.values(r.revisions||{}).filter(s=>s.evaluation_eligible&&Date.parse(s.created_at)<Date.parse(s.cutoff)).sort(contextOrder)[0];
 async function getJSON(path){
  const root='https://raw.githubusercontent.com/tadasuketakahashi1234-design/-marugame-motor/'+liveRef+'/omura/docs/';
  const urls=[root+path,'./'+path];
@@ -23,7 +24,7 @@ async function getJSON(path){
 }
 const purchasePolicy='balanced-no-gami-v2';
 function purchaseSnapshot(r,fallback){
- const found=Object.values(r?.revisions||{}).filter(x=>x.purchase_plan?.policy===purchasePolicy&&x.evaluation_eligible&&Date.parse(x.created_at)<Date.parse(x.cutoff)).sort((a,b)=>b.created_at.localeCompare(a.created_at)||b.id.localeCompare(a.id));
+ const found=Object.values(r?.revisions||{}).filter(x=>x.purchase_plan?.policy===purchasePolicy&&x.evaluation_eligible&&Date.parse(x.created_at)<Date.parse(x.cutoff)).sort((a,b)=>Date.parse(b.context_snapshot_at||b.created_at)-Date.parse(a.context_snapshot_at||a.created_at)||b.created_at.localeCompare(a.created_at)||b.id.localeCompare(a.id));
  return found[0]||fallback;
 }
 function purchaseView(s){

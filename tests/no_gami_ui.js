@@ -25,3 +25,13 @@ console.log('PASS: saved offer history and first-offer settlement remain visible
 
 const research=context.renderOfferHistory({result:{refund_verified:true,refund_boats:['2'],paper:{'12':{stake:1200,return:1380,refund:600}},result_source:{official_result_source:'https://www.boatrace.jp/owpc/pc/race/raceresult?hd=20261103&jcd=09&rno=12'}}});
 assert(research.includes('1380円（返還 600円含む）'));assert(research.includes('公式結果・返還の確認元'));
+
+// A newer quote clock must not restore pre-exhibition context.
+vm.runInContext(src.slice(src.indexOf('const contextOrder='),src.indexOf('async function getJSON('))+'globalThis.selectLatest=latest;',context);
+const freshContext={...s,id:'fresh-context',phase:'preview',created_at:'2026-11-04T17:36:52+09:00',cutoff:'2026-11-04T17:41:00+09:00'};
+const staleContext={...s,id:'late-quote',phase:'partial',created_at:'2026-11-04T17:37:48+09:00',cutoff:freshContext.cutoff,context_snapshot_at:'2026-11-04T17:12:33+09:00'};
+const race={revisions:{fresh:freshContext,old:staleContext},result:{selection_snapshot_id:staleContext.id}};
+assert.equal(context.selectLatest(race).id,freshContext.id);
+assert.equal(context.purchaseSnapshot(race,null).id,freshContext.id);
+assert.equal(race.result.selection_snapshot_id,staleContext.id);
+console.log('PASS: latest commentary and tickets share the newest context; historical evaluation pointer is preserved');

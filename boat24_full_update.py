@@ -31,7 +31,7 @@ def latest(rec):
            if timeparse(r.get('created_at')) and timeparse(r.get('cutoff'))
            and timeparse(r['created_at'])<timeparse(r['cutoff'])
            and r.get('evaluation_eligible') is True]
-    return max(valid,key=lambda r:(r['created_at'],r['id'])) if valid else None
+    return max(valid,key=lambda r:((timeparse(r.get('context_snapshot_at')) or timeparse(r['created_at'])),timeparse(r['created_at']),r['id'])) if valid else None
 
 
 def make_snapshot(code,card,data,model,history,now,previous=None,clock=None):

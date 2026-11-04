@@ -8,6 +8,7 @@ import time
 from boat24_integrity import JST, atomic_write, timeparse, merge_ledgers
 from boat24_full_update import MANIFEST, merge_day, build_index
 from boat24_official import merge_cache
+from boat24_quote_context import reject_obsolete_reprices
 from boat24_model_io import read_json, write_json
 from boat24_history_io import read_history,write_history,write_view,day_key,history_files,view_files
 
@@ -46,7 +47,7 @@ def _publish():
                     elif path.endswith(('boat24_full_model.json','boat24_full_model.json.gz')):
                         a=remote.get('trained_through','');b=incoming.get('trained_through','')
                         chosen=remote if a>b or a==b and remote.get('generated_at','')>incoming.get('generated_at','') else incoming
-                    else:chosen=merge_day(remote,incoming)
+                    else:chosen=merge_day(remote,reject_obsolete_reprices(remote,incoming))
                     if day_key(dest) and dest.parent.name=='full_history':
                         original=dest;had_original=original.exists()
                         cache_dir=dest.parent.parent/'day_views';before_views=set(cache_dir.glob(day_key(dest)+'-*.json'))

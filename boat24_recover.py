@@ -1,9 +1,9 @@
 """Publish storage and settlement recovery independently of expensive model training."""
 import datetime as dt
 import json
-from boat24_integrity import JST,atomic_write,summarize
+from boat24_integrity import JST,atomic_write,summarize,timeparse
 from boat24_history_io import day_paths,read_history,write_history,write_view
-from boat24_full_update import DIRECTORY,INDEX,MANIFEST,build_index,settle
+from boat24_full_update import DIRECTORY,INDEX,MANIFEST,build_index,settle,latest
 from boat24_offers import register_offers
 from boat24_official_results import collect_results,CACHE
 from boat24_settlement import settle_legacy
@@ -44,7 +44,13 @@ def main():
     publish(days,legacy,{}, {},'storage_and_saved_offers')
     codes={code for _,day in days for code,r in day.get('records',{}).items() if r.get('result')}
     codes|={code for code,r in legacy.get('predictions',{}).items() if r.get('result')}
-    rows,errors=collect_results(codes,dt.datetime.now(JST),limit=24)
+    now=dt.datetime.now(JST);due=[]
+    for _,day in days:
+        for code,rec in day.get('records',{}).items():
+            cut=timeparse((latest(rec) or {}).get('cutoff'))
+            if not rec.get('result') and cut and now>=cut+dt.timedelta(seconds=90):due.append((cut,code))
+    priority=[code for cut,code in sorted(due,reverse=True)]
+    rows,errors=collect_results(codes|set(priority),now,limit=24,priority_codes=priority)
     publish(days,legacy,rows,errors,'official_settlements')
 
 if __name__=='__main__':main()

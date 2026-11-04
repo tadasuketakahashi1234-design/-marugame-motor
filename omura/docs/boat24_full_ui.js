@@ -91,6 +91,25 @@ async function readRaceArchive(code){
  const record=path?await getJSON('full_history/'+path):archived.records?.[code];
  if(!record)throw Error('このRの補足データを取得できません');return record;
 }
+function renderResultPanel(record,snapshot,cutoff,health={}){
+ const result=record?.result;
+ if(!result){
+  const minutes=(Date.now()-Date.parse(cutoff))/60000,waiting=minutes>=0;
+  return '<div class="result-panel"><h4>結果</h4><strong>'+(minutes>=10?'結果更新が遅れています':waiting?'結果確認中':'レース前')+'</strong><p>'+(waiting?'公式の着順・払戻を確認中':'締切後に公式結果と照合')+'</p>'+(waiting?'<p class="small">最終確認 '+esc(health.attempt_at?.slice(11,19)||'未取得')+'</p>':'')+'</div>';
+ }
+ const bet=result.offer_settlements?.[snapshot?.id];
+ const summary=b=>'<b>'+(b.hit?(b.profit<0?'的中・ガミ':'的中'):b.refund===b.stake?'全額返還':'不的中')+'</b><br>購入想定 '+esc(b.stake)+'円<br>払戻 '+esc(b.return)+'円（返還 '+esc(b.refund??0)+'円含む）<br>収支 '+esc(b.profit??b.return-b.stake)+'円';
+ const first=result.offer_settlements?.[result.purchase_snapshot_id];
+ const source=result.result_source?.official_result_source;
+ return '<div class="result-panel"><h4>結果</h4><strong>'+esc(result.combo)+'</strong><p>100円払戻 '+esc(result.payout_100yen)+'円</p><p class="small">'+(result.refund_verified?'返還艇：'+esc(result.refund_boats?.join('・')||'なし（公式確認）'):'返還は照合待ち')+'</p><div class="paper-result">この表示予想の仮想照合<br>'+(bet?summary(bet):'購入候補の保存なし')+'</div>'+(first&&result.purchase_snapshot_id!==snapshot?.id?'<details><summary>最初の候補の仮想照合</summary>'+summary(first)+'</details>':'')+(/^https:\/\/www\.boatrace\.jp\/owpc\/pc\/race\/raceresult\?/.test(source||'')?'<p><a href="'+esc(source)+'" target="_blank" rel="noopener noreferrer">公式結果</a></p>':'')+'</div>';
+}
+function renderComparison(items){
+ return '<h3>予想と結果をまとめて確認</h3><table class="race-comparison"><thead><tr><th scope="col">R</th><th scope="col">予想・購入判定</th><th scope="col">結果・払戻</th></tr></thead><tbody>'+[...items].sort((a,b)=>a.race_code.localeCompare(b.race_code)).map(item=>{
+ const r=data.records?.[item.race_code],s=r&&latest(r),ps=s&&purchaseSnapshot(r,s),p=ps?.purchase_plan,result=r?.result;
+ const prediction=p?.status==='ready'?(p.tickets||[]).map(t=>esc(t.combo)).join('／')+'<br>'+p.tickets.length+'点・'+esc(p.budget)+'円':s?'購入候補なし<br>'+esc(p?.status==='odds_stale'||p?.status==='odds_incomplete'?'オッズ確認待ち':p?.status==='preview_pending'?'展示確認待ち':'保存時は見送り'):'予想保存待ち';
+ return '<tr><th scope="row"><a href="#race-'+esc(item.race_code)+'">'+(Number($('venue').value)?'':esc(names[item.venue])+' ')+esc(item.race)+'R</a></th><td>'+prediction+'</td><td>'+ (result?'<b>'+esc(result.combo)+'</b><br>'+esc(result.payout_100yen)+'円 / 100円':Date.now()>=Date.parse(item.cutoff||s?.cutoff)?'結果確認中':'レース前')+'</td></tr>';
+ }).join('')+'</tbody></table>';
+}
 function records(){const venue=Number($('venue').value);return Object.values(data?.records||{}).filter(r=>!venue||Number(r.venue)===venue).sort((a,b)=>b.race_code.localeCompare(a.race_code))}
 function catalogRows(){const v=Number($('venue').value);return Object.values(data?.catalog||index?.catalogs?.[$('fullDate').value]||{}).filter(r=>!v||r.venue===v).sort((a,b)=>a.race_code.localeCompare(b.race_code))}
 function render(){
@@ -118,12 +137,13 @@ function render(){
  }
 
  const visible=venue==='0'?rows.slice(0,raceVisible):rows;
+ if($('fullRaceComparison'))$('fullRaceComparison').innerHTML=renderComparison(visible);
  if($('fullRaceNav'))$('fullRaceNav').innerHTML=visible.map(x=>'<a href="#race-'+esc(x.race_code)+'">'+(venue==='0'?esc(names[x.venue])+' ':'')+x.race+'R</a>').join('');
  $('fullRecords').innerHTML=visible.map(item=>{
   const r=data.records?.[item.race_code],snap=r&&latest(r);
-  if(!snap)return '<article class="race-card" id="race-'+esc(item.race_code)+'"><h3>'+esc(names[item.venue])+' '+item.race+'R</h3><p>'+esc(raceStates[item.state]||'予想作成待ち')+'</p><p>締切 '+esc(item.cutoff?.slice(11,16)||'未確認')+'</p></article>';
-  const ps=purchaseSnapshot(r,snap),v=purchaseView(ps),c=r.race_commentary,closed=Date.now()>=Date.parse(snap.cutoff),bet=r.result?.paper?.balanced;
-  return '<article class="race-card" id="race-'+esc(r.race_code)+'" data-full-code="'+esc(r.race_code)+'"><header class="race-card-heading"><h3>'+esc(names[r.venue])+' '+r.race+'R</h3><span>締切 '+esc(snap.cutoff.slice(11,16))+(closed?'／締切済み':'／あと'+Math.max(0,Math.ceil((Date.parse(snap.cutoff)-Date.now())/60000))+'分')+'</span></header><div class="purchase-main">'+v.html+(v.valid?'<p class="small">取得時の最低想定払戻 '+Math.min(...ps.purchase_plan.tickets.map(t=>t.expected_return))+'円</p>':'')+'</div><p class="quote-clock">予想 '+esc(snap.created_at.slice(11,19))+' ／ オッズ '+esc(snap.purchase_plan?.odds_observed_at?.slice(11,19)||'未取得')+'<br>確率は校正検証中／情報段階：'+esc(({initial:'展示前の暫定評価',partial:'直前情報は一部取得',preview:'展示後'})[snap.phase]||snap.phase)+(snap.context_snapshot_at?'／オッズ以外の入力 '+esc(snap.context_snapshot_at.slice(11,19)):'')+'</p>'+renderNarrative(c)+'<details class="purchase-evidence"><summary>オッズ・配分と購入条件の根拠</summary><p>'+v.metrics+'</p><p>点数可変・上限1,200円。全買い目の取得時払戻が総購入額を超える配分に限定。オッズ変動後のガミや利益を保証する条件ではありません。</p></details>'+(r.result?'<div class="race-result">結果 '+esc(r.result.combo)+'／100円払戻 '+r.result.payout_100yen+'円'+(bet?'<br>保存候補：'+bet.stake+'円→'+bet.return+'円（返還 '+bet.refund+'円含む）':'')+'</div>':'')+'<button type="button" data-full-detail="'+esc(r.race_code)+'">使った情報を見る</button></article>';
+  if(!snap)return '<article class="race-card" id="race-'+esc(item.race_code)+'"><h3>'+esc(names[item.venue])+' '+item.race+'R</h3><p>'+esc(raceStates[item.state]||'予想作成待ち')+'</p><p>締切 '+esc(item.cutoff?.slice(11,16)||'未確認')+'</p>'+renderResultPanel(r,null,item.cutoff,data.result_health)+'</article>';
+  const ps=purchaseSnapshot(r,snap),v=purchaseView(ps),c=r.race_commentary,closed=Date.now()>=Date.parse(snap.cutoff);
+  return '<article class="race-card" id="race-'+esc(r.race_code)+'" data-full-code="'+esc(r.race_code)+'"><header class="race-card-heading"><h3>'+esc(names[r.venue])+' '+r.race+'R</h3><span>締切 '+esc(snap.cutoff.slice(11,16))+(closed?'／締切済み':'／あと'+Math.max(0,Math.ceil((Date.parse(snap.cutoff)-Date.now())/60000))+'分')+'</span></header><div class="prediction-result-pair"><div class="purchase-main"><h4>予想・買い目</h4>'+v.html+(v.valid?'<p class="small">取得時の最低想定払戻 '+Math.min(...ps.purchase_plan.tickets.map(t=>t.expected_return))+'円</p>':'')+'</div>'+renderResultPanel(r,ps,snap.cutoff,data.result_health)+'</div><p class="quote-clock">予想 '+esc(snap.created_at.slice(11,19))+' ／ オッズ '+esc(snap.purchase_plan?.odds_observed_at?.slice(11,19)||'未取得')+'<br>確率は校正検証中／情報段階：'+esc(({initial:'展示前の暫定評価',partial:'直前情報は一部取得',preview:'展示後'})[snap.phase]||snap.phase)+(snap.context_snapshot_at?'／オッズ以外の入力 '+esc(snap.context_snapshot_at.slice(11,19)):'')+'</p>'+renderNarrative(c)+'<details class="purchase-evidence"><summary>オッズ・配分と購入条件の根拠</summary><p>'+v.metrics+'</p><p>点数可変・上限1,200円。全買い目の取得時払戻が総購入額を超える配分に限定。オッズ変動後のガミや利益を保証する条件ではありません。</p></details>'+'<button type="button" data-full-detail="'+esc(r.race_code)+'">使った情報を見る</button></article>';
  }).join('')+(venue==='0'&&rows.length>visible.length?'<button type="button" id="fullMoreRaces">さらに24Rの予想・見解を見る</button>':'');
  $('fullRecords').querySelectorAll('[data-full-detail]').forEach(b=>b.addEventListener('click',()=>{selected=b.dataset.fullDetail;openDetail()}));
  $('fullMoreRaces')?.addEventListener('click',()=>{raceVisible+=24;render()});

@@ -64,14 +64,16 @@ def merge_cache(remote,local):
         if row.get('observed_at','')>=out['records'].get(code,{}).get('observed_at',''):out['records'][code]=row
     return out
 
-def collect_results(codes,now,cache_path=None,limit=8):
+def collect_results(codes,now,cache_path=None,limit=8,priority_codes=()):
     path=cache_path or CACHE;cache=json.loads(path.read_text()) if path.exists() else {'schema':1,'records':{},'failures':{}}
     wanted=[];errors={}
-    for code in sorted(set(codes)):
+    rank={code:i for i,code in enumerate(priority_codes)}
+    for code in sorted(set(codes),key=lambda c:(c not in rank,rank.get(c,0),c)):
         saved=cache.get('records',{}).get(code,{});at=timeparse(saved.get('observed_at'));failed=timeparse(cache.get('failures',{}).get(code))
         age_limit=dt.timedelta(days=1) if code[:8]<now.strftime('%Y%m%d') else dt.timedelta(minutes=30)
         if at and dt.timedelta(0)<=now-at<age_limit:continue
-        if failed and dt.timedelta(0)<=now-failed<dt.timedelta(minutes=5):continue
+        retry=dt.timedelta(seconds=60) if code in rank else dt.timedelta(minutes=5)
+        if failed and dt.timedelta(0)<=now-failed<retry:continue
         wanted.append(code)
     def job(code):
         url=f'https://www.boatrace.jp/owpc/pc/race/raceresult?hd={code[:8]}&jcd={code[8:10]}&rno={int(code[-2:])}'
@@ -89,8 +91,8 @@ def collect_results(codes,now,cache_path=None,limit=8):
     cache['updated_at']=now.isoformat();atomic_write(path,cache)
     return cache.get('records',{}),errors
 
-def attach_results(data,codes,now):
-    rows,errors=collect_results(codes,now)
+def attach_results(data,codes,now,priority_codes=()):
+    rows,errors=collect_results(codes,now,priority_codes=priority_codes)
     for code in codes:
         row=rows.get(code)
         if not row:continue

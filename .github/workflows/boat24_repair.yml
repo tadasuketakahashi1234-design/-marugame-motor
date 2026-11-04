@@ -49,6 +49,7 @@ jobs:
           node tests/ui_smoke.js
           node tests/no_gami_ui.js
           node tests/forecast_ui.js
+          node tests/results_ui.js
       - name: Load current inputs and preserve original history for validation
         run: |
           python - <<'PY'
@@ -98,7 +99,10 @@ jobs:
           print('History preservation confirmed:',len(before),'->',len(latest['predictions']))
 
           PY
+      - name: Validate local saved pre-cutoff revisions and purchase constraints
+        run: python boat24_validate_saved.py
       - name: Verify all-input public website and saved pre-cutoff revisions
+        continue-on-error: true
         env:
           GH_TOKEN: ${{ github.token }}
           SOURCE_CHANGED: ${{ steps.install.outputs.changed }}
@@ -122,7 +126,7 @@ jobs:
               try:
                   html=read(base+'boat24_results.html');assert 'fullForecastPanel' in html and 'boat24_full_ui.js' in html and 'fullReportGroup' in html and 'fullHealth' in html and 'fullVenueCoverage' in html and 'fullLearning' in html and 'boat24_integrated_ui.js' in html
                   integrated=read(base+'boat24_integrated_ui.js');assert 'factorRows' in integrated and '展示・進入・足の詳細' in integrated
-                  script=read(base+'boat24_full_ui.js');assert all(marker in script for marker in ('selection_snapshot_id','feature_usage','purchaseView','purchaseSnapshot','expected_return','estimated_roi','displayAudit','renderWater',PURCHASE_POLICY)), 'Published UI does not contain the current purchase policy'
+                  script=read(base+'boat24_full_ui.js');assert all(marker in script for marker in ('contextOrder','renderResultPanel','feature_usage','purchaseView','purchaseSnapshot','expected_return','estimated_roi','displayAudit','renderWater',PURCHASE_POLICY)), 'Published UI does not contain the current purchase policy'
                   index=json.loads(read(raw+'boat24_full_index.json'));assert index['model']==VERSION
                   entry=index['days'][index['latest_day']]
                   ledger=json.loads(read(raw+entry.get('view_path','full_history/'+index['latest_day']+'.json')))

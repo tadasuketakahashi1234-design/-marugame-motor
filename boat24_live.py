@@ -69,21 +69,26 @@ def reprice(base,quotes,model,code,now,clock=None):
 
 
 def capture(model):
-    from boat24_full_update import DIRECTORY,INDEX,MANIFEST
+    from boat24_full_update import DIRECTORY,INDEX,MANIFEST,latest,settle
+    from boat24_official_results import collect_results,CACHE as RESULT_CACHE
     now=dt.datetime.now(JST);path=history_path(DIRECTORY,now.date().isoformat())
     if not path.exists():return False
-    ledger=read_history(path);targets=[]
+    ledger=read_history(path);targets=[];result_targets=[]
     for code,rec in ledger.get('records',{}).items():
         s=newest_context(rec);cut=timeparse((s or {}).get('cutoff'))
         if not rec.get('result') and cut and dt.timedelta(minutes=2)<cut-now<=dt.timedelta(minutes=25):targets.append((cut,code,s))
+        if not rec.get('result') and cut and now>=cut+dt.timedelta(seconds=90):result_targets.append((cut,code))
     targets=sorted(targets)[:24]
-    if not targets:return False
+    result_codes=[code for cut,code in sorted(result_targets,reverse=True)][:12]
+    if not targets and not result_codes:return False
     from boat24_fast_context import collect as collect_context,refresh as refresh_context
-    with ThreadPoolExecutor(max_workers=2) as pool:
+    with ThreadPoolExecutor(max_workers=3) as pool:
         quotes_job=pool.submit(collect,[c for _,c,_ in targets],now)
-        context_job=pool.submit(collect_context,[(c,s) for _,c,s in targets],now)
+        context_job=pool.submit(collect_context,[(c,s) for _,c,s in targets],now) if targets else None
+        result_job=pool.submit(collect_results,result_codes,now,limit=12,priority_codes=result_codes)
         rows,errors=quotes_job.result()
-        contexts,context_errors=context_job.result()
+        contexts,context_errors=context_job.result() if context_job else ({},{})
+        result_rows,result_errors=result_job.result()
     changed=0
     for _,code,s in targets:
         if code not in rows:continue
@@ -94,13 +99,21 @@ def capture(model):
         if new and new['id'] not in rec['revisions']:
             rec['revisions'][new['id']]=new;register_offers(rec);changed+=1
     ledger['quote_health']={'attempt_at':dt.datetime.now(JST).isoformat(),'targets':len(targets),'confirmed':len(rows),'updated':changed,'errors':errors,'context_errors':context_errors,'interval_seconds':30,'source':'official_odds3t_and_verified_context'}
+    settled=0
+    for code in result_codes:
+        row=result_rows.get(code)
+        if row:settled+=int(settle(ledger['records'][code],row['result'],row['payout'],dt.datetime.now(JST)))
+    result_at=dt.datetime.now(JST).isoformat()
+    ledger['result_health']={'attempt_at':result_at,'targets':result_codes,'confirmed':sum(c in result_rows for c in result_codes),'settled':settled,'errors':result_errors,'source':'official_raceresult_without_csv_gate'}
+    if settled:ledger['settlement_updated_at']=result_at
     # Do not present a quote-only refresh as a fresh weather/feature collection.
     write_history(path,ledger);write_view(path,ledger)
     old_index=json.loads(INDEX.read_text()) if INDEX.exists() else {}
-    atomic_write(INDEX,old_index);atomic_write(MANIFEST,{'paths':[str(path)],'index':str(INDEX)})
+    paths=[str(path)]+([str(RESULT_CACHE)] if RESULT_CACHE.exists() else [])
+    atomic_write(INDEX,old_index);atomic_write(MANIFEST,{'paths':paths,'index':str(INDEX)})
     import boat24_full_publish
     boat24_full_publish.main()
-    print('Official quote capture:',json.dumps(ledger['quote_health'],ensure_ascii=False),flush=True)
+    print('Official quote capture:',json.dumps(ledger['quote_health'],ensure_ascii=False),'results:',json.dumps(ledger['result_health'],ensure_ascii=False),flush=True)
     return True
 
 
@@ -161,7 +174,7 @@ def start_workflow_worker():
 def stop_workflow_worker():
     root=Path.cwd();(root/'.boat24-live-stop').touch();pidfile=root/'.boat24-live-pid'
     if not pidfile.exists():return
-    pid=int(pidfile.read_text());deadline=time.monotonic()+90
+    pid=int(pidfile.read_text());deadline=time.monotonic()+300
     while time.monotonic()<deadline:
         try:
             state=Path(f'/proc/{pid}/stat').read_text().rsplit(')',1)[1].split()[0]

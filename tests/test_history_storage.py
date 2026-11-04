@@ -53,6 +53,24 @@ class HistoryStorage(unittest.TestCase):
             legacy['updated_at']=DAY+'T17:30:00+09:00';write_json(str(p)+'.gz',legacy)
             self.assertEqual(set(read_history(str(p)+'.gz')['records'][CODE]['revisions']),{'old','new','extra'})
 
+    def test_quote_only_update_gets_an_immutable_public_url(self):
+        import hashlib
+        from boat24_history_io import write_view
+        from boat24_full_update import build_index
+        with tempfile.TemporaryDirectory() as tmp:
+            directory=Path(tmp)/'full_history';path=directory/(DAY+'.json');doc=document()
+            write_history(path,doc);write_view(path,doc)
+            first=build_index(directory)['days'][DAY]
+            self.assertNotEqual(first['view_path'],'day_views/'+DAY+'.json')
+            first_file=Path(tmp)/first['view_path'];before=first_file.read_bytes()
+            self.assertEqual(hashlib.sha256(before).hexdigest(),first['view_sha256'])
+            doc['quote_health']={'attempt_at':DAY+'T17:21:00+09:00'}
+            write_history(path,doc);write_view(path,doc)
+            second=build_index(directory)['days'][DAY]
+            self.assertNotEqual(first['view_path'],second['view_path'])
+            self.assertEqual(first_file.read_bytes(),before)
+            self.assertEqual(json.loads((Path(tmp)/second['view_path']).read_text())['quote_health'],doc['quote_health'])
+
     def test_publisher_replaces_large_plain_file_with_archive_and_view(self):
         from boat24_full_publish import main,git as actual_git
         def run(*args,cwd):return subprocess.check_output(['git',*args],cwd=cwd,text=True,stderr=subprocess.DEVNULL).strip()

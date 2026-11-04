@@ -103,5 +103,23 @@ def compact_day(doc):
     return out
 
 def write_view(history_file,doc):
-    path=Path(history_file);dest=path.parent.parent/'day_views'/(day_key(path)+'.json')
-    write_json(dest,compact_day(doc));return dest
+    import hashlib
+    path=Path(history_file);day=day_key(path);directory=path.parent.parent/'day_views';dest=directory/(day+'.json')
+    view=compact_day(doc);raw=json.dumps(view,ensure_ascii=False,separators=(',',':'),allow_nan=False).encode()
+    digest=hashlib.sha256(raw).hexdigest();version=directory/(day+'-'+digest[:16]+'.json');pointer=directory/(day+'.pointer.json')
+    old=read_json(pointer) if pointer.exists() else {}
+    history=[]
+    for name in [old.get('path'),*old.get('previous_paths',[])]:
+        if name and name!=version.name and name not in history:history.append(name)
+    history=history[:32]
+    write_json(version,view);write_json(dest,view)
+    write_json(pointer,{'path':version.name,'sha256':digest,'previous_paths':history})
+    # Display caches are expendable; all immutable inputs remain in full_history.
+    for item in directory.glob(day+'-*.json'):
+        if re.fullmatch(day+r'-[0-9a-f]{16}\.json',item.name) and item.name not in [version.name,*history]:item.unlink()
+    return dest
+
+def view_files(history_file):
+    path=Path(history_file);day=day_key(path);directory=path.parent.parent/'day_views';pointer=directory/(day+'.pointer.json')
+    info=read_json(pointer)
+    return [directory/(day+'.json'),pointer,directory/info['path']]

@@ -10,7 +10,7 @@ const context={document:{getElementById:el,hidden:false},fetch:async u=>{request
 vm.runInNewContext(fs.readFileSync('omura/docs/boat24_full_ui.js','utf8'),context);
 (async()=>{
  await new Promise(r=>setTimeout(r,50));
- assert(el('fullRecords').innerHTML.includes('判定保留'));assert(el('fullRecords').innerHTML.includes('風速6m'));assert(el('fullRecords').innerHTML.includes('想定展開'));
+ assert(el('fullRecords').innerHTML.includes('判定保留'));assert(el('fullRecords').innerHTML.includes('風速6m'));assert(el('fullRaceNav').innerHTML.includes('#race-'+code));assert(el('fullRecords').innerHTML.includes('想定展開'));
  assert(!requests.some(u=>u.startsWith('./')),'A successful primary read must not wait for a slow fallback');
  version=1;const done=el('fullReload').events.click();assert(el('fullReload').disabled);assert(el('fullReload').textContent.includes('取得中'));
  await done;assert.equal(apiCalls,2,'Manual refresh must bypass the previous 45-second ref cache');

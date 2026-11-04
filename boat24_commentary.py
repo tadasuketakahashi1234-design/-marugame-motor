@@ -33,6 +33,14 @@ def build(s):
     motor=f.get('motor',{}).get('モーター2連対率');lap=ed.get('一周順位')
     if motor is not None and lap:
         axis_text+=f' モーター期2連対率{motor:.1f}％に対し、本日の一周は{int(lap)}番手。期率は使用選手や番組の影響も含むため、このRの足と同一視しない。'
+    axis_rate=number(ability.get('全国勝率'))
+    rivals=[(number(x.get('ability',{}).get('全国勝率')),i) for i,x in enumerate(fs,1) if i!=axis and number(x.get('ability',{}).get('全国勝率')) is not None]
+    if axis_rate is not None and rivals:
+        rival_rate,rival=max(rivals)
+        if rival_rate>axis_rate:
+            axis_text+=f' 能力比較では{label(rival)}の全国勝率{rival_rate:.2f}が軸艇{axis_rate:.2f}を上回る。軸艇の先行が崩れる場合は、この相手の逆転も考える。'
+        else:
+            axis_text+=f' 全国勝率は相手最高{rival_rate:.2f}に対し{axis_rate-rival_rate:.2f}高い。一方、能力差がそのまま今回の着順差になるとは限らず、進入と当日の足を合わせて判断する。'
     if s.get('phase')=='initial':axis_text+='展示前の暫定評価。スタートや当日の足を確認した最終評価ではない。'
     elif ed.get('展示順位',0)>=4:
         axis_text+='ただし展示タイム順位は上位ではなく、能力評価だけで押し切るとは読まない。'

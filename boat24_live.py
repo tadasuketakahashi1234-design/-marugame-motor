@@ -94,7 +94,7 @@ def watch(stop):
         start=time.monotonic()
         try:
             if pending:publish();pending=False
-            subprocess.run(['git','fetch','origin','main'],check=True,stdout=subprocess.DEVNULL)
+            subprocess.run(['git','fetch','origin','+refs/heads/main:refs/remotes/origin/main'],check=True,stdout=subprocess.DEVNULL)
             # This is an isolated, agent-created worktree. Only reset after all
             # its previously generated observations have been published.
             subprocess.run(['git','reset','--hard','origin/main'],check=True,stdout=subprocess.DEVNULL)

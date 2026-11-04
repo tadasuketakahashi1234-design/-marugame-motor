@@ -167,7 +167,9 @@ def build_index(directory=DIRECTORY,now=None):
         data=read_history(path);records=list(data.get('records',{}).values());all_records+=records
         catalogs[day_key(path)]=data.get('catalog',{})
         latest_health=data.get('health',{}) or latest_health
-        days[day_key(path)]={'view_path':'day_views/'+day_key(path)+'.json','archive_path':'full_history/'+path.name,'summary':summary(records),'venues':{str(v):summary([r for r in records if r['venue']==v]) for v in range(1,25)}}
+        pointer=directory.parent/'day_views'/(day_key(path)+'.pointer.json')
+        view_info=json.loads(pointer.read_text()) if pointer.exists() else {}
+        days[day_key(path)]={'view_path':'day_views/'+view_info.get('path',day_key(path)+'.json'),'view_sha256':view_info.get('sha256'),'archive_path':'full_history/'+path.name,'summary':summary(records),'venues':{str(v):summary([r for r in records if r['venue']==v]) for v in range(1,25)}}
     legacy_path=directory.parent/'boat24_ledger.json'
     legacy=json.loads(legacy_path.read_text()) if legacy_path.exists() else {}
     from boat24_experiments import paired_report

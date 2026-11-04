@@ -9,7 +9,7 @@ from boat24_integrity import JST, atomic_write, timeparse, merge_ledgers
 from boat24_full_update import MANIFEST, merge_day, build_index
 from boat24_official import merge_cache
 from boat24_model_io import read_json, write_json
-from boat24_history_io import read_history,write_history,write_view,day_key,history_files
+from boat24_history_io import read_history,write_history,write_view,day_key,history_files,view_files
 
 
 def git(*args,cwd=None):return subprocess.check_output(['git',*args],cwd=cwd,text=True).strip()
@@ -49,8 +49,10 @@ def main():
                     else:chosen=merge_day(remote,incoming)
                     if day_key(dest) and dest.parent.name=='full_history':
                         original=dest;had_original=original.exists()
+                        cache_dir=dest.parent.parent/'day_views';before_views=set(cache_dir.glob(day_key(dest)+'-*.json'))
                         dest=write_history(dest,chosen);view=write_view(dest,chosen)
-                        paths.extend([str(p.relative_to(work)) for p in history_files(dest)]+[str(view.relative_to(work))])
+                        removed_views=before_views-set(cache_dir.glob(day_key(dest)+'-*.json'))
+                        paths.extend([str(p.relative_to(work)) for p in history_files(dest)]+[str(p.relative_to(work)) for p in view_files(dest)]+[str(p.relative_to(work)) for p in removed_views])
                         if had_original and not original.exists():paths.append(str(original.relative_to(work)))
                     else:write_json(dest,chosen);paths.append(path)
                 index=build_index(work/'omura/docs/full_history',dt.datetime.now(JST))

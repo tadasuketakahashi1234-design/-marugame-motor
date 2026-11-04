@@ -55,7 +55,7 @@ jobs:
           import json, os, subprocess
           from pathlib import Path
           assert os.environ['GITHUB_REPOSITORY']=='tadasuketakahashi1234-design/-marugame-motor'
-          subprocess.run(['git','fetch','origin','main'],check=True)
+          subprocess.run(['git','fetch','origin','+refs/heads/main:refs/remotes/origin/main'],check=True)
           for path in ['omura/docs/boat24_ledger.json','omura/docs/boat24_comparison.json','omura/docs/boat24_motor_analysis.json']:
               value=subprocess.check_output(['git','show','origin/main:'+path])
               json.loads(value)
@@ -73,7 +73,7 @@ jobs:
           python - <<'PY'
           import json, os, subprocess
           from pathlib import Path
-          subprocess.run(['git','fetch','origin','main'],check=True)
+          subprocess.run(['git','fetch','origin','+refs/heads/main:refs/remotes/origin/main'],check=True)
           before=json.loads(Path(os.environ['RUNNER_TEMP'],'boat24-before-predictions.json').read_text())['predictions']
           latest=json.loads(subprocess.check_output(['git','show','origin/main:omura/docs/boat24_ledger.json']))
           for code,record in before.items():

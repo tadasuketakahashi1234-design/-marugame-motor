@@ -15,12 +15,12 @@ from boat24_history_io import read_history,write_history,write_view,day_key,hist
 def git(*args,cwd=None):return subprocess.check_output(['git',*args],cwd=cwd,text=True).strip()
 
 
-def main():
+def _publish():
     root=Path(git('rev-parse','--show-toplevel'));manifest=json.loads((root/MANIFEST).read_text())
     local={p:(read_history(root/p) if day_key(p) and Path(p).parent.name=='full_history' else read_json(root/p)) for p in manifest['paths']}
     old_index=json.loads((root/manifest['index']).read_text())
     for attempt in range(5):
-        git('fetch','origin','main',cwd=root)
+        git('fetch','origin','+refs/heads/main:refs/remotes/origin/main',cwd=root)
         with tempfile.TemporaryDirectory(prefix='boat24-full-publish-') as tmp:
             work=Path(tmp)/'checkout';git('worktree','add','--detach',str(work),'origin/main',cwd=root)
             try:
@@ -68,5 +68,17 @@ def main():
         time.sleep(2)
     raise SystemExit('All-input publication failed; local observations remain in the failure artifact')
 
+
+def main():
+    # Both collectors share the same Git common directory, including worktrees.
+    # Only publication is serialized; odds retrieval and model work remain parallel.
+    import fcntl
+    root=Path(git('rev-parse','--show-toplevel'))
+    common=Path(git('rev-parse','--git-common-dir',cwd=root))
+    if not common.is_absolute():common=root/common
+    with (common/'boat24-publication.lock').open('a') as lock:
+        fcntl.flock(lock,fcntl.LOCK_EX)
+        try:return _publish()
+        finally:fcntl.flock(lock,fcntl.LOCK_UN)
 
 if __name__=='__main__':main()

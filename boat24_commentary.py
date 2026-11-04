@@ -2,7 +2,7 @@
 from boat24_context import number
 from boat24_integrity import timeparse
 
-SCHEMA='race-commentary-1'
+SCHEMA='race-commentary-2'
 
 def build(s):
     fs=s.get('input_snapshot',{}).get('features',[])
@@ -16,7 +16,9 @@ def build(s):
         first[int(boats[0])]+=p
         for boat in boats:inside[int(boat)]+=p
     order=sorted(first,key=lambda i:(-first[i],i));axis=order[0]
-    partners=sorted((i for i in inside if i!=axis),key=lambda i:(-inside[i],i))[:2]
+    from boat24_reasoning import build as reasoning
+    trace=reasoning(s)
+    partners=[r['lane'] for r in trace['axis_opponents'][:2]] if trace else sorted((i for i in inside if i!=axis),key=lambda i:(-inside[i],i))[:2]
     f=fs[axis-1];ed=f.get('exhibition_detail',{});ability=f.get('ability',{});course=f.get('course',{})
     def evidence(i):
         x=fs[i-1];a=x.get('ability',{});e=x.get('exhibition_detail',{});sd=x.get('start_detail',{});out=[]
@@ -59,11 +61,12 @@ def build(s):
         deployment+=f'{label(axis)}がインを確保して先に1マークを回れば、'+ '・'.join(str(i)+'号艇' for i in partners)+'の追走を本線に置く。'+f'一方、{label(attack)}がスタートで内を先行できれば、攻めと内の差し残りで相手順が変わる。これは条件付きの展開想定。'
     else:
         deployment+=f'{label(axis)}は先行艇を捕まえる展開が必要。{label(attack)}の攻めが届く場合と内側が残る場合を分け、枠番どおりに決まる前提では組まない。'
-    weather=s.get('input_snapshot',{}).get('previews',{}).get('weather',{});w=f.get('weather',{});wc=s.get('water_context',{});official=wc.get('latest_official_wind',{})
+    weather=s.get('input_snapshot',{}).get('previews',{}).get('weather',{});w={k:number(v) for k,v in (f.get('weather',{}) or weather).items() if number(v) is not None};wc=s.get('water_context',{});official=wc.get('latest_official_wind',{})
     bits=[]
     for key,title,unit in [('風速(m)','風速','m'),('波の高さ(cm)','波高','cm'),('気温(℃)','気温','℃'),('水温(℃)','水温','℃')]:
         if w.get(key) is not None:bits.append(f'{title}{w[key]:g}{unit}')
-    direction=official.get('wind_direction_literal');quality=official.get('wind_quality_literal')
+    same_water_observation=not weather.get('気象観測時刻') or weather.get('気象観測時刻')==official.get('measured_at')
+    direction=official.get('wind_direction_literal') if same_water_observation else None;quality=official.get('wind_quality_literal') if same_water_observation else None
     water=('当該場の観測は'+ '・'.join(bits)+'。') if bits else '当日の風・波は未取得。平水面や無風として扱わない。'
     if direction:water+=f'公式の風向表示は{direction}'+(f'／{quality}' if quality else '')+'。'
     measured=weather.get('気象観測時刻') or official.get('measured_at') or weather.get('取得日時')
@@ -91,6 +94,50 @@ def build(s):
     heads=sorted({t['combo'].split('-')[0] for t in tickets})
     price=('購入候補は'+ '・'.join(i+'号艇頭' for i in heads)+'。中心評価と、オッズを踏まえた購入対象は一致するとは限らない。全買い目の取得時払戻が総購入額を超える配分に限定する。') if tickets and plan.get('status')=='ready' else '買い目の採否は上の購入判定で確認。オッズ未取得・更新遅延と、最新オッズでも期待値条件に届かない見送りを分けて表示する。'
     rows=[{'lane':i,'name':ids.get(i,{}).get('name'),'mark':('◎' if i==axis else '○' if i==partners[0] else '▲' if i==partners[1] else '△'),'evidence':evidence(i),'motor_two_rate':fs[i-1].get('motor',{}).get('モーター2連対率')} for i in range(1,7)]
-    return {'schema':SCHEMA,'snapshot_id':s['id'],'basis':'saved_inputs_and_conditional_interpretation','headline':f'◎{axis}号艇を中心、相手は{partners[0]}・{partners[1]}号艇',
+    if trace:
+        comp=trace['components'];rival=trace['first_candidates'][1];final=trace['marginals'];place=trace['place_axis']
+        axis_text=f"1着評価の先頭は{label(axis)}、連軸の先頭は{label(place)}。最終1着評価の{label(rival)}との差は{trace['axis_gap']*100:.1f}ポイント。"
+        if trace['axis_gap']<.05:axis_text+='頭固定を強く推すほどの差ではなく、両艇を頭候補として併記する。'
+        context,market=comp.get('context'),comp.get('market')
+        if context:
+            independent=max(context,key=lambda x:x['first'])['lane']
+            axis_text+=f" 独自データ部分の先頭は{label(independent)}。{label(axis)} {context[axis-1]['first']*100:.1f}％、{label(rival)} {context[rival-1]['first']*100:.1f}％。"
+            if independent!=axis:axis_text+='市場情報との混合で順位が逆転した評価である。'
+        if market:axis_text+=f" 混合前の市場比率は{comp['market_weight']*100:.0f}％。市場由来の1着評価は{label(axis)} {market[axis-1]['first']*100:.1f}％、{label(rival)} {market[rival-1]['first']*100:.1f}％。"
+        axis_text+=' 軸艇の観測：'+'、'.join(evidence(axis))+'。'
+        support=next((r for r in trace.get('support',[]) if r['lane']==axis),{})
+        if support.get('races'):
+            axis_text+=f" 当該実進入コースの保存実績は{support['races']}走{support['wins']}勝。"
+            interval=support.get('historical_rate_wilson95')
+            if interval:axis_text+=f"過去比率の95％区間は{interval[0]*100:.1f}〜{interval[1]*100:.1f}％で、今回の勝率の区間ではない。"
+            if support['races']<20:axis_text+='20走未満のため、この実績だけで軸を固定しない。'
+        elif course.get('標本数'):
+            axis_text+=f" 当該進入コースの保存標本は{int(course['標本数'])}走。元の勝数・区間がこの版に保存されていないため、補正済みの率を今回の勝率と同一視しない。"
+        if s.get('phase')=='initial':axis_text+='展示前の暫定評価。'
+        sensitivity=trace.get('sensitivity',{})
+        if sensitivity.get('rows'):
+            effects=sorted(sensitivity['rows'],key=lambda r:-abs(r['first_delta'][axis-1]))[:4]
+            axis_text+=' 独自部分の感度確認：'+'／'.join(f"{r['label']} {r['first_delta'][axis-1]*100:+.1f}ポイント" for r in effects)+'。要素を外した場合との差で、足し合わせる寄与率ではない。'
+        opponent=f'{label(axis)}が1着になる条件で、2・3着候補を比較する。'
+        for r in trace['axis_opponents']:
+            i=r['lane'];opponent+=f" {label(i)}：条件付き2着{r['second']*100:.1f}％・3着{r['third']*100:.1f}％。"+'、'.join(evidence(i))+'。'
+            ed2=fs[i-1].get('exhibition_detail',{});co=fs[i-1].get('entry_detail',{}).get('展示コース')
+            if co:opponent+=f'展示{int(co)}コース。'
+            if ed2.get('展示順位')==1:opponent+='展示同率最速を含む上位艇。相手から外す際は価格条件と展開上の反証を確認する。'
+        arrangement=trace.get('observed_entry')
+        deployment=('展示の進入は'+'-'.join(map(str,arrangement))+'。') if arrangement else '展示進入は未確認。インを確保する条件を含め、隊形が確認できるまで暫定評価。'
+        deployment+='頭候補ごとに、モデルが想定する2着・3着を比較する。攻め方の成立条件と反証は下に示す。まくり・差しが成立する確率は未推定。'
+        quality=trace.get('quality',{}).get('weather',{})
+        if quality.get('excluded_from_prediction'):water+=' この観測は鮮度条件を満たさず、今回の天候・風の数値特徴を計算から除外した。直前の有利・不利の加点には使用していない。'
+        risks+=['軸の印、条件別比較値、取得時の価格条件は別の判断。1着先頭でも、頭固定の根拠や収益性が実証されたことにはならない。']
+        for row in rows:
+            row['evidence']+=['モデル内1着 '+format(final[row['lane']-1]['first']*100,'.1f')+'％／3着内 '+format(final[row['lane']-1]['top3']*100,'.1f')+'％']
+    headline=f'◎{axis}号艇を中心、相手は{partners[0]}・{partners[1]}号艇'
+    if trace and trace['axis_gap']<.05:
+        headline=f"頭候補{axis}・{trace['first_candidates'][1]}号艇の接戦／連軸{trace['place_axis']}号艇"
+        for row in rows:
+            row['mark']='頭候補' if row['lane'] in trace['first_candidates'] else row['mark']
+            if row['lane']==trace['place_axis']:row['mark']+='・連軸'
+    return {'schema':SCHEMA,'snapshot_id':s['id'],'basis':'saved_inputs_and_conditional_interpretation','headline':headline,
             'forecast_lines':sorted(s.get('probabilities',{}),key=lambda k:(-s['probabilities'][k],k))[:3],'axis':axis_text,'opponents':opponent,'deployment':deployment,'water':water,'risks':risks,'price':price,'boats':rows,
-            'context_at':s.get('context_snapshot_at',s.get('created_at')),'notice':'映像を自動解析した見解ではありません。確認できた数値・公式情報からの条件付き考察です。'}
+            'reasoning':trace,'context_at':s.get('context_snapshot_at',s.get('created_at')),'notice':'数値はモデル内比較で、検証済みの的中確率ではありません。映像の行き足・起こし位置・助走距離・旋回出口は未計測です。'}

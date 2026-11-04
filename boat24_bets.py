@@ -37,7 +37,7 @@ def no_gami_plan(probabilities, odds, count=12):
              synthetic_odds=1/sum(1/float(q) for _,_,q,_ in chosen))
 
 
-def _balanced_fixed_budget(probabilities,odds,budget=1200,frontier_limit=256):
+def _balanced_fixed_budget(probabilities,odds,budget=1200,frontier_limit=256,*,max_ticket_share=1.,lower_probability_bounds=False):
  """Compare variable ticket counts and integer stakes on a Pareto frontier.
 
  Balance score = hit probability * (estimated ROI - 1). Positive estimated
@@ -62,7 +62,9 @@ def _balanced_fixed_budget(probabilities,odds,budget=1200,frontier_limit=256):
  if len(quotes)!=120:return base
  try:ps={c:float(probabilities[c]) for c in quotes}
  except (KeyError,TypeError,ValueError):return dict(base,status='probabilities_invalid')
- if any(not math.isfinite(p) or p<0 or p>1 for p in ps.values()) or abs(sum(ps.values())-1)>1e-6:
+ mass=sum(ps.values())
+ if not 0<max_ticket_share<=1:raise ValueError('Ticket share must be in (0,1]')
+ if any(not math.isfinite(p) or p<0 or p>1 for p in ps.values()) or (not 0<mass<=1+1e-6 if lower_probability_bounds else abs(mass-1)>1e-6):
   return dict(base,status='probabilities_invalid')
  if max(ps[c]*pay/100 for c,(_,pay) in quotes.items())<=1+1e-12:
   return dict(base,status='no_positive_value')
@@ -83,10 +85,11 @@ def _balanced_fixed_budget(probabilities,odds,budget=1200,frontier_limit=256):
   q,pay=quotes[c];p=ps[c]
   if pay<=0 or p<=0:continue
   minimum=budget//pay+1
-  if minimum>units:continue
+  maximum=min(units,math.floor(units*max_ticket_share+1e-9))
+  if minimum>maximum:continue
   previous=states;states=[list(rows) for rows in previous]
   for spent in range(minimum,units+1):
-   for bet in range(minimum,spent+1):
+   for bet in range(minimum,min(spent,maximum)+1):
     states[spent].extend((hit+p,expected+p*pay*bet,picks+((c,bet),)) for hit,expected,picks in previous[spent-bet])
    states[spent]=prune(states[spent])
  feasible=states[units]
@@ -110,12 +113,13 @@ def _balanced_fixed_budget(probabilities,odds,budget=1200,frontier_limit=256):
              synthetic_odds=1/sum(1/t['odds'] for t in tickets))
 
 
-def balanced_plan(probabilities,odds,budget=1200,frontier_limit=256):
+def balanced_plan(probabilities,odds,budget=1200,frontier_limit=256,*,max_ticket_share=1.,lower_probability_bounds=False):
  """Budget is a cap, not a spending target; prefer less stake on equal scores."""
- maximum=_balanced_fixed_budget(probabilities,odds,budget,frontier_limit)
+ constraints={'max_ticket_share':max_ticket_share,'lower_probability_bounds':lower_probability_bounds}
+ maximum=_balanced_fixed_budget(probabilities,odds,budget,frontier_limit,**constraints)
  if maximum['status'] in ('odds_incomplete','probabilities_invalid','no_positive_value'):
   return maximum
- plans=[_balanced_fixed_budget(probabilities,odds,b,frontier_limit) for b in range(100,budget,100)]+[maximum]
+ plans=[_balanced_fixed_budget(probabilities,odds,b,frontier_limit,**constraints) for b in range(100,budget,100)]+[maximum]
  ready=[p for p in plans if p['status']=='ready']
  if not ready:return maximum
  best=dict(max(ready,key=lambda p:(round(p['balance_score'],12),round(p['estimated_hit_probability'],12),round(p['estimated_roi'],12),-p['budget'])))

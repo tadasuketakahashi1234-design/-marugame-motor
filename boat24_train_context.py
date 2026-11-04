@@ -194,6 +194,8 @@ def race_features(code,card,data,history,asof,previous_motor=None,course_stats=N
                            motors,contexts,previews['ex'],previews['st'],previews['weather'],previews['original'],day)
     if course_stats is not None:add_course_features(features,card,venue,course_stats)
     metadata=add_priority_features(features,card,data.get('title',{}).get(code,{}),data.get('registry',{}),course_stats,venue,day,limit)
+    from boat24_quality import prepare as prepare_quality
+    prepare_quality(features,previews,effective)
     from boat24_details import attach
     detail=attach(features,code,card,data,previews,limit,effective)
     return {'race_context':metadata,'features':features,'contexts':contexts,'previews':previews,'cutoff':limit,'asof':effective,'detail':detail,
@@ -261,6 +263,8 @@ def build_model(today,days=28):
             if initial:tactics.attach(initial['features'],card,int(code[8:10]),d)
             for phase,snapshot in [('preview',built),('initial',initial)]:
                 if not snapshot:continue
+                from boat24_quality import prepare as prepare_quality
+                prepare_quality(snapshot['features'],snapshot.get('previews',{}),snapshot.get('asof') or snapshot['cutoff']-dt.timedelta(minutes=FREEZE_MINUTES,microseconds=1))
                 for lane,f in enumerate(snapshot['features'],1):
                     course=int(f.get('start',{}).get('展示進入',lane))
                     samples.append({'phase':phase,'date':d,'code':code,'venue':int(code[8:10]),'course':course,'lane':lane,'finish':fm[str(lane)],'features':f,'snapshot_id':snapshot.get('snapshot_id'),'feature_schema':SCHEMA})
@@ -299,6 +303,9 @@ def build_model(today,days=28):
     model['approved_candidate_phases']=[r['phase'] for r in model['forward_evidence']['phase_reports'] if r['adoption_approved']]
     import hashlib
     model['generated_at']=dt.datetime.now(JST).isoformat()
+    from boat24_quality import POLICY as INPUT_POLICY
+    model['input_policy']=INPUT_POLICY
+    if model.get('calibration',{}).get('probability_display_approved'):model['validated_input_policy']=INPUT_POLICY
     model['model_id']=hashlib.sha256(json.dumps(model,ensure_ascii=False,sort_keys=True,separators=(',',':')).encode()).hexdigest()
     return model
 

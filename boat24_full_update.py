@@ -16,6 +16,8 @@ from boat24_priority import add_priority_features
 from boat24_behavior import BehaviorStats
 from boat24_water import SurfaceStats,PROFILES
 from boat24_bets import optimize, balanced_plan, PURCHASE_POLICY
+from boat24_risk import robust_plan,POLICY as RISK_POLICY
+from boat24_quality import prepare as prepare_quality,POLICY as INPUT_POLICY
 from boat24_offers import register_offers,report as offer_report,PROTOCOL_ID
 from boat24_official_results import attach_results, CACHE as RESULT_CACHE
 from boat24_operations import catalog,health
@@ -31,7 +33,8 @@ def latest(rec):
            if timeparse(r.get('created_at')) and timeparse(r.get('cutoff'))
            and timeparse(r['created_at'])<timeparse(r['cutoff'])
            and r.get('evaluation_eligible') is True]
-    return max(valid,key=lambda r:((timeparse(r.get('context_snapshot_at')) or timeparse(r['created_at'])),timeparse(r['created_at']),r['id'])) if valid else None
+    from boat24_quote_context import information_level
+    return max(valid,key=lambda r:(information_level(r),(timeparse(r.get('context_snapshot_at')) or timeparse(r['created_at'])),timeparse(r['created_at']),r['id'])) if valid else None
 
 
 def make_snapshot(code,card,data,model,history,now,previous=None,clock=None):
@@ -71,13 +74,15 @@ def make_snapshot(code,card,data,model,history,now,previous=None,clock=None):
     from boat24_factors import audit
     detail=attach_details(built['features'],code,card,data,built['previews'],cutoff,now,official)
     Tactics(model.get('tactical_state')).attach(built['features'],card,int(code[8:10]),day)
+    input_quality=prepare_quality(built['features'],built['previews'],now)
     # Do not append identical forecasts just because an unchanged report was
     # fetched again or the wall clock advanced. Freshness is still displayed.
     digest_features=[{k:v for k,v in f.items() if k!='data_quality'} for f in built['features']]
     comments_identity={lane:{k:c.get(k) for k in ('racer','comment','source')} for lane,c in official.get('comments',{}).items()}
-    h=fingerprint(digest_features,built['previews']['odds'],model,{'before':official.get('before'),'comments':comments_identity,'race_flags':official.get('race_flags'),'purchase_policy':PURCHASE_POLICY,'purchase_protocol':PROTOCOL_ID,'presentation_schema':'race-commentary-1'})
+    h=fingerprint(digest_features,built['previews']['odds'],model,{'before':official.get('before'),'comments':comments_identity,'race_flags':official.get('race_flags'),'purchase_policy':PURCHASE_POLICY,'purchase_protocol':PROTOCOL_ID,'presentation_schema':'race-commentary-2','risk_policy':RISK_POLICY,'input_policy':INPUT_POLICY})
     if previous and previous.get('id')==h:return None,'unchanged_inputs'
-    result=predict(built['features'],int(code[8:10]),day,model,built['previews']['odds'])
+    inference_model=model if model.get('validated_input_policy')==INPUT_POLICY else {**model,'phase_calibration':{}}
+    result=predict(built['features'],int(code[8:10]),day,inference_model,built['previews']['odds'])
     baseline=result
     candidate=predict(built['features'],int(code[8:10]),day,{**model,'enabled_groups':[g for g in ALL_GROUPS if g!='data_quality'],'phase_calibration':{}},built['previews']['odds'])
     gate=next((r for r in model.get('forward_evidence',{}).get('phase_reports',[]) if r['phase']==candidate['phase']),{})
@@ -95,7 +100,11 @@ def make_snapshot(code,card,data,model,history,now,previous=None,clock=None):
     result['details']=detail
     valid_odds={c:number(built['previews']['odds'].get('3連単_'+c)) for c in result['probabilities']}
     result['allocation']=optimize(result['probabilities'],valid_odds)
-    result['purchase_plan']=balanced_plan(result['probabilities'],valid_odds)
+    result['input_quality']=input_quality
+    if model.get('validated_input_policy')!=INPUT_POLICY:
+        result['probability_verified']=False
+        result['probability_verification_reason']='観測鮮度・決まり手欠損の新しい扱いを前向き検証中'
+    result['purchase_plan']=robust_plan(result['probabilities'],valid_odds,verified=result['probability_verified'],inputs_ready=input_quality['purchase_inputs_ready'])
     result['purchase_plan']['protocol_id']=PROTOCOL_ID
     quote_time=built['previews']['odds'].get('取得日時')
     result['purchase_plan']['odds_observed_at']=quote_time
@@ -123,15 +132,18 @@ def make_snapshot(code,card,data,model,history,now,previous=None,clock=None):
     result['extended_inputs_complete']=all(result['feature_usage'][g]['status']=='used' and not result['feature_usage'][g].get('unused_fields') for g in ('course','style','maintenance','comments'))
     result['extended_inputs_complete']=result['extended_inputs_complete'] and result['feature_usage']['wind']['status']=='used' and (PROFILES[str(int(code[8:10]))]['tidal_range']=='なし' or result['feature_usage']['tide']['status']=='used')
     result['complete_inputs']=result['complete_inputs'] and result['extended_inputs_complete'] and built['race_context']['unknown_sex_count']==0 and all(result['feature_usage'][g]['status']=='used' and result['feature_usage'][g]['used_lanes']==6 for g in ('race_conditions','opposition','local_support')) and all(f['local_support'].get('当地公式成績未確認')==0 for f in built['features'])
-    completed=clock() if clock else now
-    # Real calls must finish before the freeze, not merely start before it.
-    if completed>=cutoff-dt.timedelta(minutes=FREEZE_MINUTES):return None,'computed_after_freeze'
-    result.update({'id':h,'created_at':now.isoformat(),'computed_at':completed.isoformat(),'cutoff':cutoff.isoformat(),
+    result.update({'id':h,'created_at':now.isoformat(),'computed_at':now.isoformat(),'cutoff':cutoff.isoformat(),
                    'evaluation_eligible':True,'model_generated_at':model['generated_at'],'model_id':model.get('model_id'),
-                   'input_snapshot':{'race_context':built['race_context'],'features':built['features'],'previews':built['previews'],
+                   'input_snapshot':{'race_context':built['race_context'],'card':card,'title':title,'features':built['features'],'previews':built['previews'],
                                      'motor_history':built['contexts'],'official':official,'tide_schedule':data.get('official',{}).get('tides',{}).get(day), 'source_times':built['source_times'],
                                      'feature_schema':SCHEMA,'supplemental_previews':{k:safe_row(data.get(k,{}).get(code),cutoff,now) for k in ('tokuten','od1','od2')},
                                      'missing_data_reasons':{lane:{'motor':ctx.get('status'),'period_verified':bool(ctx.get('period'))} for lane,ctx in built['contexts'].items()},'retained_sources':retained,'captured_at':now.isoformat()}})
+    result['race_code']=code
+    from boat24_reasoning import build as explain
+    result['race_reasoning']=explain(result,model,include_sensitivity=input_quality['purchase_inputs_ready'] and cutoff-now<=dt.timedelta(minutes=30))
+    completed=clock() if clock else now
+    if completed>=cutoff-dt.timedelta(minutes=FREEZE_MINUTES):return None,'computed_after_freeze'
+    result['computed_at']=completed.isoformat()
     return json.loads(json.dumps(result,ensure_ascii=False,allow_nan=False)),None
 
 

@@ -6,7 +6,8 @@ import unittest
 from unittest.mock import patch
 from boat24_integrity import JST,result_paper,merge_ledgers
 from boat24_official_results import parse_result,merge_cache
-from boat24_offers import register_offers,report,PROTOCOL_ID
+from boat24_offers import register_offers,report
+PROTOCOL_ID="balanced-no-gami-v2-first-ready-1" # Actual historical protocol, before stress allocation.
 from boat24_settlement import settle_record,settle_legacy
 from boat24_full_update import merge_day,summary
 

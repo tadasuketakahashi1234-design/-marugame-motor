@@ -47,8 +47,8 @@ def build(s):
     axis_course=f.get('entry_detail',{}).get('展示コース')
     attack=next((i for i in order if i!=axis and fs[i-1].get('entry_detail',{}).get('展示コース',i)>=3),partners[0])
     deployment=(f'展示の並びは{observed_entry}。' if observed_entry else '展示の進入は未確認。')+(f'本番の統計上の第一想定は{entry}。' if entry else '本番の進入想定は未確認。')
-    if axis_course==1:
-        deployment+=f'{label(axis)}が先に1マークを回れば、'+ '・'.join(str(i)+'号艇' for i in partners)+'の追走を本線に置く。'+f'一方、{label(attack)}がスタートで内を先行できれば、攻めと内の差し残りで相手順が変わる。これは条件付きの展開想定。'
+    if axis_course==1 or axis_course is None and axis==1:
+        deployment+=f'{label(axis)}がインを確保して先に1マークを回れば、'+ '・'.join(str(i)+'号艇' for i in partners)+'の追走を本線に置く。'+f'一方、{label(attack)}がスタートで内を先行できれば、攻めと内の差し残りで相手順が変わる。これは条件付きの展開想定。'
     else:
         deployment+=f'{label(axis)}は先行艇を捕まえる展開が必要。{label(attack)}の攻めが届く場合と内側が残る場合を分け、枠番どおりに決まる前提では組まない。'
     weather=s.get('input_snapshot',{}).get('previews',{}).get('weather',{});w=f.get('weather',{});wc=s.get('water_context',{});official=wc.get('latest_official_wind',{})
@@ -81,7 +81,7 @@ def build(s):
     risks.append('進入の変更、内側のスタート遅れ、観測後の風・波の変化で本線は崩れる。取得した数値と、この文章の展開解釈を区別している。')
     plan=s.get('purchase_plan',{});tickets=plan.get('tickets',[])
     heads=sorted({t['combo'].split('-')[0] for t in tickets})
-    price=('購入候補は'+ '・'.join(i+'号艇頭' for i in heads)+'。中心評価と、オッズを踏まえた購入対象は一致するとは限らない。全買い目の取得時払戻が総購入額を超える配分に限定する。') if tickets and plan.get('status')=='ready' else '買い目の採否は下の購入判定で確認。オッズ未取得・更新遅延と、最新オッズでも期待値条件に届かない見送りを分けて表示する。'
+    price=('購入候補は'+ '・'.join(i+'号艇頭' for i in heads)+'。中心評価と、オッズを踏まえた購入対象は一致するとは限らない。全買い目の取得時払戻が総購入額を超える配分に限定する。') if tickets and plan.get('status')=='ready' else '買い目の採否は上の購入判定で確認。オッズ未取得・更新遅延と、最新オッズでも期待値条件に届かない見送りを分けて表示する。'
     rows=[{'lane':i,'name':ids.get(i,{}).get('name'),'mark':('◎' if i==axis else '○' if i==partners[0] else '▲' if i==partners[1] else '△'),'evidence':evidence(i),'motor_two_rate':fs[i-1].get('motor',{}).get('モーター2連対率')} for i in range(1,7)]
     return {'schema':SCHEMA,'snapshot_id':s['id'],'basis':'saved_inputs_and_conditional_interpretation','headline':f'◎{axis}号艇を中心、相手は{partners[0]}・{partners[1]}号艇',
             'forecast_lines':sorted(s.get('probabilities',{}),key=lambda k:(-s['probabilities'][k],k))[:3],'axis':axis_text,'opponents':opponent,'deployment':deployment,'water':water,'risks':risks,'price':price,'boats':rows,

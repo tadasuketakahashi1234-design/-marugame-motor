@@ -38,14 +38,14 @@ class OfficialOddsTests(unittest.TestCase):
    r=reprice(s,quotes,model,CODE,NOW)
    self.assertIsNotNone(r);self.assertEqual(s,before)
    self.assertNotEqual(r['input_snapshot']['features'][0]['market_detail']['市場1着周辺確率'],.99)
-   self.assertEqual(r['context_snapshot_at'],s['created_at']);self.assertFalse(r['complete_inputs'])
+   self.assertEqual(r['context_snapshot_at'],s['created_at']);self.assertEqual(r['input_snapshot']['captured_at'],NOW.isoformat());self.assertFalse(r['complete_inputs'])
    self.assertIsNone(reprice(s,quotes,{**model,'model_id':'other'},CODE,NOW))
    self.assertIsNone(reprice(s,quotes,model,CODE,NOW+dt.timedelta(minutes=6)))
    self.assertIsNone(reprice(s,quotes,model,CODE,NOW,clock=lambda:NOW.replace(hour=9,minute=14)))
  def test_weather_and_missing_inputs_cannot_be_invented_in_commentary(self):
   fs=[{'ability':{'全国勝率':4+i}} for i in range(6)]
   s={'id':'a','phase':'initial','created_at':NOW.isoformat(),'probabilities':{'1-2-3':1},'input_snapshot':{'features':fs},'purchase_plan':{'status':'odds_stale'}}
-  c=build(s);self.assertIn('未取得',c['water']);self.assertIn('展示前',c['axis']);self.assertNotIn('無風。',c['water'])
+  c=build(s);self.assertIn('未取得',c['water']);self.assertIn('展示前',c['axis']);self.assertIn('インを確保',c['deployment']);self.assertNotIn('無風。',c['water'])
   self.assertIn('映像',c['notice']);self.assertEqual(len(c['boats']),6)
   s['input_snapshot']['features'][0].update(weather={'風速(m)':6,'波の高さ(cm)':8},start_detail={'展示F':1})
   s['input_snapshot']['previews']={'weather':{'取得日時':'2026-11-04T08:00:00+09:00'}}

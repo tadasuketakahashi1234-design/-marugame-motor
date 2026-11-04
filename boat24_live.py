@@ -45,6 +45,7 @@ def reprice(base,quotes,model,code,now,clock=None):
     plan=balanced_plan(out['probabilities'],odds)
     plan.update(protocol_id=PROTOCOL_ID,odds_observed_at=quotes['取得日時'],odds_source=quotes.get('source_url'),odds_fetched_at=quotes.get('取得完了日時'))
     out['purchase_plan']=plan
+    out['input_snapshot']['captured_at']=now.isoformat()
     out['input_snapshot']['features']=features
     out['input_snapshot'].setdefault('previews',{})['odds']=copy.deepcopy(quotes)
     out['input_snapshot'].setdefault('source_times',{})['odds']=quotes['取得日時']

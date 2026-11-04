@@ -48,6 +48,7 @@ jobs:
           node tests/integrated_ui_smoke.js
           node tests/ui_smoke.js
           node tests/no_gami_ui.js
+          node tests/forecast_ui.js
       - name: Load current inputs and preserve original history for validation
         run: |
           python - <<'PY'
@@ -66,7 +67,7 @@ jobs:
       - name: Recover history and official settlements before model training
         run: python boat24_recover.py
       - name: Capture and publish all six improvements with repeated observations
-        run: python boat24_cycle.py --seconds 180
+        run: BOAT24_LIVE_ODDS_WORKER=1 python boat24_cycle.py --seconds 180
       - name: Verify all original forecast and comparison records
         run: |
           python - <<'PY'
@@ -126,13 +127,23 @@ jobs:
                   for record in ledger['records'].values():
                       for snap in record['revisions'].values():
                           assert timeparse(snap['created_at'])<timeparse(snap['cutoff']) and snap['evaluation_eligible']
-                          assert set(snap['feature_usage']) >= {'weather','exhibition','start','motor_history','odds'}
+                          if not snap.get('_details_compacted'):assert set(snap['feature_usage']) >= {'weather','exhibition','start','motor_history','odds'}
+                          else:assert record.get('race_commentary'), 'Missing race-specific reasoning'
                           plan=snap.get('purchase_plan',{})
                           if plan.get('policy')==PURCHASE_POLICY and plan.get('status')=='ready':
                               tickets=plan['tickets'];total=sum(t['stake'] for t in tickets)
                               assert tickets and len({t['combo'] for t in tickets})==len(tickets)
                               assert total==plan['budget'] and total<=plan['budget_cap'] and plan['estimated_roi']>1
                               assert all(t['stake']>0 and t['stake']%100==0 and t['expected_return']>total for t in tickets)
+                  if ledger['records']:
+                      import gzip
+                      archive=json.loads(read(raw+entry.get('archive_path','full_history/'+index['latest_day']+'.json')))
+                      code=next(iter(ledger['records']))
+                      path=archive.get('history_storage',{}).get('record_paths',{}).get(code)
+                      if path:
+                          with urllib.request.urlopen(raw+'full_history/'+path+'?verify='+str(time.time_ns()),timeout=30) as response:full_record=json.loads(gzip.decompress(response.read()))
+                      else:full_record=archive['records'][code]
+                      assert all(len(s['input_snapshot']['features'])==6 for s in full_record['revisions'].values())
                   break
               except Exception:
                   if attempt==11:raise
@@ -143,7 +154,7 @@ jobs:
 
           PY
       - name: Keep collecting live previews and results while the runner is active
-        run: python boat24_cycle.py --seconds 18000
+        run: BOAT24_LIVE_ODDS_WORKER=1 python boat24_cycle.py --seconds 18000
       - name: Preserve observations if any step fails
         if: failure()
         uses: actions/upload-artifact@v4
@@ -158,6 +169,7 @@ jobs:
             omura/docs/boat24_full_model.json*
             boat24_full_pending.json
             omura/docs/boat24_official_cache.json
+            boat24-live-worker/omura/docs/
             omura/docs/boat24_identity_cache.json
             omura/docs/boat24_official_results.json
           retention-days: 30

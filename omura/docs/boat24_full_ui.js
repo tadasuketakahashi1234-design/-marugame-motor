@@ -8,19 +8,18 @@ if(linkedVenue!==null&&/^(?:[0-9]|1[0-9]|2[0-4])$/.test(linkedVenue))$('venue').
 const raceStates={waiting_initial:'展示前予想の保存待ち',program_unconfirmed:'番組未確認',cancelled:'中止・順延',cutoff_unknown:'締切時刻未確認',closed_no_forecast:'締切済み・新モデル予想なし',result_pending:'結果・払戻金待ち',saved:'予想保存済み',settled:'結果確定'};
 const statuses={shadow:'候補予想で検証中',not_applicable:'対象外',not_implemented:'取得処理が未実装',partial_used:'一部を計算に使用',not_contributing_market_only:'検証で市場のみ採用・文脈は未採用',used:'計算に使用',missing:'未取得',partial:'一部のみ取得',historical_sample_insufficient:'参照できる過去標本が不足'};
 const pct=x=>x==null?'未集計':(100*x).toFixed(1)+'%',num=x=>x==null?'未取得':Number(x).toFixed(2);
-let index=null,data=null,selected=null,loading=0,liveRef='main',refChecked=0;
-async function resolveLiveRef(){
- if(Date.now()-refChecked<45000)return;refChecked=Date.now();
- try{const r=await fetch('https://api.github.com/repos/tadasuketakahashi1234-design/-marugame-motor/commits/main?t='+Date.now(),{cache:'no-store',signal:AbortSignal.timeout(8000)});if(!r.ok)return;const d=await r.json();if(/^[a-f0-9]{40}$/.test(d.sha||''))liveRef=d.sha}catch(e){/* Keep the last verified commit or the regular data sources. */}
+let index=null,data=null,selected=null,loading=0,liveRef='main',refChecked=0,renderedRef='',busy=false,raceVisible=24;
+async function resolveLiveRef(force=false){
+ if(!force&&Date.now()-refChecked<60000)return;refChecked=Date.now();
+ try{const r=await fetch('https://api.github.com/repos/tadasuketakahashi1234-design/-marugame-motor/commits/main?t='+Date.now(),{cache:'no-store',signal:AbortSignal.timeout(8000)});if(!r.ok){liveRef='main';return}const d=await r.json();if(/^[a-f0-9]{40}$/.test(d.sha||''))liveRef=d.sha}catch(e){liveRef='main'}
 }
 const latest=r=>r.revisions?.[r.result?.selection_snapshot_id]||Object.values(r.revisions||{}).filter(s=>s.evaluation_eligible&&Date.parse(s.created_at)<Date.parse(s.cutoff)).sort((a,b)=>b.created_at.localeCompare(a.created_at)||b.id.localeCompare(a.id))[0];
 async function getJSON(path){
  const root='https://raw.githubusercontent.com/tadasuketakahashi1234-design/-marugame-motor/'+liveRef+'/omura/docs/';
  const urls=[root+path,'./'+path];
- const got=await Promise.allSettled(urls.map(async u=>{const r=await fetch(u+'?t='+Date.now(),{cache:'no-store',signal:AbortSignal.timeout(20000)});if(!r.ok)throw Error('HTTP '+r.status);if(path.endsWith('.gz')){if(typeof DecompressionStream==='undefined')throw Error('このブラウザでは圧縮履歴を開けません');return new Response(r.body.pipeThrough(new DecompressionStream('gzip'))).json()}return r.json()}));
- const valid=got.filter(r=>r.status==='fulfilled').map(r=>r.value);
- if(!valid.length)throw Error('総合予想データを読み込めません');
- return valid.sort((a,b)=>Date.parse(b.updated_at||b.generated_at||0)-Date.parse(a.updated_at||a.generated_at||0))[0];
+ let error;
+ for(const u of urls){try{const r=await fetch(u+'?t='+Date.now(),{cache:'no-store',signal:AbortSignal.timeout(8000)});if(!r.ok)throw Error('HTTP '+r.status);if(path.endsWith('.gz')){if(typeof DecompressionStream==='undefined')throw Error('このブラウザでは圧縮履歴を開けません');return await new Response(r.body.pipeThrough(new DecompressionStream('gzip'))).json()}return await r.json()}catch(e){error=e}}
+ throw Error('最新データの再取得に失敗：'+(error?.message||'通信エラー'));
 }
 const purchasePolicy='balanced-no-gami-v2';
 function purchaseSnapshot(r,fallback){
@@ -34,11 +33,29 @@ function purchaseView(s){
  const current=p.policy===purchasePolicy;
  const valid=current&&p.status==='ready'&&tickets.length>0&&new Set(tickets.map(t=>t.combo)).size===tickets.length&&total===p.budget&&total<=p.budget_cap&&p.estimated_roi>1&&tickets.every(t=>Number.isInteger(t.stake)&&t.stake>=100&&t.stake%100===0&&Number.isFinite(t.odds)&&Math.floor((t.odds+1e-9)*10)*10*(t.stake/100)>total&&t.expected_return>total);
  const reasons={odds_stale:'オッズが古い・取得時刻不明',odds_incomplete:'オッズ未取得・不足',probabilities_invalid:'確率データの整合性未確認',no_positive_value:'モデル推定の期待回収率100％超の案なし',no_feasible_plan:'ガミなし条件の配分なし'};
+ if(['odds_stale','odds_incomplete'].includes(p.status))return {pending:true,html:'<strong>判定保留（購入候補なし）</strong><br>'+(!p.odds_observed_at?'オッズ未取得':p.status==='odds_incomplete'?'オッズ120通りが揃っていません':'オッズ更新遅延')+'<br>価格が低いことによる見送りではありません',metrics:'オッズ更新 '+esc(p.odds_observed_at||'未取得')};
  if(!valid)return {html:'<strong>見送り</strong><br>'+(!current?'点数可変の新条件の保存待ち（旧予想は詳細に保持）':reasons[p.status]||'配分の整合性未確認'),metrics:'購入候補なし'};
  if(!closed&&Date.now()>=Date.parse(s.cutoff)-120000)return {html:'<strong>見送り：締切2分前</strong>',metrics:'新規の購入候補表示を停止'};
- if(!closed&&!fresh)return {html:'<strong>見送り：オッズ再取得待ち</strong>',metrics:'オッズが古い・取得時刻不明'};
+ if(!closed&&!fresh)return {html:'<strong>判定保留：オッズ更新遅延</strong>',metrics:'オッズが古い・取得時刻不明'};
  const minimum=Math.min(...tickets.map(t=>t.expected_return));
  return {ready:!closed,html:(closed?'<b>締切済み・保存時の参考</b><br>':'')+'<b>'+tickets.length+'点・計'+total+'円</b><br>'+tickets.map(t=>esc(t.combo)+'：'+t.stake+'円').join('<br>'),metrics:'取得時の最低想定払戻 '+minimum+'円<br>最低想定利益 ＋'+(minimum-total)+'円<br>モデル内試算回収率 '+pct(p.estimated_roi)+'（未校正・実績ではありません）<br>合成 '+num(p.synthetic_odds)+'倍<br>オッズ時刻 '+esc(p.odds_observed_at)+'<br>候補計算 '+esc(s.created_at)+'<br>点数・配分の近似比較／的中確率とのバランス優先'};
+}
+function renderNarrative(c){
+ if(!c)return '<section class="race-analysis"><h4>予想見解</h4><p>この保存版の見解を準備中です。補足データで確認できる範囲を表示します。</p></section>';
+ return '<section class="race-analysis"><h4>'+esc(c.headline)+'</h4>'+((c.forecast_lines||[]).length?'<p><b>展開予想の本線</b> '+c.forecast_lines.map(esc).join(' ／ ')+'<br><span class="small muted">購入対象・金額は上の購入判定で確認してください。</span></p>':'')+[['本線の評価',c.axis],['相手の評価',c.opponents],['想定展開',c.deployment],['当日の水面をどう読むか',c.water],['買い目との関係',c.price]].map(([h,t])=>'<div><b>'+h+'</b><p>'+esc(t)+'</p></div>').join('')+'<div><b>本線が崩れる条件・注意点</b><p>'+c.risks.map(esc).join('<br>')+'</p></div><details><summary>6艇を比較する</summary><div class="boat-comparison">'+c.boats.map(b=>'<div><b>'+esc(b.mark)+' '+b.lane+'号艇 '+esc(b.name||'')+'</b><p>'+b.evidence.map(esc).join(' ／ ')+'</p></div>').join('')+'</div></details><p class="small muted">'+esc(c.notice)+'</p></section>';
+}
+async function openDetail(){
+ const r=data.records?.[selected],snap=r&&latest(r);if(!snap)return;
+ if($('fullSupplement'))$('fullSupplement').open=true;
+ if(!snap._details_compacted){renderDetail();return}
+ const code=selected;$('fullDetail').innerHTML='<p>このRの補足データと保存入力を読込中…</p>';
+ try{const full=await readRaceArchive(code);if(code!==selected)return;full.race_commentary=r.race_commentary;data.records[code]=full;renderDetail()}catch(e){$('fullDetail').innerHTML='<p>'+esc(e.message)+'</p>'}
+}
+async function readRaceArchive(code){
+ const archived=await getJSON(index.days?.[$('fullDate').value]?.archive_path||'full_history/'+$('fullDate').value+'.json');
+ const path=archived.history_storage?.record_paths?.[code];
+ const record=path?await getJSON('full_history/'+path):archived.records?.[code];
+ if(!record)throw Error('このRの補足データを取得できません');return record;
 }
 function records(){const venue=Number($('venue').value);return Object.values(data?.records||{}).filter(r=>!venue||Number(r.venue)===venue).sort((a,b)=>b.race_code.localeCompare(a.race_code))}
 function catalogRows(){const v=Number($('venue').value);return Object.values(data?.catalog||index?.catalogs?.[$('fullDate').value]||{}).filter(r=>!v||r.venue===v).sort((a,b)=>a.race_code.localeCompare(b.race_code))}
@@ -48,8 +65,9 @@ function render(){
  const phaseCounts={initial:0,preview:0,partial:0,missed:0,old:0};for(const r of list){const snap=latest(r),stage=snap?.phase;if(stage==='initial'&&Date.now()>=Date.parse(snap.cutoff))phaseCounts.missed++;else if(stage in phaseCounts)phaseCounts[stage]++;else phaseCounts.old++}
  const group=index.days?.[day],stats=venue==='0'?group?.summary:group?.venues?.[venue];
  const h=data.health||index.health||{},age=(Date.now()-Date.parse(h.attempt_at||data.updated_at))/60000,today=new Intl.DateTimeFormat('sv-SE',{timeZone:'Asia/Tokyo'}).format(new Date())===day,stale=today&&age>(h.stale_after_minutes||5);
- $('fullStatus').textContent=(stale?'【更新遅延 '+Math.floor(age)+'分】 ':h.state==='degraded'?'【一部取得失敗・未保存あり】 ':'')+'総合予想更新：'+(data.updated_at||index.updated_at)+' ／ '+(index.model||'')+(h.collection_mode==='live_watch'?' ／ ライブ更新を監視中':' ／ 取得できた情報で再計算')+(h.missing_forecasts?.length?' ／ 保存待ち '+h.missing_forecasts.length+'R':'');
+ $('fullStatus').textContent=(stale?'【更新遅延 '+Math.floor(age)+'分】 ':h.state==='degraded'?'【一部の直前情報が未取得】 ':'')+'総合予想更新：'+(data.updated_at||index.updated_at)+' ／ '+(index.model||'')+(h.collection_mode==='live_watch'?' ／ ライブ更新を監視中':' ／ 取得できた情報で再計算')+(h.missing_forecasts?.length?' ／ 保存待ち '+h.missing_forecasts.length+'R':'');
  $('fullHealth').textContent=(stale?'自動更新が遅れています。最新の買い目として扱う前に更新時刻を確認してください。 ':'')+'取得失敗 '+Object.keys(h.source_errors||{}).length+'件 ／ '+Object.entries(h.source_counts||{}).map(([k,v])=>k+':'+v).join('・')+'。自動実行には遅延・欠落が起こる場合があります。';
+ if(data.quote_health)$('fullStatus').textContent+=' ／ 直前オッズ確認 '+esc(data.quote_health.attempt_at?.slice(11,19))+'（'+data.quote_health.confirmed+'/'+data.quote_health.targets+'R）';
  if(data.settlement_updated_at)$('fullStatus').textContent+=' ／ 精算更新 '+data.settlement_updated_at;
  $('fullStatus').textContent+=' ／ 表示中：展示後 '+phaseCounts.preview+'件・直前情報一部 '+phaseCounts.partial+'件・展示前 '+phaseCounts.initial+'件'+(phaseCounts.missed?'・展示更新なし（締切済み） '+phaseCounts.missed+'件':'')+(phaseCounts.old?'・旧版 '+phaseCounts.old+'件':'');
  let tiles=[`<div class="metric">研究予想の保存履歴（購入条件とは別）<strong>${list.length}</strong>予定 ${catalogRows().length}R ／ 予想未保存 ${catalogRows().filter(x=>!data.records?.[x.race_code]).length}R<br>必須情報使用 ${stats?.complete_inputs??0}件<br>結果確定 ${stats?.settled??0}件 ／ 待ち ${stats?.pending??0}件</div>`];
@@ -64,10 +82,17 @@ function render(){
   $('fullPurchaseSummary').innerHTML=next?'<b>次のレース：'+esc(names[next.venue])+' '+esc(next.race)+'R</b><br>'+(view?view.html:'<strong>見送り：購入候補の保存待ち</strong>'):'締切前のレースはありません。各Rの保存時の判定は下に表示します。';
  }
 
- $('fullRecords').innerHTML='<p class="small">締切前のレースを先に表示しています。スマホでは各Rの「購入判定・買い目」を確認してください。締切後に予想を作り足すことはありません。過去の旧版買い目は下の旧モデル履歴に残っています。</p><table><thead><tr><th>場・R</th><th>情報状態</th><th>最終計算／締切</th><th>点数可変・ガミなし想定の買い目と配分</th><th>取得時の想定払戻</th><th>結果</th></tr></thead><tbody>'+rows.map(item=>{const r=data.records?.[item.race_code],s=r&&latest(r);if(!s){const closed=item.cutoff&&Date.now()>=Date.parse(item.cutoff)-120000;return `<tr><td>${esc(names[item.venue])} ${item.race}R</td><td>${esc(raceStates[closed&&item.state==='waiting_initial'?'closed_no_forecast':item.state]||'未保存')}</td><td>締切 ${esc(item.cutoff?.slice(11,16)||'未確認')}</td><td colspan="3">新モデルの買い目なし</td></tr>`}const planView=purchaseView(purchaseSnapshot(r,s)),m=s.market_metrics?.['12']||{},a=s.allocation||{},status=s.phase==='initial'?(Date.now()>=Date.parse(s.cutoff)?'展示更新なし（締切済み）':'展示前の暫定予想'):s.phase==='preview'?'展示後の予想':s.phase==='partial'?'直前情報は一部取得':s.complete_inputs?'必須情報を使用':'未採用・未取得の情報あり';return `<tr data-full-code="${esc(r.race_code)}"><td>${esc(names[r.venue])} ${esc(r.race)}R</td><td>${status}<br><button type="button" data-full-detail="${esc(r.race_code)}">使った情報を見る</button></td><td>${esc(s.created_at.slice(11,19))}<br>締切 ${esc(s.cutoff.slice(11,16))}<br>履歴 ${(r.revision_count??Object.keys(r.revisions||{}).length)}版</td><td>${planView.html}</td><td>${planView.metrics}<br><span class="muted">確率の表示保留（校正検証中）／オッズ変動で払戻は変わります</span></td><td>${esc(r.result?.combo||r.result_pending_reason||(Date.now()<Date.parse(s.cutoff)?'締切前': '結果・払戻金待ち'))}<br>${r.result?esc(r.result.payout_100yen)+'円'+(r.result.paper?.balanced?'<br>最初の候補：'+r.result.paper.balanced.stake+'円→'+r.result.paper.balanced.return+'円（返還 '+r.result.paper.balanced.refund+'円含む）':'')+(r.result.refund_verified?'':'<br>返還は公式照合待ち'):''}</td></tr>`}).join('')+'</tbody></table>';
- $('fullRecords').querySelectorAll('[data-full-detail]').forEach(b=>b.addEventListener('click',()=>{selected=b.dataset.fullDetail;renderDetail()}));
+ const visible=venue==='0'?rows.slice(0,raceVisible):rows;
+ $('fullRecords').innerHTML=visible.map(item=>{
+  const r=data.records?.[item.race_code],snap=r&&latest(r);
+  if(!snap)return '<article class="race-card"><h3>'+esc(names[item.venue])+' '+item.race+'R</h3><p>'+esc(raceStates[item.state]||'予想作成待ち')+'</p><p>締切 '+esc(item.cutoff?.slice(11,16)||'未確認')+'</p></article>';
+  const v=purchaseView(purchaseSnapshot(r,snap)),c=r.race_commentary,closed=Date.now()>=Date.parse(snap.cutoff),bet=r.result?.paper?.balanced;
+  return '<article class="race-card" data-full-code="'+esc(r.race_code)+'"><header class="race-card-heading"><h3>'+esc(names[r.venue])+' '+r.race+'R</h3><span>締切 '+esc(snap.cutoff.slice(11,16))+(closed?'／締切済み':'／あと'+Math.max(0,Math.ceil((Date.parse(snap.cutoff)-Date.now())/60000))+'分')+'</span></header><div class="purchase-main">'+v.html+'</div><p class="quote-clock">予想 '+esc(snap.created_at.slice(11,19))+' ／ オッズ '+esc(snap.purchase_plan?.odds_observed_at?.slice(11,19)||'未取得')+'<br>確率は校正検証中／情報段階：'+esc(({initial:'展示前の暫定評価',partial:'直前情報は一部取得',preview:'展示後'})[snap.phase]||snap.phase)+(snap.context_snapshot_at?'／オッズ以外の入力 '+esc(snap.context_snapshot_at.slice(11,19)):'')+'</p>'+renderNarrative(c)+'<details class="purchase-evidence"><summary>オッズ・配分と購入条件の根拠</summary><p>'+v.metrics+'</p><p>点数可変・上限1,200円。全買い目の取得時払戻が総購入額を超える配分に限定。オッズ変動後のガミや利益を保証する条件ではありません。</p></details>'+(r.result?'<div class="race-result">結果 '+esc(r.result.combo)+'／100円払戻 '+r.result.payout_100yen+'円'+(bet?'<br>保存候補：'+bet.stake+'円→'+bet.return+'円（返還 '+bet.refund+'円含む）':'')+'</div>':'')+'<button type="button" data-full-detail="'+esc(r.race_code)+'">使った情報を見る</button></article>';
+ }).join('')+(venue==='0'&&rows.length>visible.length?'<button type="button" id="fullMoreRaces">さらに24Rの予想・見解を見る</button>':'');
+ $('fullRecords').querySelectorAll('[data-full-detail]').forEach(b=>b.addEventListener('click',()=>{selected=b.dataset.fullDetail;openDetail()}));
+ $('fullMoreRaces')?.addEventListener('click',()=>{raceVisible+=24;render()});
  if(!rows.length)$('fullRecords').innerHTML='<p>この日の総合予想はまだ保存されていません。旧モデルの保存履歴は下に残しています。</p>';
- if(selected&&data.records[selected])renderDetail();
+ if(selected&&data.records[selected]&&!latest(data.records[selected])?._details_compacted)renderDetail();
  renderReport();
  renderVenueCoverage();
  const check=index.training?.validation||{},loss=check.test_mean_logloss||{};
@@ -120,15 +145,22 @@ function renderDetail(){
    const path=archived.history_storage?.record_paths?.[code];
    const record=path?await getJSON('full_history/'+path):archived.records?.[code];
    if(selected!==code)return;if(!record)throw Error('このレースの履歴を取得できません');
-   data.records[code]=record;renderDetail();
+   record.race_commentary=data.records[code]?.race_commentary;data.records[code]=record;renderDetail();
   }catch(e){$('fullDetail').insertAdjacentHTML('beforeend','<p class="warning">'+esc(e.message)+'</p>')}
  });
 }
 async function loadDay(){
- const ticket=++loading;try{const day=$('fullDate').value;if(!day)return;const next=await getJSON(index.days?.[day]?.view_path||'full_history/'+day+'.json');if(ticket!==loading)return;if(next.history_storage&&!next.records)throw Error('表示用データの更新待ちです。更新ボタンで再取得してください');const keep=selected&&next.records?.[selected];data=next;if(!keep)selected=null;if(!keep)$('fullDetail').innerHTML='<span class="muted">レースの「使った情報を見る」で入力の使用状況と更新履歴を確認できます。</span>';render()}catch(e){$('fullStatus').textContent=e.message;}
+ const ticket=++loading;try{const day=$('fullDate').value;if(!day)return;const next=await getJSON(index.days?.[day]?.view_path||'full_history/'+day+'.json');if(ticket!==loading)return;if(next.history_storage&&!next.records)throw Error('表示用データの更新待ちです。更新ボタンで再取得してください');const keep=selected&&next.records?.[selected];data=next;if(!keep)selected=null;if(!keep)$('fullDetail').innerHTML='<span class="muted">レースの「使った情報を見る」で入力の使用状況と更新履歴を確認できます。</span>';render()}catch(e){$('fullStatus').textContent=e.message;throw e;}
 }
-async function load(){try{await resolveLiveRef();index=await getJSON('boat24_full_index.json');if(!$('fullDate').value){const linkedDay=typeof location==='undefined'?null:new URLSearchParams(location.search).get('day');$('fullDate').value=index.days?.[linkedDay]?linkedDay:index.latest_day||'';}await loadDay()}catch(e){$('fullStatus').textContent=e.message+'。総合モデルの初回データ作成を待っています。'}}
-setInterval(()=>{if(!document.hidden)load()},60000);
+async function load(force=false){
+ if(busy)return;busy=true;
+ const buttons=[$('fullReload'),$('reload')].filter(Boolean);buttons.forEach(b=>{b.disabled=true;b.textContent='最新データを取得中…'});
+ const oldRef=liveRef,oldUpdated=index?.updated_at,feedback=$('fullRefreshStatus');if(feedback)feedback.textContent='更新確認中…';
+ try{if(force===true||!index)await resolveLiveRef(force===true);else liveRef='main';let nextIndex=await getJSON('boat24_full_index.json');if(force!==true&&index&&nextIndex.updated_at===index.updated_at&&Date.now()-Date.parse(index.updated_at)>60000&&Date.now()-refChecked>=60000){await resolveLiveRef(false);nextIndex=await getJSON('boat24_full_index.json');}if(index&&Date.parse(nextIndex.updated_at)<Date.parse(index.updated_at))throw Error('取得データが表示中より古いため、更新を保留しました');if(force!==true&&data&&index?.updated_at===nextIndex.updated_at){index=nextIndex;render();if(feedback)feedback.textContent='表示確認 '+new Date().toLocaleTimeString('ja-JP')+'／新しい保存版はまだありません';return}index=nextIndex;if(!$('fullDate').value){const linkedDay=typeof location==='undefined'?null:new URLSearchParams(location.search).get('day');$('fullDate').value=index.days?.[linkedDay]?linkedDay:index.latest_day||'';}await loadDay();renderedRef=liveRef;if(feedback)feedback.textContent='再取得完了 '+new Date().toLocaleTimeString('ja-JP')+(oldUpdated===index.updated_at?'／新しい保存版はまだありません':'／最新の保存版を反映しました')+'。このボタンは保存済みデータを再取得します。';}
+ catch(e){$('fullStatus').textContent=e.message;if(feedback)feedback.textContent='再取得に失敗しました。表示中データの時刻を確認してください。';}
+ finally{busy=false;buttons.forEach(b=>{b.disabled=false;b.textContent='最新の予想・オッズを再取得'})}
+}
+setInterval(()=>{if(!document.hidden)load(false)},20000);
 $('fullReportGroup')?.addEventListener('change',renderReport);
-$('fullDate').addEventListener('change',loadDay);$('venue').addEventListener('change',render);$('fullReload').addEventListener('click',load);$('reload')?.addEventListener('click',load);load();
+$('fullDate').addEventListener('change',()=>loadDay().catch(()=>{}));$('venue').addEventListener('change',()=>{raceVisible=24;render()});$('fullReload').addEventListener('click',()=>load(true));$('reload')?.addEventListener('click',()=>load(true));load();
 })();

@@ -51,7 +51,7 @@ def make_snapshot(code,card,data,model,history,now,previous=None,clock=None):
     retained=[]
     # Preserve previously acquired valid previews through transient source outages.
     for kind,old in (previous or {}).get('input_snapshot',{}).get('previews',{}).items():
-        if kind in previews and not previews[kind] and safe_row(old,cutoff,now):
+        if kind in previews and safe_row(old,cutoff,now) and (not previews[kind] or (timeparse(old.get('取得日時')) and (not timeparse(previews[kind].get('取得日時')) or timeparse(old['取得日時'])>timeparse(previews[kind]['取得日時'])))):
             previews[kind]=old;retained.append(kind)
     if retained:
         # Recompute with the retained raw rows, never silently downgrade complete inputs.
@@ -75,7 +75,7 @@ def make_snapshot(code,card,data,model,history,now,previous=None,clock=None):
     # fetched again or the wall clock advanced. Freshness is still displayed.
     digest_features=[{k:v for k,v in f.items() if k!='data_quality'} for f in built['features']]
     comments_identity={lane:{k:c.get(k) for k in ('racer','comment','source')} for lane,c in official.get('comments',{}).items()}
-    h=fingerprint(digest_features,built['previews']['odds'],model,{'before':official.get('before'),'comments':comments_identity,'race_flags':official.get('race_flags'),'purchase_policy':PURCHASE_POLICY,'purchase_protocol':PROTOCOL_ID})
+    h=fingerprint(digest_features,built['previews']['odds'],model,{'before':official.get('before'),'comments':comments_identity,'race_flags':official.get('race_flags'),'purchase_policy':PURCHASE_POLICY,'purchase_protocol':PROTOCOL_ID,'presentation_schema':'race-commentary-1'})
     if previous and previous.get('id')==h:return None,'unchanged_inputs'
     result=predict(built['features'],int(code[8:10]),day,model,built['previews']['odds'])
     baseline=result
@@ -99,6 +99,8 @@ def make_snapshot(code,card,data,model,history,now,previous=None,clock=None):
     result['purchase_plan']['protocol_id']=PROTOCOL_ID
     quote_time=built['previews']['odds'].get('取得日時')
     result['purchase_plan']['odds_observed_at']=quote_time
+    result['purchase_plan']['odds_source']=built['previews']['odds'].get('source_url')
+    result['boat_identities']=[{'lane':i,'name':card.get(f'艇{i}_選手名'),'racer':card.get(f'艇{i}_登録番号'),'motor':card.get(f'艇{i}_モーター番号')} for i in range(1,7)]
     stamp=timeparse(quote_time)
     if not stamp or not dt.timedelta(0)<=now-stamp<=dt.timedelta(minutes=5):
         result['purchase_plan'].update(status='odds_stale',tickets=[])
@@ -179,6 +181,9 @@ def build_index(directory=DIRECTORY,now=None):
 def merge_day(remote,local):
     # Immutable revision IDs: remote observations always win on collisions.
     merged=json.loads(json.dumps(local,ensure_ascii=False));merged['catalog']=json.loads(json.dumps({**remote.get('catalog',{}),**local.get('catalog',{})}));merged['records']=json.loads(json.dumps(remote.get('records',{}),ensure_ascii=False))
+    merged['updated_at']=max(remote.get('updated_at',''),local.get('updated_at',''))
+    for field,stamp in (('health','attempt_at'),('quote_health','attempt_at')):
+        if remote.get(field,{}).get(stamp,'')>local.get(field,{}).get(stamp,''):merged[field]=remote[field]
     for code,incoming in local.get('records',{}).items():
         if code not in merged['records']:merged['records'][code]=incoming;continue
         rec=merged['records'][code]
@@ -229,6 +234,8 @@ def main():
         if limit and now<limit-dt.timedelta(minutes=2) and not data['results'].get(code) and not data['payouts'].get(code):candidates.append((limit,code))
     candidates=[code for limit,code in sorted(candidates) if limit<=now+dt.timedelta(minutes=30)][:32]
     data['official']=collect_official(candidates,data['cards'],now,data.get('title'))
+    from boat24_odds import attach as attach_live_odds
+    if data.get('_live_collection'):data['odds_errors']=attach_live_odds(data,candidates,dt.datetime.now(JST))
     apply_live_previews(data,data['official'],dt.datetime.now(JST))
     history=History(model['calendars'],model['motor_histories'],model['profiles'],model['runs'])
     profiles,runs=profiles_and_runs(data,day,CourseStats(model.get('course_state')))
@@ -255,7 +262,7 @@ def main():
         register_offers(rec)
         settled+=settle(rec,data['results'].get(code),data['payouts'].get(code),dt.datetime.now(JST))
     ledger['catalog']=catalog(data,records,dt.datetime.now(JST))
-    ledger['health']=health(data,ledger['catalog'],{**ERRORS,**official_errors,**data.get('supplement_errors',{}),**data.get('official',{}).get('errors',{})},dt.datetime.now(JST))
+    ledger['health']=health(data,ledger['catalog'],{**ERRORS,**official_errors,**data.get('odds_errors',{}),**data.get('supplement_errors',{}),**data.get('official',{}).get('errors',{})},dt.datetime.now(JST))
     ledger['updated_at']=dt.datetime.now(JST).isoformat();ledger['diagnostics']={'new_forecasts':made,'updated_forecasts':updated,'new_settlements':settled,'skipped':skipped,'source_errors':dict(ERRORS)}
     path=write_history(path,ledger);write_view(path,ledger);touched=[str(path)]
     # Retry unsettled previous dates without requiring their race cards.

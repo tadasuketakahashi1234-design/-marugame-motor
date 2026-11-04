@@ -81,7 +81,10 @@ def compact_day(doc):
         rec={k:copy.deepcopy(v) for k,v in record.items() if k not in ('revisions','result_history')}
         revisions=record.get('revisions',{});keep=set()
         chosen=latest(record)
-        if chosen:keep.add(chosen['id'])
+        if chosen:
+            keep.add(chosen['id'])
+            from boat24_commentary import build as commentary
+            rec['race_commentary']=commentary(chosen)
         valid=[s for s in revisions.values() if s.get('evaluation_eligible')]
         if valid:keep.add(max(valid,key=lambda s:(s['created_at'],s['id']))['id'])
         plans=[s for s in valid if s.get('purchase_plan')]
@@ -92,7 +95,8 @@ def compact_day(doc):
         if pointer in revisions:keep.add(pointer)
         offers=sorted(record.get('offers',{}).values(),key=lambda o:(o['created_at'],o['snapshot_id']))
         if offers and offers[0]['snapshot_id'] in revisions:keep.add(offers[0]['snapshot_id'])
-        rec['revisions']={k:copy.deepcopy(revisions[k]) for k in keep if k in revisions}
+        fields=('id','created_at','computed_at','cutoff','evaluation_eligible','phase','complete_inputs','model','model_id','purchase_plan','refresh_kind','context_snapshot_at')
+        rec['revisions']={k:{**{f:copy.deepcopy(revisions[k][f]) for f in fields if f in revisions[k]},'_details_compacted':True} for k in keep if k in revisions}
         rec['revision_count']=len(revisions)
         rec['revision_history']=[{k:s.get(k) for k in ('id','created_at','cutoff','phase','model','complete_inputs')} for s in sorted(revisions.values(),key=lambda s:(s['created_at'],s['id']))]
         out['records'][code]=rec

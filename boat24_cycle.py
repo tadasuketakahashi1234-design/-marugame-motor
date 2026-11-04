@@ -8,7 +8,7 @@ from boat24_integrity import JST,atomic_write
 from boat24_history_io import history_path,read_history,write_history
 from boat24_migration import preserve_collection_during_rebuild
 
-def main(seconds=180):
+def _main(seconds=180):
  import boat24_daily,boat24_compare,boat24_full_update,boat24_full_publish
  start=time.monotonic();attempt=0
  while True:
@@ -42,6 +42,10 @@ def main(seconds=180):
    break
   print('Next collection in 60 seconds; capture',attempt,dt.datetime.now(JST).isoformat(),flush=True)
   time.sleep(max(1,60-(time.monotonic()-tick)))
+
+def main(seconds=180):
+ from boat24_live import worker
+ with worker():_main(seconds)
 
 if __name__=='__main__':
  p=argparse.ArgumentParser();p.add_argument('--seconds',type=int,default=180);main(p.parse_args().seconds)

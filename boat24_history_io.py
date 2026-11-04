@@ -97,6 +97,11 @@ def compact_day(doc):
         if offers and offers[0]['snapshot_id'] in revisions:keep.add(offers[0]['snapshot_id'])
         fields=('id','created_at','computed_at','cutoff','evaluation_eligible','phase','complete_inputs','model','model_id','purchase_plan','refresh_kind','context_snapshot_at')
         rec['revisions']={k:{**{f:copy.deepcopy(revisions[k][f]) for f in fields if f in revisions[k]},'_details_compacted':True} for k in keep if k in revisions}
+        for s in rec['revisions'].values():
+            if s.get('purchase_plan'):
+                # Search frontiers stay in the full immutable archive. The
+                # first screen needs quotes, stakes and checks, not every state.
+                s['purchase_plan']={k:v for k,v in s['purchase_plan'].items() if k not in ('frontier','comparison_by_count')}
         rec['revision_count']=len(revisions)
         rec['revision_history']=[{k:s.get(k) for k in ('id','created_at','cutoff','phase','model','complete_inputs')} for s in sorted(revisions.values(),key=lambda s:(s['created_at'],s['id']))]
         out['records'][code]=rec

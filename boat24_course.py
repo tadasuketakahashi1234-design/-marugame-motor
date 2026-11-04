@@ -2,6 +2,7 @@
 import math
 from collections import defaultdict
 from boat24_integrity import timeparse
+from boat24_methods import normalize_method
 POINTS={1:10,2:8,3:6,4:4,5:2,6:1}
 METHODS=('逃げ','差し','まくり','まくり差し')
 
@@ -18,11 +19,15 @@ class CourseStats:
    if not card:continue
    observed=timeparse(res.get('取得日時'))
    if not observed or observed.strftime('%Y%m%d')!=code[:8]:continue
+   from boat24_settlement import refund_boats
+   try:
+    if refund_boats(res):continue
+   except ValueError:continue
    finishes={str(res.get(f'{p}着_艇番')):p for p in range(1,7)}
    courses={str(res.get(f'{c}コース_艇番')):c for c in range(1,7)}
    if set(finishes)!=set('123456') or set(courses)!=set('123456'):continue
    sts={c:number(res.get(f'{c}コース_スタートタイミング')) for c in range(1,7)}
-   method=res.get('決まり手');venue=int(code[8:10])
+   method=normalize_method(res.get('決まり手'));venue=int(code[8:10])
    from boat24_priority import field_type
    composition=field_type(card,data.get('registry',{}))['type']
    for lane in range(1,7):
@@ -32,6 +37,10 @@ class CourseStats:
     if composition!='unknown':groups += [('by_field',racer+'-'+composition),('course_field',racer+'-'+str(course)+'-'+composition)]
     for group,key in groups:
      a=self.state[group].setdefault(key,empty());a['n']+=1;a['wins']+=finish==1;a['two']+=finish<=2;a['three']+=finish<=3;a['points']+=POINTS[finish];a['finish_sum']+=finish
+     if method:
+      a['method_n']=a.get('method_n',0)+1
+      for label in ('labelled_methods','labelled_allowed'):a.setdefault(label,{m:0 for m in METHODS})
+      if method in METHODS:a['labelled_methods' if finish==1 else 'labelled_allowed'][method]+=1
      st=sts[course]
      if st is not None and st>=0 and not res.get(f'{course}コース_F'):
       a['st']+=st;a['st_n']+=1;a['rank']+=1+sum(v<st for v in sts.values() if v is not None and v>=0);a['rank_n']+=1
@@ -48,8 +57,12 @@ class CourseStats:
   if a['st_n']:f['平均ST']=a['st']/a['st_n']
   if a['rank_n']:f['平均スタート順']=a['rank']/a['rank_n']
   style={}
-  for key,label in [('methods','勝ち'),('allowed','敗れ')]:
-   for m in METHODS:style[m+label+'率']=(a[key][m]+k*b[key][m]/base)/(n+k)
+  # Legacy states cannot prove the denominator of missing method labels.
+  mn=a.get('method_n',0);bn=b.get('method_n',0)
+  if mn:f['決まり手確認走数']=mn
+  if mn==n and bn==base and mn and bn:
+   for key,label in [('labelled_methods','勝ち'),('labelled_allowed','敗れ')]:
+    for m in METHODS:style[m+label+'率']=(a.get(key,{}).get(m,0)+k*b.get(key,{}).get(m,0)/bn)/(mn+k)
   return f,style
 
 def add_course_features(features,card,venue,stats):

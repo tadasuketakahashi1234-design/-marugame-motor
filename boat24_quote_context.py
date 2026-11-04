@@ -5,6 +5,11 @@ from boat24_integrity import timeparse
 def context_time(snapshot):
     return timeparse(snapshot.get('context_snapshot_at') or snapshot.get('created_at'))
 
+def information_level(snapshot):
+    # Only a full exhibition is monotone evidence. Removing stale weather can
+    # legitimately turn a partial preview into an initial-stage calculation.
+    return 2 if snapshot.get('phase')=='preview' else 0
+
 
 def newest_context(record):
     candidates=[]
@@ -12,7 +17,7 @@ def newest_context(record):
         created=timeparse(snapshot.get('created_at'));cutoff=timeparse(snapshot.get('cutoff'));context=context_time(snapshot)
         if snapshot.get('evaluation_eligible') is True and created and cutoff and context and context<=created<cutoff and len(snapshot.get('input_snapshot',{}).get('features',[]))==6:
             candidates.append(snapshot)
-    return max(candidates,key=lambda s:(context_time(s),timeparse(s['created_at']),s['id'])) if candidates else None
+    return max(candidates,key=lambda s:(information_level(s),context_time(s),timeparse(s['created_at']),s['id'])) if candidates else None
 
 
 def reject_obsolete_reprices(remote,incoming):
@@ -30,7 +35,7 @@ def reject_obsolete_reprices(remote,incoming):
         rejected=set()
         for sid,snapshot in record.get('revisions',{}).items():
             if sid in existing.get('revisions',{}):continue
-            if snapshot.get('refresh_kind')=='official_odds_reprice' and (context_time(snapshot) is None or context_time(snapshot)<context_time(base)):
+            if snapshot.get('refresh_kind') in ('official_odds_reprice','official_context_and_odds') and (information_level(snapshot)<information_level(base) or information_level(snapshot)==information_level(base) and (context_time(snapshot) is None or context_time(snapshot)<context_time(base))):
                 rejected.add(sid)
         if rejected:
             out['records'][code]={**record,

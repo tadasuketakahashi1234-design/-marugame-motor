@@ -13,7 +13,8 @@ async function resolveLiveRef(force=false){
  if(!force&&Date.now()-refChecked<60000)return;refChecked=Date.now();
  try{const r=await fetch('https://api.github.com/repos/tadasuketakahashi1234-design/-marugame-motor/git/ref/heads/main?t='+Date.now(),{cache:'no-store',signal:AbortSignal.timeout(8000)});if(!r.ok){liveRef='main';return}const d=await r.json();const sha=d.object?.sha||d.sha;if(/^[a-f0-9]{40}$/.test(sha||''))liveRef=sha}catch(e){liveRef='main'}
 }
-const contextOrder=(a,b)=>Date.parse(b.context_snapshot_at||b.created_at)-Date.parse(a.context_snapshot_at||a.created_at)||b.created_at.localeCompare(a.created_at)||b.id.localeCompare(a.id);
+const stage=s=>s.phase==='preview'?2:0;
+const contextOrder=(a,b)=>stage(b)-stage(a)||Date.parse(b.context_snapshot_at||b.created_at)-Date.parse(a.context_snapshot_at||a.created_at)||b.created_at.localeCompare(a.created_at)||b.id.localeCompare(a.id);
 const latest=r=>Object.values(r.revisions||{}).filter(s=>s.evaluation_eligible&&Date.parse(s.created_at)<Date.parse(s.cutoff)).sort(contextOrder)[0];
 async function getJSON(path){
  const root='https://raw.githubusercontent.com/tadasuketakahashi1234-design/-marugame-motor/'+liveRef+'/omura/docs/';
@@ -22,9 +23,9 @@ async function getJSON(path){
  for(const u of urls){try{const r=await fetch(u+'?t='+Date.now(),{cache:'no-store',signal:AbortSignal.timeout(8000)});if(!r.ok)throw Error('HTTP '+r.status);if(path.endsWith('.gz')){if(typeof DecompressionStream==='undefined')throw Error('このブラウザでは圧縮履歴を開けません');return await new Response(r.body.pipeThrough(new DecompressionStream('gzip'))).json()}return await r.json()}catch(e){error=e}}
  throw Error('最新データの再取得に失敗：'+(error?.message||'通信エラー'));
 }
-const purchasePolicy='balanced-no-gami-v2';
+const purchasePolicy='balanced-no-gami-v2',riskPolicy='probability-price-stress-1';
 function purchaseSnapshot(r,fallback){
- const found=Object.values(r?.revisions||{}).filter(x=>x.purchase_plan?.policy===purchasePolicy&&x.evaluation_eligible&&Date.parse(x.created_at)<Date.parse(x.cutoff)).sort((a,b)=>Date.parse(b.context_snapshot_at||b.created_at)-Date.parse(a.context_snapshot_at||a.created_at)||b.created_at.localeCompare(a.created_at)||b.id.localeCompare(a.id));
+ const found=Object.values(r?.revisions||{}).filter(x=>x.purchase_plan?.policy===purchasePolicy&&x.evaluation_eligible&&Date.parse(x.created_at)<Date.parse(x.cutoff)).sort((a,b)=>(b.phase==='preview'?2:0)-(a.phase==='preview'?2:0)||Date.parse(b.context_snapshot_at||b.created_at)-Date.parse(a.context_snapshot_at||a.created_at)||b.created_at.localeCompare(a.created_at)||b.id.localeCompare(a.id));
  return found[0]||fallback;
 }
 function purchaseView(s){
@@ -33,17 +34,49 @@ function purchaseView(s){
  const tickets=p.tickets||[],total=tickets.reduce((v,t)=>v+t.stake,0);
  const current=p.policy===purchasePolicy;
  const valid=current&&p.status==='ready'&&tickets.length>0&&new Set(tickets.map(t=>t.combo)).size===tickets.length&&total===p.budget&&total<=p.budget_cap&&p.estimated_roi>1&&tickets.every(t=>Number.isInteger(t.stake)&&t.stake>=100&&t.stake%100===0&&Number.isFinite(t.odds)&&Math.floor((t.odds+1e-9)*10)*10*(t.stake/100)>total&&t.expected_return>total);
- const reasons={odds_stale:'オッズが古い・取得時刻不明',odds_incomplete:'オッズ未取得・不足',probabilities_invalid:'確率データの整合性未確認',no_positive_value:'モデル推定の期待回収率100％超の案なし',no_feasible_plan:'ガミなし条件の配分なし'};
+ const reasons={preview_pending:'全6艇の展示・進入・展示STの確認待ち',risk_no_positive_value:'確率・払戻の下振れ条件で期待回収率100％を超えない',risk_no_feasible_plan:'下振れ時のガミ回避と1点の集中上限を両立する配分なし',odds_stale:'オッズが古い・取得時刻不明',odds_incomplete:'オッズ未取得・不足',probabilities_invalid:'確率データの整合性未確認',no_positive_value:'モデル推定の期待回収率100％超の案なし',no_feasible_plan:'ガミなし条件の配分なし'};
+ if(!closed&&p.risk_policy!==riskPolicy)return {pending:true,html:'<strong>判定保留：配分の新条件を計算中</strong>',metrics:'以前の配分は保存履歴に保持しています'};
+ if(p.status==='preview_pending')return {pending:true,html:'<strong>判定保留：展示・進入の確認待ち</strong><br>'+esc(p.reason||reasons[p.status]),metrics:'オッズが低いことによる見送りではありません'};
+ if(p.risk_policy===riskPolicy&&p.status==='ready'){
+  const r=p.risk_controls||{},ph=r.probability_haircut,qh=r.price_haircut,cap=r.maximum_ticket_share;
+  const stressReturn=t=>Math.floor((Math.floor((t.odds*(1-qh)+1e-9)*10)/10+1e-9)*10)*10*(t.stake/100);
+  const stressROI=tickets.reduce((v,t)=>v+t.estimated_probability*(1-ph)*stressReturn(t),0)/total;
+  const nominalMass=tickets.reduce((v,t)=>v+t.estimated_probability,0);
+  if(!Number.isFinite(ph)||ph<(p.probability_verified ? .10 : .20)||ph>=1||!Number.isFinite(qh)||qh<.10||qh>=1||!Number.isFinite(cap)||cap>(p.probability_verified ? .35 : .25)||cap<=0||!Number.isFinite(stressROI)||stressROI<=1||nominalMass>1+1e-6||!tickets.every(t=>Number.isFinite(t.estimated_probability)&&t.estimated_probability>=0&&t.stake<=total*cap+1e-9&&stressReturn(t)>total)||Math.abs(stressROI-p.stress_expected_roi)>1e-6)return {html:'<strong>見送り：下振れ・集中条件の整合性未確認</strong>',metrics:'購入候補なし'};
+ }
  if(['odds_stale','odds_incomplete'].includes(p.status))return {pending:true,html:'<strong>判定保留（購入候補なし）</strong><br>'+(!p.odds_observed_at?'オッズ未取得':p.status==='odds_incomplete'?'オッズ120通りが揃っていません':'オッズ更新遅延')+'<br>価格が低いことによる見送りではありません',metrics:'オッズ更新 '+esc(p.odds_observed_at||'未取得')};
  if(!valid)return {html:'<strong>見送り</strong><br>'+(!current?'点数可変の新条件の保存待ち（旧予想は詳細に保持）':reasons[p.status]||'配分の整合性未確認'),metrics:'購入候補なし'};
  if(!closed&&Date.now()>=Date.parse(s.cutoff)-120000)return {html:'<strong>見送り：締切2分前</strong>',metrics:'新規の購入候補表示を停止'};
  if(!closed&&!fresh)return {html:'<strong>判定保留：オッズ更新遅延</strong>',metrics:'オッズが古い・取得時刻不明'};
  const minimum=Math.min(...tickets.map(t=>t.expected_return));
- return {valid:true,ready:!closed,html:(closed?'<b>締切済み・保存時の参考</b><br>':'')+'<b>'+tickets.length+'点・計'+total+'円</b><br>'+tickets.map(t=>esc(t.combo)+'：'+t.stake+'円').join('<br>'),metrics:'取得時の最低想定払戻 '+minimum+'円<br>最低想定利益 ＋'+(minimum-total)+'円<br>モデル内試算回収率 '+pct(p.estimated_roi)+'（未校正・実績ではありません）<br>合成 '+num(p.synthetic_odds)+'倍<br>オッズ時刻 '+esc(p.odds_observed_at)+'<br>候補計算 '+esc(s.created_at)+'<br>点数・配分の近似比較／的中確率とのバランス優先'};
+ return {valid:true,ready:!closed,html:(closed?'<b>締切済み・保存時の参考</b><br>':'')+'<b>'+tickets.length+'点・計'+total+'円</b><br>'+tickets.map(t=>esc(t.combo)+'：'+t.stake+'円').join('<br>'),metrics:'取得時の最低想定払戻 '+minimum+'円<br>最低想定利益 ＋'+(minimum-total)+'円<br>モデル内試算回収率 '+pct(p.estimated_roi)+'（未校正・実績ではありません）<br>合成 '+num(p.synthetic_odds)+'倍<br>オッズ時刻 '+esc(p.odds_observed_at)+'<br>候補計算 '+esc(s.created_at)+'<br>点数・配分の近似比較／的中確率とのバランス優先'+(p.risk_policy===riskPolicy?'<br>感度条件：確率 '+pct(p.risk_controls.probability_haircut)+'減・払戻 '+pct(p.risk_controls.price_haircut)+'減／1点上限 '+pct(p.risk_controls.maximum_ticket_share)+'<br>下振れ条件の試算回収率 '+pct(p.stress_expected_roi)+'<br>感度条件は統計的な信頼区間ではありません':'')};
 }
 function renderNarrative(c){
  if(!c)return '<section class="race-analysis"><h4>予想見解</h4><p>この保存版の見解を準備中です。補足データで確認できる範囲を表示します。</p></section>';
- return '<section class="race-analysis"><h4>'+esc(c.headline)+'</h4>'+((c.forecast_lines||[]).length?'<p><b>展開予想の本線</b> '+c.forecast_lines.map(esc).join(' ／ ')+'<br><span class="small muted">購入対象・金額は上の購入判定で確認してください。</span></p>':'')+[['本線の評価',c.axis],['相手の評価',c.opponents],['想定展開',c.deployment],['当日の水面をどう読むか',c.water],['買い目との関係',c.price]].map(([h,t])=>'<div><b>'+h+'</b><p>'+esc(t)+'</p></div>').join('')+'<div><b>本線が崩れる条件・注意点</b><p>'+c.risks.map(esc).join('<br>')+'</p></div><details><summary>6艇を比較する</summary><div class="boat-comparison">'+c.boats.map(b=>'<div><b>'+esc(b.mark)+' '+b.lane+'号艇 '+esc(b.name||'')+'</b><p>'+b.evidence.map(esc).join(' ／ ')+'</p></div>').join('')+'</div></details><p class="small muted">'+esc(c.notice)+'</p></section>';
+ return '<section class="race-analysis"><h4>'+esc(c.headline)+'</h4>'+((c.forecast_lines||[]).length?'<p><b>着順の上位候補（モデル内）</b> '+c.forecast_lines.map(esc).join(' ／ ')+'<br><span class="small muted">購入対象・金額は上の購入判定で確認してください。</span></p>':'')+[['本線の評価',c.axis],['相手の評価',c.opponents],['想定展開',c.deployment],['当日の水面をどう読むか',c.water],['買い目との関係',c.price]].map(([h,t])=>'<div><b>'+h+'</b><p>'+esc(t)+'</p></div>').join('')+renderReasoning(c.reasoning)+'<div><b>本線が崩れる条件・注意点</b><p>'+c.risks.map(esc).join('<br>')+'</p></div><details><summary>6艇を比較する</summary><div class="boat-comparison">'+c.boats.map(b=>'<div><b>'+esc(b.mark)+' '+b.lane+'号艇 '+esc(b.name||'')+'</b><p>'+b.evidence.map(esc).join(' ／ ')+'</p></div>').join('')+'</div></details><p class="small muted">'+esc(c.notice)+'</p></section>';
+}
+function renderReasoning(r){
+ if(!r)return '';
+ const fmt=x=>Number.isFinite(x)?(100*x).toFixed(1)+'％':'未確認';
+ const axis=r.axis,rival=r.first_candidates?.find(i=>i!==axis),comp=r.components||{};
+ let html='<div class="reasoning-proof"><b>軸の順位が決まった過程</b><p>1着軸 '+esc(axis)+'号艇／連軸 '+esc(r.place_axis)+'号艇。数値はモデル内の比較値です。</p>';
+ if(rival)html+='<table class="reasoning-table"><tr><th>段階</th><th>'+axis+'号艇</th><th>'+rival+'号艇</th></tr>'+[['独自データ部分',comp.context],['市場由来',comp.market],['混合・補正後',comp.final]].map(([name,rows])=>'<tr><td>'+name+'</td><td>'+fmt(rows?.[axis-1]?.first)+'</td><td>'+fmt(rows?.[rival-1]?.first)+'</td></tr>').join('')+'</table><p class="small">混合前の重み：市場 '+fmt(comp.market_weight)+'・独自 '+fmt(1-comp.market_weight)+'。'+esc(comp.notice||'')+'</p>';
+ if(r.sensitivity?.rows?.length)html+='<details><summary>何の要素で軸評価が変わったか</summary><table class="reasoning-table"><tr><th>外して再計算した要素</th><th>'+axis+'号艇への差</th></tr>'+r.sensitivity.rows.map(x=>'<tr><td>'+esc(x.label)+'</td><td>'+esc((100*x.first_delta[axis-1]).toFixed(1))+'ポイント</td></tr>').join('')+'</table><p class="small">'+esc(r.sensitivity.notice)+'</p></details>';
+ html+='</div><div class="race-branches"><b>頭候補ごとの展開条件と相手</b><p class="small">'+esc(r.numerical_notice||'')+'</p>';
+ for(const b of r.branches||[]){
+  html+='<section class="race-branch"><h5>'+b.winner+'号艇が勝つ場合'+(b.course?'／展示'+b.course+'コース':'／進入未確認')+'</h5><p><b>成立に必要な条件</b><br>'+b.conditions.map(esc).join('<br>')+'</p>';
+  if(b.counter_evidence?.length)html+='<p><b>反証・評価を下げる材料</b><br>'+b.counter_evidence.map(esc).join('<br>')+'</p>';
+  if(b.start_comparison?.status==='uncalibrated_normal_reference')html+='<p class="small">内隣より早いSTとなる正規近似 '+fmt(b.start_comparison.earlier_probability)+'。'+esc(b.start_comparison.notice)+'</p>';
+  const mr=b.method_reference;
+  if(mr?.status==='historical_reference')html+='<details><summary>決まり手別の2・3着連動実績（'+mr.known+'例）</summary><p class="small">'+esc(mr.notice)+'</p>'+mr.methods.map(m=>'<p>'+esc(m.method)+' '+m.races+'例／コース勝利時の内訳 '+fmt(m.share_among_course_wins)+'<br>'+m.pairs.map(p=>esc(p.combo)+' '+p.count+'例（'+fmt(p.rate)+'）').join('／')+'</p>').join('')+'</details>';
+  else html+='<p class="small">決まり手別の連動実績：'+(mr?.known??0)+'例確認／全ラベル確認・20例以上の条件待ち。今回の攻め方の確率は未推定です。</p>';
+  html+='<table class="reasoning-table"><tr><th>相手</th><th>条件付き2着</th><th>条件付き3着</th></tr>'+(b.opponents||[]).slice(0,3).map(x=>'<tr><td>'+x.lane+'号艇</td><td>'+fmt(x.second)+'</td><td>'+fmt(x.third)+'</td></tr>').join('')+'</table><p>条件付き上位着順 '+(b.combos||[]).map(x=>esc(x.combo)).join('／')+'。購入採否は価格・配分条件で別に判定します。</p><p class="small"><b>未確認</b> '+(b.unknown||[]).map(esc).join(' ')+'</p></section>';
+ }
+ html+='</div>';
+ if(r.price_audit?.length)html+='<details class="purchase-evidence"><summary>買い目を採った・外した価格根拠</summary><p class="small">1口100円あたりのモデル内期待回収率です。単独の期待値と配分全体の採否を区別します。</p>'+r.price_audit.map(x=>'<p><b>'+esc(x.combo)+(x.selected?' 採用':' 非採用')+'</b>／取得 '+esc(x.odds)+'倍<br>通常 '+fmt(x.unit_expected_roi)+'／下振れ条件 '+fmt(x.stress_unit_expected_roi)+'<br>'+esc(x.reason)+'</p>').join('')+'</details>';
+ const q=r.quality||{};
+ if(q.policy)html+='<p class="small"><b>根拠の鮮度</b> 天候：'+esc(({fresh:'10分以内の観測を使用',stale:'10分超のため計算から除外',observation_time_unknown:'観測時刻不明のため除外',future_observation:'未来の観測のため除外',missing:'未取得'})[q.weather?.state]||q.weather?.state)+'。観測 '+esc(q.weather?.measured_at||'不明')+'。決まり手の分母未確認 '+esc((q.method_label_unverified_lanes||[]).join('・')||'なし')+'号艇。</p>';
+ return html;
 }
 async function openDetail(){
  const r=data.records?.[selected],snap=r&&latest(r);if(!snap)return;
@@ -69,6 +102,7 @@ function render(){
  $('fullStatus').textContent=(stale?'【更新遅延 '+Math.floor(age)+'分】 ':h.state==='degraded'?'【一部の直前情報が未取得】 ':'')+'総合予想更新：'+(data.updated_at||index.updated_at)+' ／ '+(index.model||'')+(h.collection_mode==='live_watch'?' ／ ライブ更新を監視中':' ／ 取得できた情報で再計算')+(h.missing_forecasts?.length?' ／ 保存待ち '+h.missing_forecasts.length+'R':'');
  $('fullHealth').textContent=(stale?'自動更新が遅れています。最新の買い目として扱う前に更新時刻を確認してください。 ':'')+'取得失敗 '+Object.keys(h.source_errors||{}).length+'件 ／ '+Object.entries(h.source_counts||{}).map(([k,v])=>k+':'+v).join('・')+'。自動実行には遅延・欠落が起こる場合があります。';
  if(data.quote_health)$('fullStatus').textContent+=' ／ 直前オッズ確認 '+esc(data.quote_health.attempt_at?.slice(11,19))+'（'+data.quote_health.confirmed+'/'+data.quote_health.targets+'R）';
+ if(data.quote_health?.context_errors&&Object.keys(data.quote_health.context_errors).length){const keys=Object.keys(data.quote_health.context_errors);$('fullStatus').textContent+=' ／ 直前情報の取得待ち：'+[keys.some(k=>k.startsWith('before_'))?'公式展示':null,keys.some(k=>k.startsWith('water_'))?'水面観測':null,keys.some(k=>k.startsWith('original_'))?'足別タイム':null].filter(Boolean).join('・')+'（確認済みの情報を保持）';}
  if(data.settlement_updated_at)$('fullStatus').textContent+=' ／ 精算更新 '+data.settlement_updated_at;
  $('fullStatus').textContent+=' ／ 表示中：展示後 '+phaseCounts.preview+'件・直前情報一部 '+phaseCounts.partial+'件・展示前 '+phaseCounts.initial+'件'+(phaseCounts.missed?'・展示更新なし（締切済み） '+phaseCounts.missed+'件':'')+(phaseCounts.old?'・旧版 '+phaseCounts.old+'件':'');
  let tiles=[`<div class="metric">研究予想の保存履歴（購入条件とは別）<strong>${list.length}</strong>予定 ${catalogRows().length}R ／ 予想未保存 ${catalogRows().filter(x=>!data.records?.[x.race_code]).length}R<br>必須情報使用 ${stats?.complete_inputs??0}件<br>結果確定 ${stats?.settled??0}件 ／ 待ち ${stats?.pending??0}件</div>`];
@@ -107,8 +141,8 @@ function renderReport(){
  const el=$('fullForward');if(!el)return;
  const labels={new:'新モデル12点均等',old:'旧モデル12点均等',market:'同時刻市場12点均等',allocated_paper:'オッズ選択・配分（仮想）'};
  el.innerHTML='<h3>保存後の比較検証</h3><p class="small">新旧・市場の3者比較は同じレースだけで集計します。旧版と新版の保存時刻は異なります。朝にオッズがなければ市場比較から除外。性別・開催場・予想段階別も集計しています。</p>'+(rows.length?'<table><tr><th>比較</th><th>対象</th><th>的中</th><th>回収率</th><th>的中率95%区間</th></tr>'+rows.map(r=>`<tr><td>${esc(labels[r.model]||r.model)}</td><td>${r.cohort==='same_races'?'3者共通':'取得分'} ${r.races}R</td><td>${r.hits}/${r.races}</td><td>${pct(r.roi)}</td><td>${r.hit_rate_interval95.map(pct).join('〜')}</td></tr>`).join('')+'</table>':'<p>新しい比較条件での結果確定を待っています。</p>');
- const cohorts=index.purchase_forward_report?.rows||[],protocol=index.purchase_forward_report?.protocol;
- el.innerHTML+='<h3>点数可変候補：全保存期間・全場のモデル別成績</h3><p>各Rの最初の有効候補を1件だけ集計します。保存時刻に基づく仮想検証で、公開時刻・実購入の検証ではありません。旧12点・18点の成績とは別集計です。固定条件 '+esc(protocol?.id||'未設定')+'。少数標本で収益性を証明できません。</p>'+(cohorts.length?'<table><tr><th>保存条件／モデル／段階</th><th>対象・的中</th><th>購入想定／払戻</th><th>回収率</th></tr>'+cohorts.map(g=>'<tr><td>'+esc(g.protocol_id==='historical-reconstructed'?'過去保存から復元':g.protocol_id)+'<br>'+esc(g.model)+'<br>'+esc(g.model_id)+'<br>'+esc(g.phase)+'</td><td>'+g.races+'R／'+g.hits+'R<br>全額返還 '+g.fully_refunded+'R<br>返還未照合 '+g.refund_unverified+'R</td><td>'+g.stake+'円／'+g.return+'円<br>返還 '+g.refund+'円含む</td><td>'+pct(g.roi)+'</td></tr>').join('')+'</table>':'<p>条件を満たす候補の結果確定を待っています。</p>');
+ const cohorts=index.purchase_forward_report?.protocol_comparison_rows||index.purchase_forward_report?.rows||[],protocol=index.purchase_forward_report?.protocol;
+ el.innerHTML+='<h3>点数可変候補：全保存期間・全場のモデル別成績</h3><p>条件ごとに各Rの最初の有効候補を1件だけ集計します。条件間の件数は合算しません。保存時刻に基づく仮想検証で、公開時刻・実購入の検証ではありません。旧12点・18点の成績とは別集計です。固定条件 '+esc(protocol?.id||'未設定')+'。少数標本で収益性を証明できません。</p>'+(cohorts.length?'<table><tr><th>保存条件／モデル／段階</th><th>対象・的中</th><th>購入想定／払戻</th><th>回収率</th></tr>'+cohorts.map(g=>'<tr><td>'+esc(g.protocol_id==='historical-reconstructed'?'過去保存から復元':g.protocol_id)+'<br>'+esc(g.model)+'<br>'+esc(g.model_id)+'<br>'+esc(g.phase)+'</td><td>'+g.races+'R／'+g.hits+'R<br>全額返還 '+g.fully_refunded+'R<br>返還未照合 '+g.refund_unverified+'R</td><td>'+g.stake+'円／'+g.return+'円<br>返還 '+g.refund+'円含む</td><td>'+pct(g.roi)+'</td></tr>').join('')+'</table>':'<p>条件を満たす候補の結果確定を待っています。</p>');
 }
 function renderOfferHistory(r){
  const offers=Object.values(r.offers||{}).sort((a,b)=>a.created_at.localeCompare(b.created_at)||a.snapshot_id.localeCompare(b.snapshot_id));

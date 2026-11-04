@@ -15,7 +15,7 @@ def fixture():
   for k,v in enumerate((37+i*.1,5+i*.01,7+i*.01),1):org[f'艇{i}_値{k}']=str(v)
   for k,v in {'枠番別勝率':5,'枠番別平均ST':.16,'枠番別平均スタート順':3,'過去1走_着順':2,'過去2走_着順':3}.items():waku[f'艇{i}_{k}']=str(v)
   recent[f'艇{i}_前1節_終了日']='2026-10-31';recent[f'艇{i}_前1節_着順列']='１２３４５６'
- weather={**base,'風速(m)':'2','風向':'8','波の高さ(cm)':'3','天候':'2','気温(℃)':'21','水温(℃)':'23'}
+ weather={**base,'気象観測時刻':base['取得日時'],'風速(m)':'2','風向':'8','波の高さ(cm)':'3','天候':'2','気温(℃)':'21','水温(℃)':'23'}
  odds={**base,**{'3連単_'+c:str(10+j%20) for j,c in enumerate(COMBOS)}}
  motor=[{'場コード':'15','モーター番号':str(i),'モーター期起算日':'2026-04-01','勝率':'5','2連対率':'35','3連対率':'50','出走数':'100','平均ラップ秒':'15'} for i in range(1,7)]
  d={'cards':{CODE:c},'title':{CODE:{'レースコード':CODE,'電話投票締切予定':'14:10'}},'waku':{CODE:waku},'recent_n':{CODE:recent},'recent_l':{CODE:recent},'ex':{CODE:ex},'st':{CODE:st},'original':{CODE:org},'weather':{CODE:weather},'odds':{CODE:odds},'motor_rows':motor,'results':{},'payouts':{}}

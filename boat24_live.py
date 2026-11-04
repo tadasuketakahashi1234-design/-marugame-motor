@@ -17,6 +17,7 @@ from boat24_offers import PROTOCOL_ID,register_offers
 from boat24_history_io import history_path,read_history,write_history,write_view
 from boat24_model_io import read_json
 from boat24_odds import collect
+from boat24_quote_context import newest_context
 
 
 def reprice(base,quotes,model,code,now,clock=None):
@@ -59,12 +60,12 @@ def reprice(base,quotes,model,code,now,clock=None):
 
 
 def capture(model):
-    from boat24_full_update import DIRECTORY,INDEX,MANIFEST,latest
+    from boat24_full_update import DIRECTORY,INDEX,MANIFEST
     now=dt.datetime.now(JST);path=history_path(DIRECTORY,now.date().isoformat())
     if not path.exists():return False
     ledger=read_history(path);targets=[]
     for code,rec in ledger.get('records',{}).items():
-        s=latest(rec);cut=timeparse((s or {}).get('cutoff'))
+        s=newest_context(rec);cut=timeparse((s or {}).get('cutoff'))
         if not rec.get('result') and cut and dt.timedelta(minutes=2)<cut-now<=dt.timedelta(minutes=25):targets.append((cut,code,s))
     targets=sorted(targets)[:24]
     if not targets:return False

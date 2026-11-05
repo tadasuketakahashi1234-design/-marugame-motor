@@ -52,7 +52,10 @@ class FrozenDecisions(unittest.TestCase):
 class PublicReceiptPublisher(unittest.TestCase):
  def test_public_payload_digest_and_receipt_are_committed_to_bare_remote(self):self.run_publisher(False)
  def test_reuses_publication_worktree_and_reads_current_archive_once(self):self.run_publisher(True)
- def run_publisher(self,reuse):
+ def test_stale_mutable_index_uses_the_same_public_ref_fallback_as_ui(self):self.run_publisher(True,stale=True)
+ def test_invalid_public_ref_cannot_create_a_receipt(self):self.run_publisher(True,stale='invalid')
+ def test_newer_public_index_for_a_different_view_cannot_create_a_receipt(self):self.run_publisher(True,stale='different')
+ def run_publisher(self,reuse,stale=False):
   import subprocess,tempfile,hashlib,types
   from pathlib import Path
   import boat24_public_receipts as pub
@@ -71,12 +74,24 @@ class PublicReceiptPublisher(unittest.TestCase):
    class Clock(dt.datetime):
     @classmethod
     def now(cls,tz=None):return AT+dt.timedelta(seconds=10)
-   calls=[]
-   def download(url):calls.append(url);return json.dumps(index).encode() if 'boat24_full_index.json' in url else raw
-   with patch.object(pub,'git',side_effect=observed_git),patch.object(pub,'download',side_effect=download),patch.object(pub,'dt',types.SimpleNamespace(datetime=Clock)),patch.object(pub,'read_history',wraps=pub.read_history) as reads:pub.publish(local,initial_work=local if reuse else None)
+   calls=[];published_sha=git('rev-parse','HEAD',cwd=local)
+   def download(url):
+    calls.append(url)
+    if 'api.github.com' in url:return json.dumps({'object':{'sha':'invalid' if stale=='invalid' else published_sha}}).encode()
+    if 'main/omura/docs/boat24_full_index.json' in url and stale:return b'{"days":{}}'
+    if stale=='different' and 'boat24_full_index.json' in url:return b'{"days":{}}'
+    return json.dumps(index).encode() if 'boat24_full_index.json' in url else raw
+   with patch.object(pub,'git',side_effect=observed_git),patch.object(pub,'download',side_effect=download),patch.object(pub,'dt',types.SimpleNamespace(datetime=Clock)),patch.object(pub,'read_history',wraps=pub.read_history) as reads:
+    if stale=='invalid':
+     with self.assertRaisesRegex(ValueError,'Invalid public main ref'):pub.publish(local,initial_work=local)
+     self.assertFalse((docs/'boat24_decisions.json').exists());return
+    pub.publish(local,initial_work=local if reuse else None)
+   if stale=='different':self.assertFalse((docs/'boat24_decisions.json').exists());return
    self.assertEqual(reads.call_count,1)
    if reuse:self.assertFalse(any(a[:2]==('worktree','add') for a in git_calls))
    saved=json.loads(git('--git-dir',remote,'show','main:omura/docs/boat24_decisions.json'));self.assertEqual(len(saved['records'][CODE]['receipts']),1);receipt=next(iter(saved['records'][CODE]['receipts'].values()));self.assertEqual(receipt['proof']['sha256'],h);self.assertEqual(receipt['observed_at'],(AT+dt.timedelta(seconds=10)).isoformat());self.assertTrue(any('main/omura/docs/boat24_full_index.json' in u for u in calls))
+   if stale:
+    self.assertIn('/'+published_sha+'/',receipt['proof']['index_confirmed_url']);self.assertTrue(any('/git/ref/heads/main' in u for u in calls))
    updated=json.loads(git('--git-dir',remote,'show','main:omura/docs/boat24_full_index.json'));self.assertEqual(updated['decision_report']['counts']['awaiting_freeze'],1)
 
 class ObservationAuditTruth(unittest.TestCase):

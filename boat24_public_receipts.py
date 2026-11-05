@@ -33,6 +33,17 @@ def publish(root,initial_work=None,publication=None):
             with stage(trace,'public_index_fetch'):current=json.loads(download(base+'main/omura/docs/boat24_full_index.json'))
             # Confirm the public current index points to this exact view.
             day=dt.datetime.now(JST).date().isoformat();entry=index.get('days',{}).get(day);public=current.get('days',{}).get(day)
+            confirmed_url=base+'main/omura/docs/boat24_full_index.json'
+            if entry and (not public or entry.get('view_path')!=public.get('view_path') or entry.get('view_sha256')!=public.get('view_sha256')):
+                # Match the UI's latest-ref fallback when the mutable raw URL is stale.
+                # The public ref must resolve first; a locally known SHA alone is not evidence.
+                with stage(trace,'public_ref_fetch'):
+                    ref_url='https://api.github.com/repos/'+repo+'/git/ref/heads/main'
+                    ref=json.loads(download(ref_url));public_sha=ref.get('object',{}).get('sha','')
+                    if not re.fullmatch(r'[a-f0-9]{40}',public_sha):raise ValueError('Invalid public main ref')
+                confirmed_url=base+public_sha+'/omura/docs/boat24_full_index.json'
+                with stage(trace,'public_versioned_index_fetch'):current=json.loads(download(confirmed_url))
+                public=current.get('days',{}).get(day);trace['public_ref_sha']=public_sha
             if entry and public and entry.get('view_path')==public.get('view_path') and entry.get('view_sha256')==public.get('view_sha256'):
                 path=entry.get('view_path','')
                 if not re.fullmatch(r'day_views/\d{4}-\d{2}-\d{2}-[a-f0-9]{16}\.json',path):raise ValueError('Unversioned public view cannot establish receipt')
@@ -43,7 +54,7 @@ def publish(root,initial_work=None,publication=None):
                 view=json.loads(raw);observed=dt.datetime.now(JST).isoformat();trace['state']='view_confirmed'
                 with stage(trace,'read_observed_archive'):ledger=read_history(work/'omura/docs'/entry['archive_path'])
                 archives=ledger['records'];loaded={day:ledger}
-                proof={'source_commit':source,'view_url':url,'sha256':digest,'index_confirmed_url':base+'main/omura/docs/boat24_full_index.json'}
+                proof={'source_commit':source,'view_url':url,'sha256':digest,'index_confirmed_url':confirmed_url}
                 pending.append((view,archives,observed,proof))
             trace.setdefault('state','index_changed_before_verification')
             target=work/PATH;doc=json.loads(target.read_text()) if target.exists() else {}

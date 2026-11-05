@@ -74,6 +74,9 @@ def publish(root,initial_work=None,publication=None):
                 doc=update(doc,{'catalog':ledger.get('catalog',{})},ledger.get('records',{}),now,{})
             if not doc: return
             index['decision_report']=report(doc);index['updated_at']=now
+            from boat24_study import report as study_report
+            study_records=[r for book in loaded.values() for r in book.get('records',{}).values()]
+            index['prospective_study']=study_report(study_records,doc,index.get('catalogs',{}),dt.datetime.now(JST))
             index.setdefault('pipeline_health',{}).update(publication=publication or index.get('pipeline_health',{}).get('publication',{}),public_observation=trace,last_observed_at=index['decision_report'].get('last_public_observed_at'))
             atomic_write(target,doc);atomic_write(index_path,index)
             git('add',PATH,'omura/docs/boat24_full_index.json',cwd=work)

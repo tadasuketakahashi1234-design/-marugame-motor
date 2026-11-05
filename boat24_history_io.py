@@ -85,7 +85,8 @@ def compact_day(doc):
     from boat24_full_update import latest
     out={k:copy.deepcopy(v) for k,v in doc.items() if k!='records'};out['records']={};out['view_schema']=1
     for code,record in doc.get('records',{}).items():
-        rec={k:copy.deepcopy(v) for k,v in record.items() if k not in ('revisions','result_history')}
+        rec={k:copy.deepcopy(v) for k,v in record.items() if k not in ('revisions','result_history','collection_attempts','settlement_attempts')}
+        rec['collection_attempt_count']=len(record.get('collection_attempts',{}));rec['settlement_attempt_count']=len(record.get('settlement_attempts',{}))
         revisions=record.get('revisions',{});keep=set()
         chosen=latest(record)
         if chosen:
@@ -104,6 +105,10 @@ def compact_day(doc):
         if offers and offers[0]['snapshot_id'] in revisions:keep.add(offers[0]['snapshot_id'])
         fields=('id','created_at','computed_at','cutoff','evaluation_eligible','phase','complete_inputs','model','model_id','purchase_plan','refresh_kind','context_snapshot_at')
         rec['revisions']={k:{**{f:copy.deepcopy(revisions[k][f]) for f in fields if f in revisions[k]},'_details_compacted':True} for k in keep if k in revisions}
+        from boat24_study import evidence
+        for sid,public in rec['revisions'].items():
+            proof=evidence(revisions[sid])
+            if proof:public['study_evidence']=proof
         for s in rec['revisions'].values():
             if s.get('purchase_plan'):
                 # Search frontiers stay in the full immutable archive. The

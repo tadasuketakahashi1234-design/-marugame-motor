@@ -7,7 +7,7 @@ const snap=()=>({id:staleView?'old':'s',phase:'preview',created_at:new Date(now.
 const index=()=>({latest_day:'2026-11-04',updated_at:new Date(now.getTime()+(stale?-10000:version*1000)).toISOString(),days:{'2026-11-04':{summary:{},venues:{10:{}}}},training:{},forward_report:{rows:[]}});
 const data=()=>({updated_at:now.toISOString(),catalog:{[code]:{race_code:code,venue:10,race:2,cutoff}},records:{[code]:{race_code:code,venue:10,race:2,revisions:{[staleView?'old':'s']:snap()},race_commentary:c}}});
 const context={document:{getElementById:el,hidden:false},fetch:async u=>{requests.push(u);if(u.includes('api.github.com')){apiCalls++;return{ok:true,json:async()=>({object:{sha:(version?'b':'a').repeat(40)}})}}if(u.startsWith('./'))return new Promise(()=>{});return{ok:true,json:async()=>u.includes('boat24_full_index')?index():data()}},AbortSignal:{timeout(){}},Date,Intl,Number,String,Object,Set,Promise,Error,setInterval(){}};
-vm.runInNewContext(fs.readFileSync('omura/docs/boat24_full_ui.js','utf8'),context);
+vm.runInNewContext(fs.readFileSync('omura/docs/boat24_full_ui.js','utf8').replace('function renderNarrative(c){','globalThis.__renderNarrative=renderNarrative;function renderNarrative(c){'),context);
 (async()=>{
  await new Promise(r=>setTimeout(r,50));
  assert(el('fullRecords').innerHTML.includes('判定保留'));assert(el('fullRecords').innerHTML.includes('風速6m'));assert(el('fullRaceNav').innerHTML.includes('#race-'+code));assert(el('fullRecords').innerHTML.includes('想定展開'));assert(el('fullRecords').innerHTML.includes('軸の順位が決まった過程'));assert(el('fullRecords').innerHTML.includes('条件付き2着'));assert(el('fullRecords').innerHTML.includes('助走距離は未計測'));
@@ -21,3 +21,11 @@ vm.runInNewContext(fs.readFileSync('omura/docs/boat24_full_ui.js','utf8'),contex
 })().catch(e=>{console.error(e);process.exitCode=1});
 
 require('./race_navigation_ui.js');
+
+const waterFixture={conditions:'北風・風速3m・波高4cm',fresh:true,tide:'上げ潮（推算）',rows:Array.from({length:6},(_,i)=>({lane:i+1,course:i+1,wind:{label:i?'標本不足':'良化傾向',n:i?5:30,delta:i?null:.5},tide:{label:'潮位未取得',n:0,delta:null}})),scope:'同場同コース',missing:'波高別は未集計',prediction_use:'参考',through:'2026-11-05'};
+const compactHtml=context.__renderNarrative({...c,water_analysis:waterFixture});
+assert.equal((compactHtml.match(/水面と艇への影響/g)||[]).length,1);
+assert(compactHtml.includes('良化傾向')&&compactHtml.includes('30例'));
+assert(!compactHtml.includes('根拠の鮮度')&&!compactHtml.includes('買い目との関係'));
+assert(compactHtml.indexOf('予想の詳しい根拠・反証')<compactHtml.indexOf('軸の順位が決まった過程'));
+console.log('Compact water UI PASS: one surface panel, boat-level support, detailed reasoning collapsed');

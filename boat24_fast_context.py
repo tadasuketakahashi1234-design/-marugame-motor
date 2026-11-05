@@ -4,6 +4,7 @@ import csv
 import datetime as dt
 import io
 import json
+import hashlib,time
 import urllib.request
 from concurrent.futures import ThreadPoolExecutor
 from boat24_integrity import JST,timeparse
@@ -28,7 +29,7 @@ def download(url,timeout=5):
 def collect(targets,now):
     """One CSV per day, one water feed per venue, one joined before page per R."""
     rows={code:{} for code,s in targets};errors={};token=str(int(now.timestamp()//30))
-    def job(task):
+    def acquire(task):
         kind,key=task
         try:
             if kind=='before':
@@ -37,7 +38,7 @@ def collect(targets,now):
                 if not before:raise ValueError('Race/date/all six racer identities not verified')
                 preview=parse_live_previews(body,key,card,at)
                 for row in preview.values():row['source_url']=u
-                return kind,key,{'previews':preview,'before':before,'observed_at':at,'source':u},None
+                return kind,key,{'previews':preview,'before':before,'observed_at':at,'source':u,'body_sha256':hashlib.sha256(body.encode()).hexdigest()},None
             if kind=='water':
                 from boat24_water import parse_venue_weather
                 u=f'https://race.boatcast.jp/m_txt/{key}/bc_sui_{now.strftime("%Y%m%d")}_{key}.txt'
@@ -47,9 +48,18 @@ def collect(targets,now):
             body=download(u,4).lstrip('\ufeff')
             return kind,key,{r['レースコード']:r for r in csv.DictReader(io.StringIO(body)) if r.get('レースコード') in rows},None
         except Exception as e:return kind,key,None,str(e)[:160]
+    def job(task):
+        started=dt.datetime.now(JST).isoformat();tick=time.perf_counter();kind,key,value,error=acquire(task)
+        trace={'started_at':started,'completed_at':dt.datetime.now(JST).isoformat(),'seconds':round(time.perf_counter()-tick,4),'state':'unconfirmed' if error else 'parsed','error':error}
+        if kind=='before' and value:
+            trace.update(identity_verified=True,exhibition_parsed=bool(value['previews'].get('ex')),entry_parsed=bool(value['previews'].get('st')),body_sha256=value['body_sha256'])
+            if not trace['exhibition_parsed'] or not trace['entry_parsed']:trace['state']='verified_page_preview_incomplete'
+        return kind,key,value,error,trace
     tasks=[('before',code) for code,s in targets]+[('water',v) for v in sorted({c[8:10] for c,s in targets})]+[('original','today')]
     with ThreadPoolExecutor(max_workers=8) as pool:
-        for kind,key,value,error in pool.map(job,tasks):
+        for kind,key,value,error,trace in pool.map(job,tasks):
+            for code in rows:
+                if kind=='original' or kind=='before' and code==key or kind=='water' and code[8:10]==key:rows[code].setdefault('source_checks',{})[kind]=trace
             if error:errors[kind+'_'+key]=error;continue
             if kind=='before':rows[key].update(value)
             elif kind=='water':

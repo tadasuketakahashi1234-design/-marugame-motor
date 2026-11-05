@@ -51,6 +51,7 @@ jobs:
           node tests/forecast_ui.js
           node tests/results_ui.js
           node tests/frozen_decisions_ui.js
+          node tests/pipeline_ui.js
       - name: Load current inputs and preserve original history for validation
         run: |
           python - <<'PY'

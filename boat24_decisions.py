@@ -66,7 +66,7 @@ def update(doc,view,archives,observed_at,proof):
                 r['decision']={'policy':POLICY,'state':state,'reason':reason,'finalized_at':observed_at,'snapshot_id':(receipt or {}).get('snapshot_id'),'receipt':copy.deepcopy(receipt),'model_id':(snap or {}).get('model_id'),'phase':(snap or {}).get('phase'),'plan':compact_plan((snap or {}).get('purchase_plan')),'paired':copy.deepcopy((snap or {}).get('research',{}).get('decision_arms',{}))}
         decision=r.get('decision');result=rec.get('result')
         if decision and result:
-            settle={'result_id':result.get('id'),'combo':result['combo'],'payout_100yen':result['payout_100yen'],'refund_verified':bool(result.get('refund_verified')),'settled_at':observed_at}
+            settle={'result_id':result.get('id'),'combo':result['combo'],'payout_100yen':result['payout_100yen'],'refund_verified':bool(result.get('refund_verified')),'refund_boats':copy.deepcopy(result.get('refund_boats',[])),'winning_trifectas':copy.deepcopy(result.get('winning_trifectas') or {result['combo']:result['payout_100yen']}),'settled_at':observed_at}
             if result.get('refund_verified'):
                 winners=result.get('winning_trifectas') or {result['combo']:result['payout_100yen']};refunds=result.get('refund_boats',[])
                 if decision['state']=='buy':settle['actual_rule']=amounts(decision['plan']['tickets'],winners,refunds)
@@ -77,7 +77,7 @@ def update(doc,view,archives,observed_at,proof):
                     if state=='buy':pairs[name]['paper']=amounts(arm['plan']['tickets'],winners,refunds)
                 if pairs:settle['paired']=pairs
             old=r.get('settlement') or {}
-            if old.get('result_id')!=settle.get('result_id') or old.get('refund_verified')!=settle['refund_verified']:r['settlement']=settle
+            if old.get('result_id')!=settle.get('result_id') or old.get('refund_verified')!=settle['refund_verified'] or 'refund_boats' not in old:r['settlement']=settle
     out['updated_at']=observed_at;return out
 
 def report(doc):
@@ -87,9 +87,9 @@ def report(doc):
         rows.append({'race_code':r['race_code'],'venue':r.get('venue'),'race':r.get('race'),'freeze_at':r['freeze_at'],'state':state,'reason':d.get('reason'),'snapshot_id':d.get('snapshot_id'),'observed_at':(d.get('receipt') or {}).get('observed_at'),'plan':compact_plan(d.get('plan')),'result':s.get('combo'),'paper':bet})
         if bet:
             key=(d.get('model_id'),d.get('phase'));g=groups.setdefault(key,{'model_id':key[0],'phase':key[1],'races':0,'hits':0,'stake':0,'return':0,'gami':0});g['races']+=1;g['hits']+=bet['hit'];g['stake']+=bet['stake'];g['return']+=bet['return'];g['gami']+=bool(bet['hit'] and bet['profit']<0)
-            sequences.setdefault(key,[]).append((r['freeze_at'],bet))
+            sequences.setdefault(key,[]).append((r['freeze_at'],r['race_code'],bet))
             probability=d.get('plan',{}).get('estimated_hit_probability')
-            if isinstance(probability,(float,int)) and 0<=probability<=1 and bet.get('net_stake',0)>0:
+            if isinstance(probability,(float,int)) and 0<=probability<=1 and bet.get('net_stake',0)>0 and not s.get('refund_boats') and len(s.get('winning_trifectas',{}))==1:
                 b=bins.setdefault(str(min(9,int(probability*10))),{'races':0,'expected_hits':0.,'hits':0});b['races']+=1;b['expected_hits']+=probability;b['hits']+=bet['hit']
         arms=s.get('paired',{})
         if set(arms)=={'baseline','candidate'}:
@@ -100,10 +100,11 @@ def report(doc):
                 else:g['pending']+=1
     for key,sequence in sequences.items():
         balance=peak=drawdown=streak=longest=0
-        for _,bet in sorted(sequence,key=lambda x:x[0]):
+        for _,_,bet in sorted(sequence,key=lambda x:(x[0],x[1])):
             balance+=bet['profit'];peak=max(peak,balance);drawdown=max(drawdown,peak-balance)
             if bet.get('net_stake',0)>0:streak=streak+1 if bet['profit']<0 else 0
             longest=max(longest,streak)
         groups[key].update(max_drawdown=drawdown,max_loss_streak=longest)
     for g in [*groups.values(),*paired.values()]:g['roi']=g['return']/g['stake'] if g['stake'] else None;g['profit']=g['return']-g['stake']
-    return {'protocol':(doc or {}).get('protocol',{**PROTOCOL,'started_at':None}),'updated_at':(doc or {}).get('updated_at'),'counts':counts,'purchase_probability_bins':bins,'model_rows':list(groups.values()),'paired_rows':paired,'decisions':sorted(rows,key=lambda r:r['race_code']),'note':'公開データ取得確認は公開時刻の上限。購入実績ではなく仮想照合。過去の公開時刻を推定して遡及採用しない。'}
+    observed=max((v.get('observed_at','') for r in records for v in r.get('receipts',{}).values()),default=None)
+    return {'last_public_observed_at':observed,'protocol':(doc or {}).get('protocol',{**PROTOCOL,'started_at':None}),'updated_at':(doc or {}).get('updated_at'),'counts':counts,'purchase_probability_bins':bins,'model_rows':list(groups.values()),'paired_rows':paired,'decisions':sorted(rows,key=lambda r:r['race_code']),'note':'公開データ取得確認は公開時刻の上限。購入実績ではなく仮想照合。過去の公開時刻を推定して遡及採用しない。'}

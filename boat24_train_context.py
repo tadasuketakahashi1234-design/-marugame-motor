@@ -248,7 +248,6 @@ def build_model(today,days=28):
             behavior.attach(built['features'],card)
             surface.attach(built['features'],int(code[8:10]),built['cutoff'],tide_book)
             tactics.attach(built['features'],card,int(code[8:10]),d)
-            surface_pending.append((int(code[8:10]),built['features'],fm))
             initial=race_features(code,card,data,history,dt.datetime.combine(day,dt.time(7),JST),prior_motor,course_stats)
             if initial:
                 behavior.attach(initial['features'],card)
@@ -268,6 +267,9 @@ def build_model(today,days=28):
                 for lane,f in enumerate(snapshot['features'],1):
                     course=int(f.get('start',{}).get('展示進入',lane))
                     samples.append({'phase':phase,'date':d,'code':code,'venue':int(code[8:10]),'course':course,'lane':lane,'finish':fm[str(lane)],'features':f,'snapshot_id':snapshot.get('snapshot_id'),'feature_schema':SCHEMA})
+            # Queue the final replayed, freshness-filtered inputs. Add only after
+            # every race of this date was built, preserving prior-date learning.
+            surface_pending.append((int(code[8:10]),built['features'],fm))
             if offset<=12:
                 actual='-'.join(str(res.get(f'{p}着_艇番')) for p in (1,2,3))
                 if actual in COMBOS and initial:initial_validation.append({'code':code,'date':d,'venue':int(code[8:10]),'features':initial['features'],'actual':actual,'snapshot_id':initial.get('snapshot_id')})
@@ -282,7 +284,7 @@ def build_model(today,days=28):
     model={'version':VERSION,'trained_through':(today-dt.timedelta(days=1)).isoformat(),
            'generated_at':dt.datetime.now(JST).isoformat(),'samples':samples,'scales':scales(samples),
            'calendars':calendars,'motor_histories':histories,'profiles':profile_rows,'runs':run_rows,
-           'tide_book':tide_book,'water_source_errors':water_errors,'surface_state':surface.state,'venue_profiles':PROFILES,'behavior_state':behavior.state,'course_state':course_stats.state,'course_window_days':days+28,
+           'surface_training_policy':'replayed-quality-filtered-inputs-1','tide_book':tide_book,'water_source_errors':water_errors,'surface_state':surface.state,'venue_profiles':PROFILES,'behavior_state':behavior.state,'course_state':course_stats.state,'course_window_days':days+28,
            'registry':registry,'forecast_freeze_minutes':FREEZE_MINUTES,
            'previous_motor_rows':prior_motor,'coverage':coverage,'source_errors':dict(ERRORS),
            'market_alpha':.25,'market_alpha_origin':'preset_unvalidated','calibration':{'status':'not_calibrated'},

@@ -13,7 +13,7 @@ from contextlib import contextmanager
 from concurrent.futures import ThreadPoolExecutor
 from boat24_integrity import JST,timeparse,atomic_write
 from boat24_context import predict,ALL_GROUPS,FREEZE_MINUTES
-from boat24_bets import balanced_plan
+from boat24_bets import balanced_plan,optimize
 from boat24_risk import robust_plan
 from boat24_quality import prepare as prepare_quality,POLICY as INPUT_POLICY
 from boat24_offers import PROTOCOL_ID,register_offers
@@ -52,13 +52,18 @@ def reprice(base,quotes,model,code,now,clock=None):
     plan=robust_plan(out['probabilities'],odds,verified=bool(out.get('probability_verified')),inputs_ready=quality['purchase_inputs_ready'])
     plan.update(protocol_id=PROTOCOL_ID,odds_observed_at=quotes['取得日時'],odds_source=quotes.get('source_url'),odds_fetched_at=quotes.get('取得完了日時'))
     out['purchase_plan']=plan
+    out['allocation']=optimize(out['probabilities'],odds)
     out['input_snapshot']['captured_at']=now.isoformat()
     out['input_snapshot']['features']=features
     out['input_snapshot'].setdefault('previews',{})['odds']=copy.deepcopy(quotes)
     out['input_snapshot'].setdefault('source_times',{})['odds']=quotes['取得日時']
+    out.update(created_at=now.isoformat(),computed_at=now.isoformat())
+    from boat24_comparison_inputs import market_for,digest
+    out['market_baseline']=market_for(out)
+    out['allocation']['comparison_input_digest']=digest(out)
     out['context_snapshot_at']=base.get('context_snapshot_at',base['created_at'])
     out['refresh_kind']='official_odds_reprice'
-    out['id']=hashlib.sha256(json.dumps([features,quotes,model.get('model_id'),PROTOCOL_ID,quality['policy'],quality['weather']['state'],'official-reprice-2'],sort_keys=True,ensure_ascii=False).encode()).hexdigest()
+    out['id']=hashlib.sha256(json.dumps([features,quotes,model.get('model_id'),PROTOCOL_ID,quality['policy'],quality['weather']['state'],'official-reprice-3'],sort_keys=True,ensure_ascii=False).encode()).hexdigest()
     out.update(created_at=now.isoformat(),computed_at=now.isoformat(),evaluation_eligible=True,race_code=code)
     from boat24_reasoning import build as explain
     out['race_reasoning']=explain(out,model,include_sensitivity=quality['purchase_inputs_ready'])

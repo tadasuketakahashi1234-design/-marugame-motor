@@ -56,7 +56,7 @@ class BatchUpgradeTests(unittest.TestCase):
 class ForwardReportTests(unittest.TestCase):
  def test_same_race_comparison_excludes_post_deadline_old_prediction(self):
   from boat24_forward import build_report
-  p={c:1/120 for c in COMBOS};snap={'id':'s','created_at':'2026-11-03T10:00:00+09:00','cutoff':'2026-11-03T11:00:00+09:00','evaluation_eligible':True,'selection':{'12':COMBOS[:12]},'probabilities':p,'market_baseline':{'picks':COMBOS[:12],'probabilities':p},'input_snapshot':{'race_context':{'field_type':'mixed'}},'allocation':{'tickets':[{'combo':'1-2-3','stake':200}]}}
+  p={c:1/120 for c in COMBOS};snap={'id':'s','created_at':'2026-11-03T10:00:00+09:00','cutoff':'2026-11-03T11:00:00+09:00','evaluation_eligible':True,'selection':{'12':COMBOS[:12]},'probabilities':p,'market_baseline':{'picks':COMBOS[:12],'probabilities':p},'input_snapshot':{'race_context':{'field_type':'mixed'},'previews':{'odds':{'取得日時':'2026-11-03T10:00:00+09:00',**{'3連単_'+c:'120' for c in COMBOS}}}},'allocation':{'tickets':[{'combo':'1-2-3','stake':200,'odds':120}]}}
   r={'race_code':'202611031501','date':'2026-11-03','venue':15,'revisions':{'s':snap},'result':{'combo':'1-2-3','payout_100yen':1000}}
   old={'created_at':'2026-11-03T11:01:00+09:00','cutoff':snap['cutoff'],'selection':snap['selection'],'probabilities':p};report=build_report([r],{'predictions':{r['race_code']:old}});self.assertFalse(any(row['cohort']=='same_races' for row in report['rows']))
   old['created_at']='2026-11-03T09:00:00+09:00';report=build_report([r],{'predictions':{r['race_code']:old}});common=[row for row in report['rows'] if row['group']=='all' and row['cohort']=='same_races'];self.assertEqual(len(common),3);self.assertEqual({x['races'] for x in common},{1})

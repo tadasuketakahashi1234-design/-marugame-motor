@@ -51,6 +51,12 @@ function purchaseView(s){
  const minimum=Math.min(...tickets.map(t=>t.expected_return));
  return {valid:true,ready:!closed,html:(closed?'<b>締切済み・保存時の参考</b><br>':'')+'<b>'+tickets.length+'点・計'+total+'円</b><br>'+tickets.map(t=>esc(t.combo)+'：'+t.stake+'円').join('<br>'),metrics:'取得時の最低想定払戻 '+minimum+'円<br>最低想定利益 ＋'+(minimum-total)+'円<br>モデル内試算回収率 '+pct(p.estimated_roi)+'（未校正・実績ではありません）<br>合成 '+num(p.synthetic_odds)+'倍<br>オッズ時刻 '+esc(p.odds_observed_at)+'<br>候補計算 '+esc(s.created_at)+'<br>点数・配分の近似比較／的中確率とのバランス優先'+(p.risk_policy===riskPolicy?'<br>感度条件：確率 '+pct(p.risk_controls.probability_haircut)+'減・払戻 '+pct(p.risk_controls.price_haircut)+'減／1点上限 '+pct(p.risk_controls.maximum_ticket_share)+'<br>下振れ条件の試算回収率 '+pct(p.stress_expected_roi)+'<br>感度条件は統計的な信頼区間ではありません':'')};
 }
+function renderBoatComparison(x,code){
+ const boats=Array.from({length:6},(_,i)=>x?.boats?.find(b=>b.lane===i+1)||{lane:i+1}),val=(v,unit='',digits=2)=>v==null?'未取得':Number(v).toFixed(digits)+unit;
+ const row=(label,fn)=>'<tr><th scope="row">'+label+'</th>'+boats.map(b=>'<td>'+fn(b)+'</td>').join('')+'</tr>';
+ const html='<div class="six-boat-scroll" role="region" aria-label="1〜6号艇のデータ比較" tabindex="0"><table class="six-boat-table"><thead><tr><th scope="col">項目</th>'+boats.map(b=>'<th scope="col" class="boat-color-'+b.lane+'"><b>'+b.lane+'号艇</b><span>'+esc(b.name||'選手未取得')+'</span></th>').join('')+'</tr></thead><tbody>'+row('モーター',b=>esc(b.motor==null?'未取得':b.motor+'号機'))+row('2連対率',b=>val(b.motor_two,'%',1))+row('3連対率',b=>val(b.motor_three,'%',1))+row('全国平均ST',b=>val(b.average_st))+row('今節平均ST<br>当日確認分',b=>val(b.series_st)+(b.series_normal_count?'<small>'+b.series_normal_count+'走</small>':''))+row('今節の本番ST<br>当日確認分',b=>(b.series_starts||[]).map(r=>r.race+'R '+(r.f?'F':'')+Math.abs(r.st).toFixed(2)).join('<br>')||'未取得')+row('展示進入',b=>b.course==null?'未確認':esc(b.course)+'コース')+row('コース平均ST',b=>val(b.course_average_st))+row('コース勝率<br>補正得点',b=>val(b.course_points))+row('コース1着率<br>実績',b=>b.course_win_rate==null?'未取得':val(b.course_win_rate*100,'%',1)+'<small>'+esc(b.course_races)+'走</small>')+['逃げ','差し','まくり','まくり差し'].map(m=>row(m+'<br>補正率',b=>b.methods?.[m]==null?'未取得':val(b.methods[m]*100,'%',1))).join('')+'</tbody></table></div>';
+ return '<details class="six-boat-comparison" data-six-code="'+esc(code)+'"'+(activeRace===code?' open':'')+'><summary>1〜6号艇を比較</summary>'+html+'<details class="six-boat-notes"><summary>集計期間・項目の見方</summary><p class="small">'+esc(x?.series_scope||'この保存版の比較データは更新待ちです。')+'<br>'+esc(x?.course_scope||'')+'<br>コース実績の基準日 '+esc(x?.through||'未確認')+'。決まり手率の分母はコース出走数で、勝った時の内訳ではありません。</p></details></details>';
+}
 function renderWaterAnalysis(c){
  const w=c.water_analysis;
  if(!w)return '<section class="water-summary"><h4>水面と艇への影響</h4><p>'+esc((c.water||'観測なし').split('。')[0])+'。</p><p class="small">この保存版は艇別の水面比較を未収録。</p><details><summary>保存時の観測説明</summary><p>'+esc(c.water||'')+'</p></details></section>';
@@ -94,7 +100,7 @@ async function openDetail(){
  if($('fullSupplement')){$('fullSupplement').open=true;$('fullSupplement').scrollIntoView?.({behavior:'smooth',block:'start'})}
  if(!snap._details_compacted){renderDetail();return}
  const code=selected;$('fullDetail').innerHTML='<p>このRの補足データと保存入力を読込中…</p>';
- try{const full=await readRaceArchive(code);if(code!==selected)return;full.race_commentary=r.race_commentary;data.records[code]=full;renderDetail()}catch(e){$('fullDetail').innerHTML='<p>'+esc(e.message)+'</p>'}
+ try{const full=await readRaceArchive(code);if(code!==selected)return;full.race_commentary=r.race_commentary;full.boat_comparison=r.boat_comparison;data.records[code]=full;renderDetail()}catch(e){$('fullDetail').innerHTML='<p>'+esc(e.message)+'</p>'}
 }
 async function readRaceArchive(code){
  const archived=await getJSON(index.days?.[$('fullDate').value]?.archive_path||'full_history/'+$('fullDate').value+'.json');
@@ -130,6 +136,7 @@ function syncQuickSelection(){
  if($('fullQuickPrev'))$('fullQuickPrev').disabled=pos<=0;
  if($('fullQuickNext'))$('fullQuickNext').disabled=pos<0||pos>=quickRows.length-1;
  if($('fullQuickStatus'))$('fullQuickStatus').textContent=pos<0?'この日の選択中の場にはレースがありません':'選択中：'+names[quickRows[pos].venue]+' '+quickRows[pos].race+'R ／ 前R・次Rでも切り替えられます';
+ $('fullRecords')?.querySelectorAll('[data-six-code]').forEach(el=>{el.open=el.dataset.sixCode===activeRace;});
  $('fullRaceNav')?.querySelectorAll('a').forEach(a=>a.setAttribute?.('aria-current',a.getAttribute('href')==='#race-'+activeRace?'true':'false'));
 }
 function renderQuickNav(rows,scope){
@@ -189,7 +196,7 @@ function render(){
   const r=data.records?.[item.race_code],snap=r&&latest(r);
   if(!snap)return '<article class="race-card" tabindex="-1" id="race-'+esc(item.race_code)+'"><h3>'+esc(names[item.venue])+' '+item.race+'R</h3><p>'+esc(raceStates[item.state]||'予想作成待ち')+'</p><p>締切 '+esc(item.cutoff?.slice(11,16)||'未確認')+'</p>'+renderResultPanel(r,null,item.cutoff,data.result_health)+'</article>';
   const ps=purchaseSnapshot(r,snap),v=purchaseView(ps),c=r.race_commentary,closed=Date.now()>=Date.parse(snap.cutoff);
-  return '<article class="race-card" tabindex="-1" id="race-'+esc(r.race_code)+'" data-full-code="'+esc(r.race_code)+'"><header class="race-card-heading"><h3>'+esc(names[r.venue])+' '+r.race+'R</h3><span>締切 '+esc(snap.cutoff.slice(11,16))+(closed?'／締切済み':'／あと'+Math.max(0,Math.ceil((Date.parse(snap.cutoff)-Date.now())/60000))+'分')+'</span></header><div class="prediction-result-pair"><div class="purchase-main"><h4>予想・買い目</h4>'+v.html+(v.valid?'<p class="small">取得時の最低想定払戻 '+Math.min(...ps.purchase_plan.tickets.map(t=>t.expected_return))+'円</p>':'')+'</div>'+renderResultPanel(r,ps,snap.cutoff,data.result_health)+'</div><p class="quote-clock">予想 '+esc(snap.created_at.slice(11,19))+' ／ オッズ '+esc(snap.purchase_plan?.odds_observed_at?.slice(11,19)||'未取得')+'<br>確率は校正検証中／情報段階：'+esc(({initial:'展示前の暫定評価',partial:'直前情報は一部取得',preview:'展示後'})[snap.phase]||snap.phase)+(snap.context_snapshot_at?'／オッズ以外の入力 '+esc(snap.context_snapshot_at.slice(11,19)):'')+'</p>'+renderNarrative(c)+'<details class="purchase-evidence"><summary>オッズ・配分と購入条件の根拠</summary><p>'+v.metrics+'</p><p>点数可変・上限1,200円。全買い目の取得時払戻が総購入額を超える配分に限定。オッズ変動後のガミや利益を保証する条件ではありません。</p></details>'+(globalThis.Boat24Study?.race((index.prospective_study?.race_audit||[]).find(x=>x.race_code===r.race_code))||'')+'<button type="button" data-full-detail="'+esc(r.race_code)+'">使った情報を見る</button></article>';
+  return '<article class="race-card" tabindex="-1" id="race-'+esc(r.race_code)+'" data-full-code="'+esc(r.race_code)+'"><header class="race-card-heading"><h3>'+esc(names[r.venue])+' '+r.race+'R</h3><span>締切 '+esc(snap.cutoff.slice(11,16))+(closed?'／締切済み':'／あと'+Math.max(0,Math.ceil((Date.parse(snap.cutoff)-Date.now())/60000))+'分')+'</span></header>'+renderBoatComparison(r.boat_comparison,r.race_code)+'<div class="prediction-result-pair"><div class="purchase-main"><h4>予想・買い目</h4>'+v.html+(v.valid?'<p class="small">取得時の最低想定払戻 '+Math.min(...ps.purchase_plan.tickets.map(t=>t.expected_return))+'円</p>':'')+'</div>'+renderResultPanel(r,ps,snap.cutoff,data.result_health)+'</div><p class="quote-clock">予想 '+esc(snap.created_at.slice(11,19))+' ／ オッズ '+esc(snap.purchase_plan?.odds_observed_at?.slice(11,19)||'未取得')+'<br>確率は校正検証中／情報段階：'+esc(({initial:'展示前の暫定評価',partial:'直前情報は一部取得',preview:'展示後'})[snap.phase]||snap.phase)+(snap.context_snapshot_at?'／オッズ以外の入力 '+esc(snap.context_snapshot_at.slice(11,19)):'')+'</p>'+renderNarrative(c)+'<details class="purchase-evidence"><summary>オッズ・配分と購入条件の根拠</summary><p>'+v.metrics+'</p><p>点数可変・上限1,200円。全買い目の取得時払戻が総購入額を超える配分に限定。オッズ変動後のガミや利益を保証する条件ではありません。</p></details>'+(globalThis.Boat24Study?.race((index.prospective_study?.race_audit||[]).find(x=>x.race_code===r.race_code))||'')+'<button type="button" data-full-detail="'+esc(r.race_code)+'">使った情報を見る</button></article>';
  }).join('')+(venue==='0'&&rows.length>visible.length?'<button type="button" id="fullMoreRaces">さらに24Rの予想・見解を見る</button>':'');
  $('fullRecords').querySelectorAll('[data-full-detail]').forEach(b=>b.addEventListener('click',()=>{selected=b.dataset.fullDetail;openDetail()}));
  $('fullMoreRaces')?.addEventListener('click',()=>{raceVisible+=24;render()});
@@ -278,7 +285,7 @@ function renderDetail(){
    const path=archived.history_storage?.record_paths?.[code];
    const record=path?await getJSON('full_history/'+path):archived.records?.[code];
    if(selected!==code)return;if(!record)throw Error('このレースの履歴を取得できません');
-   record.race_commentary=data.records[code]?.race_commentary;data.records[code]=record;renderDetail();
+   record.race_commentary=data.records[code]?.race_commentary;record.boat_comparison=data.records[code]?.boat_comparison;data.records[code]=record;renderDetail();
   }catch(e){$('fullDetail').insertAdjacentHTML('beforeend','<p class="warning">'+esc(e.message)+'</p>')}
  });
 }
@@ -291,6 +298,7 @@ function retainNewerView(next,previous){
   r.offers={...old.offers,...r.offers};
   const chosen=latest(r);
   if(chosen&&r.race_commentary?.snapshot_id!==chosen.id&&old.race_commentary?.snapshot_id===chosen.id)r.race_commentary=old.race_commentary;
+  if(chosen&&r.boat_comparison?.snapshot_id!==chosen.id&&old.boat_comparison?.snapshot_id===chosen.id)r.boat_comparison=old.boat_comparison;
   r.revision_count=Math.max(r.revision_count||0,old.revision_count||0,Object.keys(r.revisions).length);
  }
  if(Date.parse(previous.quote_health?.attempt_at)>Date.parse(next.quote_health?.attempt_at||0))next.quote_health=previous.quote_health;

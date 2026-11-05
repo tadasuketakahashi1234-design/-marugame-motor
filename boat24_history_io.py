@@ -93,6 +93,7 @@ def compact_day(doc):
             keep.add(chosen['id'])
             from boat24_commentary import build as commentary
             rec['race_commentary']=commentary(chosen)
+            rec['boat_comparison']=__import__('boat24_boat_comparison').build(chosen,doc.get('records'))
         valid=[s for s in revisions.values() if s.get('evaluation_eligible')]
         if valid:keep.add(max(valid,key=lambda s:(s['created_at'],s['id']))['id'])
         plans=[s for s in valid if s.get('purchase_plan')]

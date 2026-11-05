@@ -69,8 +69,8 @@ jobs:
           PY
       - name: Start near-cutoff context and odds updates before recovery
         run: python boat24_live.py --start-workflow-worker
-      - name: Recover history and official settlements before model training
-        run: python boat24_recover.py
+      - name: Recover current-day history without replaying all prior archives
+        run: python boat24_recover.py --today-only
       - name: Capture and publish all six improvements with repeated observations
         run: BOAT24_LIVE_ODDS_WORKER=0 python boat24_cycle.py --seconds 180
       - name: Verify all original forecast and comparison records

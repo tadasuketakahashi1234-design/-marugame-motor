@@ -19,3 +19,5 @@ vm.runInNewContext(fs.readFileSync('omura/docs/boat24_full_ui.js','utf8'),contex
  stale=true;await el('fullReload').events.click();assert(el('fullRefreshStatus').textContent.includes('表示中の新しい版を保持'));assert(!el('fullRefreshStatus').textContent.includes('失敗'));assert(el('fullRecords').innerHTML.includes('4点・計400円'));
  console.log('Forecast UI PASS: race reasoning, pending versus price skip, immediate feedback, forced latest ref, fast primary read');
 })().catch(e=>{console.error(e);process.exitCode=1});
+
+require('./race_navigation_ui.js');

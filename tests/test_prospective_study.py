@@ -112,3 +112,9 @@ class ProspectiveStudy(unittest.TestCase):
   self.assertEqual(z['training_races'],0);self.assertEqual(z['exclusions']['training_quote_or_plan_not_comparable'],1)
  def test_zero_weight_is_exact_market(self):
   p={c:(i+1)/7260 for i,c in enumerate(COMBOS)};self.assertEqual(study.mixture(p,{c:1/120 for c in COMBOS},0),p)
+
+ def test_historical_decision_with_null_receipt_remains_auditable(self):
+  r,d,c,n,m=fixture();d['records'][r['race_code']]['decision']['receipt']=None
+  x=out(r,d,c,n)
+  self.assertFalse(x['race_audit'][0]['public_receipt_verified'])
+  self.assertIsNone(x['race_audit'][0]['public_at'])

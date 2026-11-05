@@ -9,3 +9,10 @@ const html=context.Boat24Integrated.render(s,{venue:15},index);
 assert(html.includes('展示・進入・足の詳細'));assert(html.includes('候補予想で検証中'));assert(html.includes('助走距離'));assert(html.includes('検証済み配信または映像計測が必要'));assert(!html.includes('<script>bad'));
 context.Boat24Integrated.learning({...index,integrated_learning:{phase_reports:[]}});assert(elements.fullLearning.innerHTML.includes('予想→結果→精算→学習→検証'));
 console.log('Integrated UI PASS: detailed exhibitions, evidence, missing factors, shadow status and learning in one screen');
+
+context.Boat24Integrated.learning({...index,integrated_learning:{policy:'public-frozen-learning-1',phase_reports:[],case_audit:{excluded:{publication_proof_missing:2}}}});
+assert(elements.fullLearning.innerHTML.includes('新しい学習条件での再学習待ち'));
+assert(elements.fullLearning.innerHTML.includes('候補の購入100R'));
+assert(elements.fullLearning.innerHTML.includes('publication_proof_missing'));
+context.Boat24Integrated.learning({...index,training:{through:'2026-11-04',learning_policy:'public-frozen-learning-1',replay:{public_frozen:7}},integrated_learning:{policy:'public-frozen-learning-1',phase_reports:[]}});
+assert(elements.fullLearning.innerHTML.includes('公開固定 7R'));

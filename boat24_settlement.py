@@ -67,7 +67,8 @@ def settle_record(rec,res,pay,snapshot,now):
     value['refund_verified']=res.get('official_refund_verified') is True
     value['settlement_schema']=2
     value['offer_ids']=[o['snapshot_id'] for o in offers]
-    result_id=hashlib.sha256(json.dumps([value,purchase_id,snapshot['id']],sort_keys=True).encode()).hexdigest()
+    label_values={k:v for k,v in res.items() if k.endswith('着_艇番') or k.startswith(tuple(str(i)+'コース_' for i in range(1,7))) or k in ('決まり手','official_finish_status')}
+    result_id=hashlib.sha256(json.dumps([value,purchase_id,snapshot['id'],label_values],sort_keys=True).encode()).hexdigest()
     if old and old.get('id')==result_id:return False
     paper={}
     for n,picks in snapshot.get('selection',{}).items():

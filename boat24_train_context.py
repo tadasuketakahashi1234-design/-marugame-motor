@@ -219,7 +219,7 @@ def build_model(today,days=28):
             if i%60==0:print('training sources',i,'/',len(jobs),flush=True)
     calendars,histories=calendar_and_history(today)
     history=History(calendars,histories);samples=[];validation=[];initial_validation=[];profile_rows=[];run_rows=[];coverage={}
-    prior_motor=[]
+    prior_motor=[];trained_public={}
     from boat24_tactics import Tactics
     course_stats=CourseStats();behavior=BehaviorStats();surface=SurfaceStats();tactics=Tactics()
     # A prior 28-day warmup supplies real course results before the training window.
@@ -231,6 +231,22 @@ def build_model(today,days=28):
         for data in pool.map(course_day,warm):course_stats.add(data)
     for offset in range(days,0,-1):
         day=today-dt.timedelta(days=offset);data=collect_day(day);data['registry']=registry;d=day.isoformat()
+        # Fixed public cases supply both their saved card and verified corrected labels.
+        from boat24_learning import training_result
+        for (code,phase),snap in observed.items():
+            case=snap.get('_learning_case')
+            if code[:8]!=day.strftime('%Y%m%d') or not case:continue
+            label=training_result(case,data['results'].get(code))
+            if label is None:
+                replay_diagnostics.setdefault('label_exclusions',{}).setdefault('six_finishes_or_matching_label_missing',[]).append(code)
+                data['results'].pop(code,None)
+                continue
+            data['cards'][code]=snap['input_snapshot'].get('card') or data['cards'].get(code,{})
+            data['results'][code]=label
+            data.setdefault('title',{})[code]={'締切時刻':snap['cutoff']}
+            for kind,row in snap['input_snapshot'].get('previews',{}).items():
+                data.setdefault(kind,{})[code]=row
+        public_day=bool(replay_diagnostics.get('protocol_started_at') and d>=replay_diagnostics['protocol_started_at'][:10])
         surface_pending=[]
         profiles,runs=profiles_and_runs(data,d,course_stats)
         # Profiles/results are inserted with source timestamps; each target filters them by its own cutoff.
@@ -238,6 +254,7 @@ def build_model(today,days=28):
         for r in runs:history.add_run(r)
         profile_rows+=profiles;run_rows+=runs
         for code,card in sorted(data['cards'].items()):
+            if public_day and not any((code,p) in observed for p in ('initial','preview')):continue
             res=data['results'].get(code,{})
             fm={str(res.get(f'{p}着_艇番')):p for p in range(1,7)}
             if len(fm)!=6 or set(fm)!=set('123456'):continue
@@ -258,28 +275,36 @@ def build_model(today,days=28):
                 built={**built,**replay}
             if (code,'initial') in observed and initial:
                 initial={**initial,**restore_snapshot(observed[(code,'initial')],code,card)}
-            tactics.attach(built['features'],card,int(code[8:10]),d)
-            if initial:tactics.attach(initial['features'],card,int(code[8:10]),d)
+            if not observed.get((code,'preview'),{}).get('_learning_case'):tactics.attach(built['features'],card,int(code[8:10]),d)
+            if initial and not observed.get((code,'initial'),{}).get('_learning_case'):tactics.attach(initial['features'],card,int(code[8:10]),d)
+            if public_day:
+                if (code,'preview') not in observed:built=None
+                if (code,'initial') not in observed:initial=None
             for phase,snapshot in [('preview',built),('initial',initial)]:
                 if not snapshot:continue
                 from boat24_quality import prepare as prepare_quality
                 prepare_quality(snapshot['features'],snapshot.get('previews',{}),snapshot.get('asof') or snapshot['cutoff']-dt.timedelta(minutes=FREEZE_MINUTES,microseconds=1))
+                case=observed.get((code,phase),{}).get('_learning_case')
+                if case:
+                    from boat24_learning import digest as learning_digest
+                    trained_public[(code,phase)]={**case['provenance'],'training_input_digest':learning_digest(snapshot['features']),'training_label_digest':learning_digest({k:v for k,v in res.items() if k!='取得日時'})}
                 for lane,f in enumerate(snapshot['features'],1):
                     course=int(f.get('start',{}).get('展示進入',lane))
                     samples.append({'phase':phase,'date':d,'code':code,'venue':int(code[8:10]),'course':course,'lane':lane,'finish':fm[str(lane)],'features':f,'snapshot_id':snapshot.get('snapshot_id'),'feature_schema':SCHEMA})
             # Queue the final replayed, freshness-filtered inputs. Add only after
             # every race of this date was built, preserving prior-date learning.
-            surface_pending.append((int(code[8:10]),built['features'],fm))
+            if built:surface_pending.append((int(code[8:10]),built['features'],fm))
             if offset<=12:
                 actual='-'.join(str(res.get(f'{p}着_艇番')) for p in (1,2,3))
                 if actual in COMBOS and initial:initial_validation.append({'code':code,'date':d,'venue':int(code[8:10]),'features':initial['features'],'actual':actual,'snapshot_id':initial.get('snapshot_id')})
-                if actual in COMBOS and built['previews']['odds']:validation.append({'code':code,'date':d,'venue':int(code[8:10]),'features':built['features'],'odds':built['previews']['odds'],'actual':actual,'snapshot_id':built.get('snapshot_id')})
+                if actual in COMBOS and built and built['previews'].get('odds'):validation.append({'code':code,'date':d,'venue':int(code[8:10]),'features':built['features'],'odds':built['previews']['odds'],'actual':actual,'snapshot_id':built.get('snapshot_id')})
         coverage[d]={'cards':len(data['cards']),'results':len(data['results']),'samples':sum(1 for s in samples if s['date']==d),
                      'weather':len(data['weather']),'exhibition':len(data['ex']),'start':len(data['st']),'original':len(data['original'])}
         for venue,features,finishes in surface_pending:surface.add(venue,features,finishes,d)
         behavior.add(data);course_stats.add(data);tactics.add(data)
         prior_motor=data['motor_rows']
         print('context training',d,'samples',len(samples),flush=True)
+    replay_diagnostics.update(public_frozen_eligible=replay_diagnostics.get('public_frozen',0),public_frozen=len(trained_public),provenance=list(trained_public.values()))
     if len(samples)<1000 or len({s['date'] for s in samples})<10:raise RuntimeError('Insufficient historical samples; no all-input model published')
     model={'version':VERSION,'trained_through':(today-dt.timedelta(days=1)).isoformat(),
            'generated_at':dt.datetime.now(JST).isoformat(),'samples':samples,'scales':scales(samples),
@@ -302,6 +327,8 @@ def build_model(today,days=28):
     model['integrated_experiments']=historical_experiments(model,validation)
     from boat24_experiments import prior_forward_evidence
     model['forward_evidence']=prior_forward_evidence(today)
+    model['learning_policy']='public-frozen-learning-1'
+    model['learning_provenance_digest']=__import__('hashlib').sha256(json.dumps(replay_diagnostics.get('provenance',[]),sort_keys=True).encode()).hexdigest()
     model['approved_candidate_phases']=[r['phase'] for r in model['forward_evidence']['phase_reports'] if r['adoption_approved']]
     import hashlib
     model['generated_at']=dt.datetime.now(JST).isoformat()

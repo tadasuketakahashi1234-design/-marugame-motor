@@ -9,7 +9,7 @@ import json
 from pathlib import Path
 from boat24_integrity import timeparse
 
-def load_observations(today,days=28,directory=Path('omura/docs/full_history')):
+def research_observations(today,days=28,directory=Path('omura/docs/full_history')):
     selected={};diagnostics={'races':0,'snapshots':0,'rejected':0,'source':'immutable_pre_cutoff_snapshots'}
     for path in day_paths(directory):
         if not (today-dt.timedelta(days=days)).isoformat()<=day_key(path)<today.isoformat():continue
@@ -39,6 +39,37 @@ def restore_snapshot(snapshot,code,card):
     previews=saved.get('previews',{});cutoff=timeparse(snapshot['cutoff']);at=timeparse(saved.get('captured_at') or snapshot['created_at'])
     # Extra sources must have been saved with this very snapshot.
     extras={k:{code:r} for k,r in saved.get('supplemental_previews',{}).items()}
-    detail=attach(features,code,card,extras,previews,cutoff,at,saved.get('official',{}))
+    # Public cases must learn exactly the saved features, including prior-race details.
+    detail=copy.deepcopy(snapshot.get('details',{})) if snapshot.get('_learning_case') else attach(features,code,card,extras,previews,cutoff,at,saved.get('official',{}))
     return {'features':features,'previews':previews,'cutoff':cutoff,'detail':detail,
             'asof':at,'snapshot_id':snapshot['id'],'race_context':saved.get('race_context',{})}
+
+
+def load_observations(today,days=28,directory=Path('omura/docs/full_history')):
+    directory=Path(directory)
+    old,diag=research_observations(today,days,directory)
+    path=directory.parent/'boat24_decisions.json'
+    if not path.exists():
+        diag.update(selection_policy='research_only_public_protocol_unavailable',public_frozen=0)
+        return old,diag
+    from boat24_learning import frozen_cases
+    doc=json.loads(path.read_text());start=timeparse(doc.get('protocol',{}).get('started_at'))
+    if not start:
+        diag.update(selection_policy='research_only_public_protocol_not_started',public_frozen=0)
+        return old,diag
+    selected={k:v for k,v in old.items() if k[0][:8]<start.strftime('%Y%m%d')}
+    records=[]
+    for path in day_paths(directory):
+        if max((today-dt.timedelta(days=days)).isoformat(),start.date().isoformat())<=day_key(path)<today.isoformat():
+            records.extend(read_history(path).get('records',{}).values())
+    cases,audit=frozen_cases(records,doc,before=today)
+    for case in cases:
+        s=case['snapshot']
+        # Keep case metadata separate from the immutable saved input object.
+        s['_learning_case']={k:v for k,v in case.items() if k!='snapshot'}
+        selected[(case['race_code'],case['phase'])]=s
+    diag.update(selection_policy='public_frozen_since_protocol_start',public_frozen=len(cases),protocol_started_at=start.isoformat(),
+                legacy_research=len(selected)-len(cases),frozen_audit=audit,
+                provenance=[c['provenance'] for c in cases],snapshots=len(selected),
+                races=len({k[0] for k in selected}))
+    return selected,diag

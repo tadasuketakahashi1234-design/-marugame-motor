@@ -51,9 +51,22 @@ function purchaseView(s){
  const minimum=Math.min(...tickets.map(t=>t.expected_return));
  return {valid:true,ready:!closed,html:(closed?'<b>締切済み・保存時の参考</b><br>':'')+'<b>'+tickets.length+'点・計'+total+'円</b><br>'+tickets.map(t=>esc(t.combo)+'：'+t.stake+'円').join('<br>'),metrics:'取得時の最低想定払戻 '+minimum+'円<br>最低想定利益 ＋'+(minimum-total)+'円<br>モデル内試算回収率 '+pct(p.estimated_roi)+'（未校正・実績ではありません）<br>合成 '+num(p.synthetic_odds)+'倍<br>オッズ時刻 '+esc(p.odds_observed_at)+'<br>候補計算 '+esc(s.created_at)+'<br>点数・配分の近似比較／的中確率とのバランス優先'+(p.risk_policy===riskPolicy?'<br>感度条件：確率 '+pct(p.risk_controls.probability_haircut)+'減・払戻 '+pct(p.risk_controls.price_haircut)+'減／1点上限 '+pct(p.risk_controls.maximum_ticket_share)+'<br>下振れ条件の試算回収率 '+pct(p.stress_expected_roi)+'<br>感度条件は統計的な信頼区間ではありません':'')};
 }
+function renderWaterAnalysis(c){
+ const w=c.water_analysis;
+ if(!w)return '<section class="water-summary"><h4>水面と艇への影響</h4><p>'+esc((c.water||'観測なし').split('。')[0])+'。</p><p class="small">この保存版は艇別の水面比較を未収録。</p><details><summary>保存時の観測説明</summary><p>'+esc(c.water||'')+'</p></details></section>';
+ const cell=x=>esc(x.label)+(x.n?' <small>'+x.n+'例</small>':'');
+ return '<section class="water-summary"><h4>水面と艇への影響</h4><p>'+esc(w.conditions)+' ／ '+esc(w.tide)+'</p>'+(!w.fresh?'<p class="small warning">風の観測が古い・未確認のため、風の有利不利は評価保留。</p>':'')+'<div class="scroll"><table class="reasoning-table"><tr><th>艇／展示コース</th><th>似た風条件</th><th>似た潮条件</th></tr>'+w.rows.map(r=>'<tr><td>'+r.lane+'艇／'+esc(r.course??'未確認')+'</td><td>'+cell(r.wind)+'</td><td>'+cell(r.tide)+'</td></tr>').join('')+'</table></div><p class="small">同場・同コースの過去傾向。選手個人の適性ではありません。</p><details><summary>水面比較の根拠・不足</summary><p>'+esc(w.scope)+'<br>'+esc(w.missing)+'<br>'+esc(w.prediction_use)+'<br>観測 '+esc(w.observed_at||'未確認')+' ／ 学習基準日 '+esc(w.through||'未確認')+'</p><p>'+w.rows.map(r=>r.lane+'艇：'+['wind','tide'].map(k=>(k==='wind'?'風':'潮')+' '+(r[k].delta==null?'未評価':(r[k].delta>=0?'+':'')+r[k].delta.toFixed(2)+'着分')+'／'+r[k].n+'例').join('・')).join('<br>')+'</p><p class="small">正の差は平均着順の良化、負は悪化。20例未満は評価保留。統計的に確定した効果ではありません。</p></details></section>';
+}
 function renderNarrative(c){
- if(!c)return '<section class="race-analysis"><h4>予想見解</h4><p>この保存版の見解を準備中です。補足データで確認できる範囲を表示します。</p></section>';
- return '<section class="race-analysis"><h4>'+esc(c.headline)+'</h4>'+((c.forecast_lines||[]).length?'<p><b>着順の上位候補（モデル内）</b> '+c.forecast_lines.map(esc).join(' ／ ')+'<br><span class="small muted">購入対象・金額は上の購入判定で確認してください。</span></p>':'')+[['本線の評価',c.axis],['相手の評価',c.opponents],['想定展開',c.deployment],['当日の水面をどう読むか',c.water],['買い目との関係',c.price]].map(([h,t])=>'<div><b>'+h+'</b><p>'+esc(t)+'</p></div>').join('')+renderReasoning(c.reasoning)+'<div><b>本線が崩れる条件・注意点</b><p>'+c.risks.map(esc).join('<br>')+'</p></div><details><summary>6艇を比較する</summary><div class="boat-comparison">'+c.boats.map(b=>'<div><b>'+esc(b.mark)+' '+b.lane+'号艇 '+esc(b.name||'')+'</b><p>'+b.evidence.map(esc).join(' ／ ')+'</p></div>').join('')+'</div></details><p class="small muted">'+esc(c.notice)+'</p></section>';
+ if(!c)return '<section class="race-analysis"><h4>予想見解</h4><p>見解を準備中です。</p></section>';
+ const lead=t=>(t||'').split('。').filter(Boolean).slice(0,2).join('。')+'。';
+ const branches=c.reasoning?.branches||[],axis=c.reasoning?.axis;
+ const observed=i=>(c.boats||[]).find(b=>b.lane===i)?.evidence?.filter(x=>!x.startsWith('モデル内')).slice(0,3).join('・');
+ const axisSummary=axis&&observed(axis)?axis+'号艇：'+observed(axis)+'。'+(c.reasoning.components?.market_weight===1?'順位は市場評価による。':''):lead(c.axis);
+ const opponents=(c.reasoning?.axis_opponents||[]).slice(0,2);
+ const opponentSummary=opponents.length&&opponents.every(r=>observed(r.lane))?opponents.map(r=>r.lane+'号艇：'+observed(r.lane)).join(' ／ '):lead(c.opponents);
+ const deployment=branches.length?branches.slice(0,2).map(b=>b.winner+'号艇：'+(b.conditions||[]).slice(0,1).join('')).join(' ／ '):lead(c.deployment);
+ return '<section class="race-analysis"><h4>'+esc(c.headline)+'</h4><div><b>軸の理由</b><p>'+esc(axisSummary)+'</p></div><div><b>相手の理由</b><p>'+esc(opponentSummary)+'</p></div><div><b>想定展開</b><p>'+esc(deployment)+'</p></div>'+renderWaterAnalysis(c)+'<details class="analysis-details"><summary>予想の詳しい根拠・反証</summary>'+renderReasoning(c.reasoning)+'<details><summary>観測値と軸・相手の比較</summary><p>'+esc(c.axis)+'</p><p>'+esc(c.opponents)+'</p></details><details><summary>注意点・未確認情報</summary><p>'+(c.risks||[]).map(esc).join('<br>')+'</p><p>'+esc(c.notice||'')+'</p></details><details><summary>6艇を比較する</summary><div class="boat-comparison">'+(c.boats||[]).map(b=>'<div><b>'+esc(b.mark)+' '+b.lane+'号艇 '+esc(b.name||'')+'</b><p>'+b.evidence.map(esc).join(' ／ ')+'</p></div>').join('')+'</div></details></details></section>';
 }
 function renderReasoning(r){
  if(!r)return '';
@@ -74,8 +87,6 @@ function renderReasoning(r){
  }
  html+='</div>';
  if(r.price_audit?.length)html+='<details class="purchase-evidence"><summary>買い目を採った・外した価格根拠</summary><p class="small">1口100円あたりのモデル内期待回収率です。単独の期待値と配分全体の採否を区別します。</p>'+r.price_audit.map(x=>'<p><b>'+esc(x.combo)+(x.selected?' 採用':' 非採用')+'</b>／取得 '+esc(x.odds)+'倍<br>通常 '+fmt(x.unit_expected_roi)+'／下振れ条件 '+fmt(x.stress_unit_expected_roi)+'<br>'+esc(x.reason)+'</p>').join('')+'</details>';
- const q=r.quality||{};
- if(q.policy)html+='<p class="small"><b>根拠の鮮度</b> 天候：'+esc(({fresh:'10分以内の観測を使用',stale:'10分超のため計算から除外',observation_time_unknown:'観測時刻不明のため除外',future_observation:'未来の観測のため除外',missing:'未取得'})[q.weather?.state]||q.weather?.state)+'。観測 '+esc(q.weather?.measured_at||'不明')+'。決まり手の分母未確認 '+esc((q.method_label_unverified_lanes||[]).join('・')||'なし')+'号艇。</p>';
  return html;
 }
 async function openDetail(){

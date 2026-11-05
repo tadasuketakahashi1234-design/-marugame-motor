@@ -77,7 +77,7 @@ def build(s):
     if weather.get('参考レース') is not None:water+=f" {weather['参考レース']}R時点の参考観測で、今回Rの実測と同一ではない。"
     n=f.get('wind',{}).get('同条件標本数');delta=f.get('wind',{}).get('同場コース平均との差')
     if n and delta is not None:
-        water+=f'軸艇の同場・同コース・同風条件は{int(n)}例、場・コース平均との着順差は{delta:+.2f}（負なら良い）。'
+        water+=f'軸艇の同場・同コース・同風条件は{int(n)}例、場・コース平均との着順差は{delta:+.2f}（正なら良い）。'
         water+= '差は小さく、風による明確な上乗せ根拠は薄い。' if abs(delta)<.25 else '条件別の過去比較であり、今回の風による因果効果を示す数字ではない。'
     if number(w.get('風速(m)')) is not None and w['風速(m)']>=5:water+='風が強いためスタートのばらつきとターンの流れを警戒するが、風速だけで特定艇の有利を断定しない。'
     profile=wc.get('profile',{})
@@ -140,4 +140,4 @@ def build(s):
             if row['lane']==trace['place_axis']:row['mark']+='・連軸'
     return {'schema':SCHEMA,'snapshot_id':s['id'],'basis':'saved_inputs_and_conditional_interpretation','headline':headline,
             'forecast_lines':sorted(s.get('probabilities',{}),key=lambda k:(-s['probabilities'][k],k))[:3],'axis':axis_text,'opponents':opponent,'deployment':deployment,'water':water,'risks':risks,'price':price,'boats':rows,
-            'reasoning':trace,'context_at':s.get('context_snapshot_at',s.get('created_at')),'notice':'数値はモデル内比較で、検証済みの的中確率ではありません。映像の行き足・起こし位置・助走距離・旋回出口は未計測です。'}
+            'water_analysis':__import__('boat24_water_commentary').build(s),'reasoning':trace,'context_at':s.get('context_snapshot_at',s.get('created_at')),'notice':'数値はモデル内比較で、検証済みの的中確率ではありません。映像の行き足・起こし位置・助走距離・旋回出口は未計測です。'}

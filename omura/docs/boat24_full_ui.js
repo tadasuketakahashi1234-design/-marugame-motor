@@ -112,6 +112,40 @@ function renderComparison(items){
 }
 function records(){const venue=Number($('venue').value);return Object.values(data?.records||{}).filter(r=>!venue||Number(r.venue)===venue).sort((a,b)=>b.race_code.localeCompare(a.race_code))}
 function catalogRows(){const v=Number($('venue').value);return Object.values(data?.catalog||index?.catalogs?.[$('fullDate').value]||{}).filter(r=>!v||r.venue===v).sort((a,b)=>a.race_code.localeCompare(b.race_code))}
+let quickRows=[],activeRace=null,quickScope='',raceObserver=null;
+function syncQuickSelection(){
+ const pos=quickRows.findIndex(x=>x.race_code===activeRace);
+ if($('fullQuickRace')){$('fullQuickRace').value=pos<0?'':activeRace;$('fullQuickRace').disabled=pos<0;}
+ if($('fullQuickPrev'))$('fullQuickPrev').disabled=pos<=0;
+ if($('fullQuickNext'))$('fullQuickNext').disabled=pos<0||pos>=quickRows.length-1;
+ if($('fullQuickStatus'))$('fullQuickStatus').textContent=pos<0?'この日の選択中の場にはレースがありません':'選択中：'+names[quickRows[pos].venue]+' '+quickRows[pos].race+'R ／ 前R・次Rでも切り替えられます';
+ $('fullRaceNav')?.querySelectorAll('a').forEach(a=>a.setAttribute?.('aria-current',a.getAttribute('href')==='#race-'+activeRace?'true':'false'));
+}
+function renderQuickNav(rows,scope){
+ const changed=quickScope!==scope;quickScope=scope;
+ quickRows=rows.slice().sort((a,b)=>a.race_code.localeCompare(b.race_code));
+ if(changed||!quickRows.some(x=>x.race_code===activeRace))activeRace=rows[0]?.race_code||null;
+ const picker=$('fullQuickRace');
+ if(picker){const html=quickRows.length?quickRows.map(x=>'<option value="'+esc(x.race_code)+'">'+esc(names[x.venue])+' '+x.race+'R'+(x.cutoff?' · '+esc(x.cutoff.slice(11,16)):'')+'</option>').join(''):'<option value="">レースなし</option>';if(picker.innerHTML!==html)picker.innerHTML=html;}
+ if($('fullQuickVenue'))$('fullQuickVenue').value=$('venue').value;
+ syncQuickSelection();
+}
+function jumpToRace(code){
+ const row=quickRows.find(x=>x.race_code===code);if(!row)return;
+ activeRace=code;
+ // The national list initially renders 24 races; make an off-screen selection available too.
+ if(!$('race-'+code)&&String(Number($('venue').value))==='0'){raceVisible=Math.max(raceVisible,quickRows.length);render();}
+ syncQuickSelection();const target=$('race-'+code);
+ target?.scrollIntoView?.({block:'start',behavior:'auto'});target?.focus?.({preventScroll:true});
+}
+function observeReadingRace(){
+ if(typeof IntersectionObserver==='undefined')return;
+ raceObserver?.disconnect();raceObserver=new IntersectionObserver(entries=>{
+  const hit=entries.filter(x=>x.isIntersecting).sort((a,b)=>a.boundingClientRect.top-b.boundingClientRect.top)[0];
+  if(hit){activeRace=hit.target.id.slice(5);syncQuickSelection();}
+ },{rootMargin:'-8% 0px -65% 0px',threshold:0});
+ $('fullRecords').querySelectorAll('.race-card').forEach(card=>raceObserver.observe(card));
+}
 function render(){
  if(!index||!data)return;
  const list=records(),venue=String(Number($('venue').value)),day=$('fullDate').value;
@@ -136,18 +170,20 @@ function render(){
   $('fullPurchaseSummary').innerHTML=next?'<b>次のレース：'+esc(names[next.venue])+' '+esc(next.race)+'R</b><br>'+(view?view.html:'<strong>判定保留：購入候補の保存待ち</strong>')+(s?'<p class="small">オッズ時刻 '+esc(purchaseSnapshot(r,s).purchase_plan?.odds_observed_at?.slice(11,19)||'未取得')+' ／ 候補計算 '+esc(purchaseSnapshot(r,s).created_at.slice(11,19))+'</p>':''):'締切前のレースはありません。各Rの保存時の判定は下に表示します。';
  }
 
+ renderQuickNav(rows,day+'|'+venue);
  const visible=venue==='0'?rows.slice(0,raceVisible):rows;
  if($('fullRaceComparison'))$('fullRaceComparison').innerHTML=renderComparison(visible);
  if($('fullRaceNav'))$('fullRaceNav').innerHTML=visible.map(x=>'<a href="#race-'+esc(x.race_code)+'">'+(venue==='0'?esc(names[x.venue])+' ':'')+x.race+'R</a>').join('');
  $('fullRecords').innerHTML=visible.map(item=>{
   const r=data.records?.[item.race_code],snap=r&&latest(r);
-  if(!snap)return '<article class="race-card" id="race-'+esc(item.race_code)+'"><h3>'+esc(names[item.venue])+' '+item.race+'R</h3><p>'+esc(raceStates[item.state]||'予想作成待ち')+'</p><p>締切 '+esc(item.cutoff?.slice(11,16)||'未確認')+'</p>'+renderResultPanel(r,null,item.cutoff,data.result_health)+'</article>';
+  if(!snap)return '<article class="race-card" tabindex="-1" id="race-'+esc(item.race_code)+'"><h3>'+esc(names[item.venue])+' '+item.race+'R</h3><p>'+esc(raceStates[item.state]||'予想作成待ち')+'</p><p>締切 '+esc(item.cutoff?.slice(11,16)||'未確認')+'</p>'+renderResultPanel(r,null,item.cutoff,data.result_health)+'</article>';
   const ps=purchaseSnapshot(r,snap),v=purchaseView(ps),c=r.race_commentary,closed=Date.now()>=Date.parse(snap.cutoff);
-  return '<article class="race-card" id="race-'+esc(r.race_code)+'" data-full-code="'+esc(r.race_code)+'"><header class="race-card-heading"><h3>'+esc(names[r.venue])+' '+r.race+'R</h3><span>締切 '+esc(snap.cutoff.slice(11,16))+(closed?'／締切済み':'／あと'+Math.max(0,Math.ceil((Date.parse(snap.cutoff)-Date.now())/60000))+'分')+'</span></header><div class="prediction-result-pair"><div class="purchase-main"><h4>予想・買い目</h4>'+v.html+(v.valid?'<p class="small">取得時の最低想定払戻 '+Math.min(...ps.purchase_plan.tickets.map(t=>t.expected_return))+'円</p>':'')+'</div>'+renderResultPanel(r,ps,snap.cutoff,data.result_health)+'</div><p class="quote-clock">予想 '+esc(snap.created_at.slice(11,19))+' ／ オッズ '+esc(snap.purchase_plan?.odds_observed_at?.slice(11,19)||'未取得')+'<br>確率は校正検証中／情報段階：'+esc(({initial:'展示前の暫定評価',partial:'直前情報は一部取得',preview:'展示後'})[snap.phase]||snap.phase)+(snap.context_snapshot_at?'／オッズ以外の入力 '+esc(snap.context_snapshot_at.slice(11,19)):'')+'</p>'+renderNarrative(c)+'<details class="purchase-evidence"><summary>オッズ・配分と購入条件の根拠</summary><p>'+v.metrics+'</p><p>点数可変・上限1,200円。全買い目の取得時払戻が総購入額を超える配分に限定。オッズ変動後のガミや利益を保証する条件ではありません。</p></details>'+'<button type="button" data-full-detail="'+esc(r.race_code)+'">使った情報を見る</button></article>';
+  return '<article class="race-card" tabindex="-1" id="race-'+esc(r.race_code)+'" data-full-code="'+esc(r.race_code)+'"><header class="race-card-heading"><h3>'+esc(names[r.venue])+' '+r.race+'R</h3><span>締切 '+esc(snap.cutoff.slice(11,16))+(closed?'／締切済み':'／あと'+Math.max(0,Math.ceil((Date.parse(snap.cutoff)-Date.now())/60000))+'分')+'</span></header><div class="prediction-result-pair"><div class="purchase-main"><h4>予想・買い目</h4>'+v.html+(v.valid?'<p class="small">取得時の最低想定払戻 '+Math.min(...ps.purchase_plan.tickets.map(t=>t.expected_return))+'円</p>':'')+'</div>'+renderResultPanel(r,ps,snap.cutoff,data.result_health)+'</div><p class="quote-clock">予想 '+esc(snap.created_at.slice(11,19))+' ／ オッズ '+esc(snap.purchase_plan?.odds_observed_at?.slice(11,19)||'未取得')+'<br>確率は校正検証中／情報段階：'+esc(({initial:'展示前の暫定評価',partial:'直前情報は一部取得',preview:'展示後'})[snap.phase]||snap.phase)+(snap.context_snapshot_at?'／オッズ以外の入力 '+esc(snap.context_snapshot_at.slice(11,19)):'')+'</p>'+renderNarrative(c)+'<details class="purchase-evidence"><summary>オッズ・配分と購入条件の根拠</summary><p>'+v.metrics+'</p><p>点数可変・上限1,200円。全買い目の取得時払戻が総購入額を超える配分に限定。オッズ変動後のガミや利益を保証する条件ではありません。</p></details>'+'<button type="button" data-full-detail="'+esc(r.race_code)+'">使った情報を見る</button></article>';
  }).join('')+(venue==='0'&&rows.length>visible.length?'<button type="button" id="fullMoreRaces">さらに24Rの予想・見解を見る</button>':'');
  $('fullRecords').querySelectorAll('[data-full-detail]').forEach(b=>b.addEventListener('click',()=>{selected=b.dataset.fullDetail;openDetail()}));
  $('fullMoreRaces')?.addEventListener('click',()=>{raceVisible+=24;render()});
  if(!rows.length)$('fullRecords').innerHTML='<p>この日の総合予想はまだ保存されていません。旧モデルの保存履歴は下に残しています。</p>';
+ syncQuickSelection();observeReadingRace();
  if(selected&&data.records[selected]&&!latest(data.records[selected])?._details_compacted)renderDetail();
  renderReport();
  renderVenueCoverage();
@@ -261,6 +297,12 @@ async function load(force=false){
  finally{busy=false;buttons.forEach(b=>{b.disabled=false;b.textContent='最新の予想・オッズを再取得'})}
 }
 setInterval(()=>{if(!document.hidden)load(false)},20000);
+$('fullQuickVenue')&&($('fullQuickVenue').innerHTML=names.map((n,i)=>'<option value="'+i+'">'+n+'</option>').join(''));
+$('fullQuickVenue')?.addEventListener('change',()=>{$('venue').value=$('fullQuickVenue').value;$('venue').dispatchEvent(new Event('change',{bubbles:true}));if(activeRace)jumpToRace(activeRace)});
+$('fullQuickRace')?.addEventListener('change',()=>jumpToRace($('fullQuickRace').value));
+$('fullQuickPrev')?.addEventListener('click',()=>{const i=quickRows.findIndex(x=>x.race_code===activeRace);if(i>0)jumpToRace(quickRows[i-1].race_code)});
+$('fullQuickNext')?.addEventListener('click',()=>{const i=quickRows.findIndex(x=>x.race_code===activeRace);if(i>=0&&i<quickRows.length-1)jumpToRace(quickRows[i+1].race_code)});
+$('fullRaceNav')?.addEventListener('click',e=>{const a=e.target.closest?.('a[href^="#race-"]');if(a){e.preventDefault();jumpToRace(a.getAttribute('href').slice(6))}});
 $('fullReportGroup')?.addEventListener('change',renderReport);
 $('fullDate').addEventListener('change',()=>loadDay().catch(()=>{}));$('venue').addEventListener('change',()=>{raceVisible=24;render()});$('fullReload').addEventListener('click',()=>load(true));$('reload')?.addEventListener('click',()=>load(true));load();
 })();

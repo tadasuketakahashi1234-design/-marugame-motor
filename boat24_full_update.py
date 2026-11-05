@@ -79,7 +79,7 @@ def make_snapshot(code,card,data,model,history,now,previous=None,clock=None):
     # fetched again or the wall clock advanced. Freshness is still displayed.
     digest_features=[{k:v for k,v in f.items() if k!='data_quality'} for f in built['features']]
     comments_identity={lane:{k:c.get(k) for k in ('racer','comment','source')} for lane,c in official.get('comments',{}).items()}
-    h=fingerprint(digest_features,built['previews']['odds'],model,{'before':official.get('before'),'comments':comments_identity,'race_flags':official.get('race_flags'),'purchase_policy':PURCHASE_POLICY,'purchase_protocol':PROTOCOL_ID,'presentation_schema':'race-commentary-2','risk_policy':RISK_POLICY,'input_policy':INPUT_POLICY})
+    h=fingerprint(digest_features,built['previews']['odds'],model,{'before':official.get('before'),'comments':comments_identity,'race_flags':official.get('race_flags'),'purchase_policy':PURCHASE_POLICY,'purchase_protocol':PROTOCOL_ID,'presentation_schema':'race-commentary-3-frozen-decision','risk_policy':RISK_POLICY,'input_policy':INPUT_POLICY})
     if previous and previous.get('id')==h:return None,'unchanged_inputs'
     inference_model=model if model.get('validated_input_policy')==INPUT_POLICY else {**model,'phase_calibration':{}}
     result=predict(built['features'],int(code[8:10]),day,inference_model,built['previews']['odds'])
@@ -116,6 +116,8 @@ def make_snapshot(code,card,data,model,history,now,previous=None,clock=None):
     if len([v for v in valid_odds.values() if v and v>0])==120:
         z=sum(1/v for v in valid_odds.values());mp={c:1/v/z for c,v in valid_odds.items()}
         result['market_baseline']={'probabilities':mp,'picks':sorted(mp,key=lambda c:(-mp[c],c))[:12],'observed_at':built['previews']['odds'].get('取得日時')}
+    from boat24_decisions import attach_arms
+    attach_arms(result,valid_odds,input_quality['purchase_inputs_ready'])
     result['behavior_forecast']=behavior
     result['water_context']=water
     required=set(GROUPS)|{'odds'}
@@ -186,7 +188,10 @@ def build_index(directory=DIRECTORY,now=None):
     legacy=json.loads(legacy_path.read_text()) if legacy_path.exists() else {}
     from boat24_experiments import paired_report
     from boat24_factors import CATALOG
-    return {'purchase_policy':PURCHASE_POLICY,'integrated_learning':paired_report(all_records),'factor_catalog':CATALOG,'catalogs':catalogs,'health':latest_health,'purchase_forward_report':offer_report(all_records),'forward_report':build_report(all_records,legacy),'schema':1,'model':VERSION,'updated_at':(now or dt.datetime.now(JST)).isoformat(),
+    from boat24_decisions import report as decision_report,PATH as DECISION_PATH
+    decision_file=directory.parent/Path(DECISION_PATH).name
+    decisions=json.loads(decision_file.read_text()) if decision_file.exists() else {}
+    return {'decision_report':decision_report(decisions),'purchase_policy':PURCHASE_POLICY,'integrated_learning':paired_report(all_records),'factor_catalog':CATALOG,'catalogs':catalogs,'health':latest_health,'purchase_forward_report':offer_report(all_records),'forward_report':build_report(all_records,legacy),'schema':1,'model':VERSION,'updated_at':(now or dt.datetime.now(JST)).isoformat(),
             'latest_day':max(days) if days else None,'days':days,'summary':summary(all_records),
             'venues':{str(v):summary([r for r in all_records if r['venue']==v]) for v in range(1,25)},
             'warning':'総合予想の保存履歴には過去版も含まれます。版別比較を参照してください。確率は別期間の校正検証条件を満たす場合のみ表示し、収益性は未証明です。'}

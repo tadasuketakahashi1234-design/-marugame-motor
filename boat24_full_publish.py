@@ -64,7 +64,12 @@ def _publish():
                 if not git('diff','--cached','--name-only',cwd=work):print('All-input observations already saved');return
                 git('-c','user.name=github-actions[bot]','-c','user.email=41898282+github-actions[bot]@users.noreply.github.com','commit','-m','Save all-input forecasts and immutable input revisions',cwd=work)
                 if subprocess.run(['git','push','origin','HEAD:main'],cwd=work).returncode==0:
-                    print('All-input model and daily history saved');return
+                    print('All-input model and daily history saved')
+                    try:
+                        from boat24_public_receipts import publish as publish_receipts
+                        publish_receipts(root)
+                    except Exception as exc:print('Public receipt verification unavailable; excluded from fixed evaluation:',str(exc),flush=True)
+                    return
             finally:git('worktree','remove','--force',str(work),cwd=root)
         time.sleep(2)
     raise SystemExit('All-input publication failed; local observations remain in the failure artifact')

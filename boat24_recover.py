@@ -19,7 +19,9 @@ def publish(days,legacy,rows,errors,phase):
             saved=rows.get(code);old=rec.get('result') or {}
             res=saved['result'] if saved else old.get('result_source');pay=saved['payout'] if saved else old.get('payout_source')
             if saved:res={**old.get('result_source',{}),**res};pay={**old.get('payout_source',{}),**pay}
+            pending_before=rec.get('result_pending_reason')
             if settle(rec,res,pay,now):day_changes+=1;dirty.add(code)
+            if rec.get('result_pending_reason')!=pending_before:dirty.add(code)
         changes+=day_changes
         if day_changes:day['settlement_updated_at']=now.isoformat()
         pointer=path.parent.parent/'day_views'/(day_key(path)+'.pointer.json')

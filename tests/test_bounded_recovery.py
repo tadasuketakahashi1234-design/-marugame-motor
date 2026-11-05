@@ -32,3 +32,12 @@ class BoundedRecovery(unittest.TestCase):
    with patch.object(recover,'DIRECTORY',p.parent),patch.object(recover,'INDEX',root/'index.json'),patch.object(recover,'MANIFEST',root/'manifest.json'),patch.object(recover,'CACHE',root/'none'),patch.object(recover,'register_offers',return_value=[]),patch.object(recover,'settle',side_effect=[False,True]),patch.object(recover,'write_history',return_value=p) as write,patch.object(recover,'write_view'),patch.object(recover,'build_index',return_value={'model':'test'}),patch('boat24_full_publish.main'):
     recover.publish([(p,{'records':{'old':{},'changed':{}}})],{}, {},{},'official_settlements')
    self.assertEqual(write.call_args.kwargs['changed_codes'],{'changed'})
+
+ def test_pending_refund_reason_is_persisted_without_a_settlement(self):
+  with tempfile.TemporaryDirectory() as t:
+   root=Path(t);p=root/'full_history/2026-11-05.json';p.parent.mkdir();(root/'day_views').mkdir();(root/'day_views/2026-11-05.pointer.json').write_text('{}')
+   def pending(rec,*args):
+    rec['result_pending_reason']='refund join unavailable';return False
+   with patch.object(recover,'DIRECTORY',p.parent),patch.object(recover,'INDEX',root/'index.json'),patch.object(recover,'MANIFEST',root/'manifest.json'),patch.object(recover,'CACHE',root/'none'),patch.object(recover,'register_offers',return_value=[]),patch.object(recover,'settle',side_effect=pending),patch.object(recover,'write_history',return_value=p) as write,patch.object(recover,'write_view'),patch.object(recover,'build_index',return_value={'model':'test'}),patch('boat24_full_publish.main'):
+    recover.publish([(p,{'records':{'pending':{}}})],{}, {},{},'official_settlements')
+   self.assertEqual(write.call_args.kwargs['changed_codes'],{'pending'})

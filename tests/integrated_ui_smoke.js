@@ -13,6 +13,6 @@ console.log('Integrated UI PASS: detailed exhibitions, evidence, missing factors
 context.Boat24Integrated.learning({...index,integrated_learning:{policy:'public-frozen-learning-1',phase_reports:[],case_audit:{excluded:{publication_proof_missing:2}}}});
 assert(elements.fullLearning.innerHTML.includes('新しい学習条件での再学習待ち'));
 assert(elements.fullLearning.innerHTML.includes('候補の購入100R'));
-assert(elements.fullLearning.innerHTML.includes('publication_proof_missing'));
+assert(elements.fullLearning.innerHTML.includes('締切前の公開を確認できない：2R'));
 context.Boat24Integrated.learning({...index,training:{through:'2026-11-04',learning_policy:'public-frozen-learning-1',replay:{public_frozen:7}},integrated_learning:{policy:'public-frozen-learning-1',phase_reports:[]}});
 assert(elements.fullLearning.innerHTML.includes('公開固定 7R'));

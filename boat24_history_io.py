@@ -51,16 +51,23 @@ def read_history(path):
         value=merge_day(a,b) if a.get('updated_at','')<=b.get('updated_at','') else merge_day(b,a)
     return value
 
-def write_history(path,value):
+def write_history(path,value,previous=None,changed_codes=None):
     path=Path(path);plain=Path(str(path)[:-3]) if path.suffix=='.gz' else path
-    size=len(json.dumps(value,ensure_ascii=False,separators=(',',':'),allow_nan=False).encode())
-    sharded=(plain.parent/day_key(plain)).exists() or size>COMPRESS_AFTER_BYTES
+    # A legacy plain/gzip fork may contribute revisions not yet in shards.
+    if plain.exists() and Path(str(plain)+'.gz').exists():previous=None;changed_codes=None
+    sharded=(plain.parent/day_key(plain)).exists()
+    if not sharded:sharded=len(json.dumps(value,ensure_ascii=False,separators=(',',':'),allow_nan=False).encode())>COMPRESS_AFTER_BYTES
     if sharded:
+        authoritative={}
+        if (previous is not None or changed_codes is not None) and path.suffix!='.gz' and plain.exists() and not Path(str(plain)+'.gz').exists():
+            storage=read_json(plain).get('history_storage',{})
+            if storage.get('schema')==2:authoritative=storage.get('record_paths',{})
         paths={}
         for code,record in value.get('records',{}).items():
             if not re.fullmatch(r'\d{12}',code) or code[:8]!=day_key(plain).replace('-',''):raise ValueError('Invalid history race code')
             name=day_key(plain)+'/'+code+'.json.gz';dest=plain.parent/name
-            write_json(dest,record)
+            unchanged=authoritative.get(code)==name and dest.exists() and ((previous is not None and previous.get('records',{}).get(code)==record) or (changed_codes is not None and code not in changed_codes))
+            if not unchanged:write_json(dest,record)
             if dest.stat().st_size>=90*1024*1024:raise RuntimeError('One race archive exceeds safe publication size')
             paths[code]=name
         meta={k:v for k,v in value.items() if k!='records'}

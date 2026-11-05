@@ -176,11 +176,12 @@ def summary(records):
 
 def build_index(directory=DIRECTORY,now=None):
     days={};all_records=[]
-    catalogs={};latest_health={}
+    catalogs={};latest_health={};latest_pipeline={}
     for path in day_paths(directory):
         data=read_history(path);records=list(data.get('records',{}).values());all_records+=records
         catalogs[day_key(path)]=data.get('catalog',{})
         latest_health=data.get('health',{}) or latest_health
+        latest_pipeline=data.get('quote_health',{}).get('pipeline',{}) or latest_pipeline
         pointer=directory.parent/'day_views'/(day_key(path)+'.pointer.json')
         view_info=json.loads(pointer.read_text()) if pointer.exists() else {}
         days[day_key(path)]={'view_path':'day_views/'+view_info.get('path',day_key(path)+'.json'),'view_sha256':view_info.get('sha256'),'archive_path':'full_history/'+path.name,'summary':summary(records),'venues':{str(v):summary([r for r in records if r['venue']==v]) for v in range(1,25)}}
@@ -191,7 +192,7 @@ def build_index(directory=DIRECTORY,now=None):
     from boat24_decisions import report as decision_report,PATH as DECISION_PATH
     decision_file=directory.parent/Path(DECISION_PATH).name
     decisions=json.loads(decision_file.read_text()) if decision_file.exists() else {}
-    return {'decision_report':decision_report(decisions),'purchase_policy':PURCHASE_POLICY,'integrated_learning':paired_report(all_records),'factor_catalog':CATALOG,'catalogs':catalogs,'health':latest_health,'purchase_forward_report':offer_report(all_records),'forward_report':build_report(all_records,legacy),'schema':1,'model':VERSION,'updated_at':(now or dt.datetime.now(JST)).isoformat(),
+    return {'pipeline_health':{'collector':latest_pipeline},'decision_report':decision_report(decisions),'purchase_policy':PURCHASE_POLICY,'integrated_learning':paired_report(all_records),'factor_catalog':CATALOG,'catalogs':catalogs,'health':latest_health,'purchase_forward_report':offer_report(all_records),'forward_report':build_report(all_records,legacy),'schema':1,'model':VERSION,'updated_at':(now or dt.datetime.now(JST)).isoformat(),
             'latest_day':max(days) if days else None,'days':days,'summary':summary(all_records),
             'venues':{str(v):summary([r for r in all_records if r['venue']==v]) for v in range(1,25)},
             'warning':'総合予想の保存履歴には過去版も含まれます。版別比較を参照してください。確率は別期間の校正検証条件を満たす場合のみ表示し、収益性は未証明です。'}

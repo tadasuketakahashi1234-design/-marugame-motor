@@ -21,18 +21,22 @@ from boat24_history_io import history_path,read_history,write_history,write_view
 from boat24_model_io import read_json
 from boat24_odds import collect
 from boat24_quote_context import newest_context
+from boat24_pipeline import stage
 
 
-def reprice(base,quotes,model,code,now,clock=None):
-    if quotes.get('レースコード')!=code:return None
+def reprice(base,quotes,model,code,now,clock=None,diagnostics=None):
+    def reject(reason):
+        if diagnostics is not None:diagnostics['rejection']=reason
+        return None
+    if quotes.get('レースコード')!=code:return reject('quote_identity_mismatch')
     cutoff=timeparse(base.get('cutoff'));stamp=timeparse(quotes.get('取得日時'))
-    if not cutoff or now>=cutoff-dt.timedelta(minutes=FREEZE_MINUTES):return None
-    if not stamp or not dt.timedelta(0)<=now-stamp<=dt.timedelta(minutes=5):return None
+    if not cutoff or now>=cutoff-dt.timedelta(minutes=FREEZE_MINUTES):return reject('freeze_reached_before_compute')
+    if not stamp or not dt.timedelta(0)<=now-stamp<=dt.timedelta(minutes=5):return reject('source_quote_stale_or_unclocked')
     prior=timeparse(base.get('purchase_plan',{}).get('odds_observed_at'))
-    if prior and stamp<prior:return None
-    if base.get('model_id')!=model.get('model_id') or model.get('trained_through','9999')>=now.date().isoformat():return None
+    if prior and stamp<prior:return reject('older_source_quote_rejected')
+    if base.get('model_id')!=model.get('model_id') or model.get('trained_through','9999')>=now.date().isoformat():return reject('model_or_training_date_mismatch')
     features=copy.deepcopy(base.get('input_snapshot',{}).get('features',[]))
-    if len(features)!=6:return None
+    if len(features)!=6:return reject('incomplete_boat_inputs')
     from boat24_odds import add_market
     # Market-derived features must follow the same new quotes as the blend.
     add_market(features,quotes,{},{})
@@ -48,7 +52,7 @@ def reprice(base,quotes,model,code,now,clock=None):
     compact=lambda p:{k:p[k] for k in ('phase','probabilities','selection')}
     out['research']={**base.get('research',{}),'baseline':compact(baseline),'candidate':compact(candidate)}
     odds={k[4:]:float(v) for k,v in quotes.items() if k.startswith('3連単_')}
-    if len(odds)!=120:return None
+    if len(odds)!=120:return reject('incomplete_quote_matrix')
     plan=robust_plan(out['probabilities'],odds,verified=bool(out.get('probability_verified')),inputs_ready=quality['purchase_inputs_ready'])
     plan.update(protocol_id=PROTOCOL_ID,odds_observed_at=quotes['取得日時'],odds_source=quotes.get('source_url'),odds_fetched_at=quotes.get('取得完了日時'))
     out['purchase_plan']=plan
@@ -70,7 +74,7 @@ def reprice(base,quotes,model,code,now,clock=None):
     from boat24_reasoning import build as explain
     out['race_reasoning']=explain(out,model,include_sensitivity=quality['purchase_inputs_ready'])
     done=clock() if clock else now
-    if done>=cutoff-dt.timedelta(minutes=FREEZE_MINUTES) or done-stamp>dt.timedelta(minutes=5):return None
+    if done>=cutoff-dt.timedelta(minutes=FREEZE_MINUTES) or done-stamp>dt.timedelta(minutes=5):return reject('freeze_or_quote_expiry_during_compute')
     out['computed_at']=done.isoformat()
     return out
 
@@ -80,7 +84,9 @@ def capture(model):
     from boat24_official_results import collect_results,CACHE as RESULT_CACHE
     now=dt.datetime.now(JST);path=history_path(DIRECTORY,now.date().isoformat())
     if not path.exists():return False
-    ledger=read_history(path);targets=[];result_targets=[]
+    pipeline={'started_at':now.isoformat(),'races':{},'stages':{}}
+    with stage(pipeline,'read_day'):ledger=read_history(path)
+    targets=[];result_targets=[]
     for code,rec in ledger.get('records',{}).items():
         s=newest_context(rec);cut=timeparse((s or {}).get('cutoff'))
         if not rec.get('result') and cut and dt.timedelta(minutes=2)<cut-now<=dt.timedelta(minutes=25):targets.append((cut,code,s))
@@ -89,6 +95,7 @@ def capture(model):
     result_codes=[code for cut,code in sorted(result_targets,reverse=True)][:12]
     if not targets and not result_codes:return False
     from boat24_fast_context import collect as collect_context,refresh as refresh_context
+    acquire_started=time.perf_counter()
     with ThreadPoolExecutor(max_workers=3) as pool:
         quotes_job=pool.submit(collect,[c for _,c,_ in targets],now)
         context_job=pool.submit(collect_context,[(c,s) for _,c,s in targets],now) if targets else None
@@ -96,25 +103,39 @@ def capture(model):
         rows,errors=quotes_job.result()
         contexts,context_errors=context_job.result() if context_job else ({},{})
         result_rows,result_errors=result_job.result()
-    changed=0
+    pipeline['stages']['acquire']={'seconds':round(time.perf_counter()-acquire_started,4),'completed_at':dt.datetime.now(JST).isoformat(),'state':'ok' if not errors and not context_errors else 'partial'}
+    unconfirmed=[code for _,code,_ in targets if contexts.get(code,{}).get('source_checks',{}).get('before',{}).get('state')!='parsed']
+    pipeline['unconfirmed_previews']=unconfirmed
+    if unconfirmed:pipeline['stages']['acquire']['state']='partial'
+    changed=0;dirty=set()
     for _,code,s in targets:
-        if code not in rows:continue
-        base=refresh_context(s,contexts.get(code,{}),model,code,dt.datetime.now(JST))
-        new=reprice(base,rows[code],model,code,dt.datetime.now(JST),clock=lambda:dt.datetime.now(JST))
+        row_trace={'attempt_at':dt.datetime.now(JST).isoformat(),'cutoff':s.get('cutoff'),'source_checks':contexts.get(code,{}).get('source_checks',{}),'odds_error':errors.get(code)};pipeline['races'][code]=row_trace
+        if code not in rows:row_trace['state']='odds_unconfirmed';continue
+        compute_started=time.perf_counter();row_trace['official_quote_at']=rows[code].get('取得日時');row_trace['quote_received_at']=rows[code].get('取得完了日時')
+        try:
+            base=refresh_context(s,contexts.get(code,{}),model,code,dt.datetime.now(JST))
+            new=reprice(base,rows[code],model,code,dt.datetime.now(JST),clock=lambda:dt.datetime.now(JST),diagnostics=row_trace)
+        except Exception as exc:
+            row_trace.update(state='compute_failed',error=str(exc)[:180]);errors['compute_'+code]=str(exc)[:180];continue
+        row_trace.update(compute_seconds=round(time.perf_counter()-compute_started,4),computed_at=dt.datetime.now(JST).isoformat(),state='saved' if new else 'not_saved_by_timing_or_model_gate')
+        if new:
+            row_trace.update(snapshot_id=new['id'],input_quality=new.get('input_quality'),decision_status=new.get('purchase_plan',{}).get('status'))
+            new['pipeline_trace']=dict(row_trace)
         if new and base.get('context_snapshot_at')!=s.get('context_snapshot_at'):new['refresh_kind']='official_context_and_odds'
         rec=ledger['records'][code]
+        if new and new['id'] in rec['revisions']:row_trace['state']='unchanged_saved_snapshot'
         if new and new['id'] not in rec['revisions']:
-            rec['revisions'][new['id']]=new;register_offers(rec);changed+=1
-    ledger['quote_health']={'attempt_at':dt.datetime.now(JST).isoformat(),'targets':len(targets),'confirmed':len(rows),'updated':changed,'errors':errors,'context_errors':context_errors,'interval_seconds':30,'source':'official_odds3t_and_verified_context'}
+            rec['revisions'][new['id']]=new;register_offers(rec);changed+=1;dirty.add(code)
+    ledger['quote_health']={'attempt_at':dt.datetime.now(JST).isoformat(),'targets':len(targets),'confirmed':len(rows),'updated':changed,'errors':errors,'context_errors':context_errors,'interval_seconds':30,'source':'official_odds3t_and_verified_context','pipeline':pipeline}
     settled=0
     for code in result_codes:
         row=result_rows.get(code)
-        if row:settled+=int(settle(ledger['records'][code],row['result'],row['payout'],dt.datetime.now(JST)))
+        if row:dirty.add(code);settled+=int(settle(ledger['records'][code],row['result'],row['payout'],dt.datetime.now(JST)))
     result_at=dt.datetime.now(JST).isoformat()
     ledger['result_health']={'attempt_at':result_at,'targets':result_codes,'confirmed':sum(c in result_rows for c in result_codes),'settled':settled,'errors':result_errors,'source':'official_raceresult_without_csv_gate'}
     if settled:ledger['settlement_updated_at']=result_at
     # Do not present a quote-only refresh as a fresh weather/feature collection.
-    write_history(path,ledger);write_view(path,ledger)
+    write_history(path,ledger,changed_codes=dirty);write_view(path,ledger)
     old_index=json.loads(INDEX.read_text()) if INDEX.exists() else {}
     paths=[str(path)]+([str(RESULT_CACHE)] if RESULT_CACHE.exists() else [])
     atomic_write(INDEX,old_index);atomic_write(MANIFEST,{'paths':paths,'index':str(INDEX)})

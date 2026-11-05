@@ -50,7 +50,9 @@ class FrozenDecisions(unittest.TestCase):
   for k,v in old.items():self.assertEqual(doc['records'][CODE]['receipts'][k],v)
 
 class PublicReceiptPublisher(unittest.TestCase):
- def test_public_payload_digest_and_receipt_are_committed_to_bare_remote(self):
+ def test_public_payload_digest_and_receipt_are_committed_to_bare_remote(self):self.run_publisher(False)
+ def test_reuses_publication_worktree_and_reads_current_archive_once(self):self.run_publisher(True)
+ def run_publisher(self,reuse):
   import subprocess,tempfile,hashlib,types
   from pathlib import Path
   import boat24_public_receipts as pub
@@ -61,8 +63,9 @@ class PublicReceiptPublisher(unittest.TestCase):
    docs=local/'omura/docs';(docs/'full_history').mkdir(parents=True);(docs/'day_views').mkdir();rec={'race_code':CODE,'revisions':{'buy':snapshot()}};v=view(rec);raw=json.dumps(v).encode();h=hashlib.sha256(raw).hexdigest();viewpath='day_views/2026-11-05-'+h[:16]+'.json';(docs/viewpath).write_bytes(raw)
    (docs/'full_history/2026-11-05.json').write_text(json.dumps({'catalog':v['catalog'],'records':{CODE:rec}}))
    index={'days':{'2026-11-05':{'view_path':viewpath,'view_sha256':h,'archive_path':'full_history/2026-11-05.json'}},'updated_at':AT.isoformat()};(docs/'boat24_full_index.json').write_text(json.dumps(index));git('add','.',cwd=local);git('commit','-m','published view',cwd=local);git('push','origin','main',cwd=local)
-   actual=pub.git
+   actual=pub.git;git_calls=[]
    def observed_git(*args,cwd):
+    git_calls.append(args)
     if args[:3]==('remote','get-url','origin'):return 'https://github.com/tadasuketakahashi1234-design/-marugame-motor.git'
     return actual(*args,cwd=cwd)
    class Clock(dt.datetime):
@@ -70,6 +73,14 @@ class PublicReceiptPublisher(unittest.TestCase):
     def now(cls,tz=None):return AT+dt.timedelta(seconds=10)
    calls=[]
    def download(url):calls.append(url);return json.dumps(index).encode() if 'boat24_full_index.json' in url else raw
-   with patch.object(pub,'git',side_effect=observed_git),patch.object(pub,'download',side_effect=download),patch.object(pub,'dt',types.SimpleNamespace(datetime=Clock)):pub.publish(local)
+   with patch.object(pub,'git',side_effect=observed_git),patch.object(pub,'download',side_effect=download),patch.object(pub,'dt',types.SimpleNamespace(datetime=Clock)),patch.object(pub,'read_history',wraps=pub.read_history) as reads:pub.publish(local,initial_work=local if reuse else None)
+   self.assertEqual(reads.call_count,1)
+   if reuse:self.assertFalse(any(a[:2]==('worktree','add') for a in git_calls))
    saved=json.loads(git('--git-dir',remote,'show','main:omura/docs/boat24_decisions.json'));self.assertEqual(len(saved['records'][CODE]['receipts']),1);receipt=next(iter(saved['records'][CODE]['receipts'].values()));self.assertEqual(receipt['proof']['sha256'],h);self.assertEqual(receipt['observed_at'],(AT+dt.timedelta(seconds=10)).isoformat());self.assertTrue(any('main/omura/docs/boat24_full_index.json' in u for u in calls))
    updated=json.loads(git('--git-dir',remote,'show','main:omura/docs/boat24_full_index.json'));self.assertEqual(updated['decision_report']['counts']['awaiting_freeze'],1)
+
+class ObservationAuditTruth(unittest.TestCase):
+ def test_finalizing_later_does_not_claim_a_new_public_observation(self):
+  r={'revisions':{'buy':snapshot()}};doc=observe({},r,AT+dt.timedelta(seconds=10));at=report(doc)['last_public_observed_at'];doc=update(doc,{'catalog':view(r)['catalog']},{CODE:r},(CUT+dt.timedelta(minutes=10)).isoformat(),{});self.assertNotEqual(doc['updated_at'],at);self.assertEqual(report(doc)['last_public_observed_at'],at)
+ def test_partial_refund_is_excluded_from_probability_calibration(self):
+  r={'revisions':{'buy':snapshot()}};doc=observe({},r,AT+dt.timedelta(seconds=10));r['result']={'id':'r','combo':'1-2-3','payout_100yen':900,'refund_verified':True,'refund_boats':['6']};doc=observe(doc,r,CUT);self.assertFalse(report(doc)['purchase_probability_bins']);self.assertEqual(report(doc)['model_rows'][0]['races'],1)

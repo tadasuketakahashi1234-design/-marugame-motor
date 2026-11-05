@@ -1,0 +1,293 @@
+{
+  "source_commit": "85cfa3340a6d9ab8e4803464e9d7c4b686989030",
+  "scope": "14 fixed decisions from protocol start through 2026-11-05T14:29:53+09:00; not all past races",
+  "counts": {
+    "quote_expired_at_freeze": 10,
+    "preview_pending": 3,
+    "risk_no_positive_value": 1
+  },
+  "compute_to_public_observation_seconds": {
+    "min": 88.777829,
+    "median": 266.1905185,
+    "max": 407.876029
+  },
+  "interpretation": "Observation latency is not identical to first-publication latency. Historical stage timings are insufficient to attribute the whole delay.",
+  "changes": [
+    "reuse publication checkout for receipt verification",
+    "reuse current-day archive in receipt finalization",
+    "measure acquisition, computation, lock queue, merge, statistics, Git push and public verification separately",
+    "distinguish verified page with incomplete preview from transport/identity failures",
+    "retain source quote times and freshness gates",
+    "isolate race computation failures",
+    "use actual receipt timestamps for public confirmation health"
+  ],
+  "tests": "tests/test_pipeline_end_to_end.py covers verified sources -> refresh -> forecast -> immutable view -> freeze -> official settlement -> next-day replay -> surface learning",
+  "rows": [
+    {
+      "race_code": "202611050308",
+      "freeze": "2026-11-05T14:00:00+09:00",
+      "reason": "quote_expired_at_freeze",
+      "selected_computed": "2026-11-05T13:54:37.001702+09:00",
+      "selected_quote": "2026-11-05T13:53:00+09:00",
+      "public_observed": "2026-11-05T13:59:44.149121+09:00",
+      "compute_to_public_seconds": 307.147419,
+      "missing_inputs": {
+        "exhibition": [],
+        "entry": [],
+        "signed_st": []
+      }
+    },
+    {
+      "race_code": "202611050309",
+      "freeze": "2026-11-05T14:28:00+09:00",
+      "reason": "quote_expired_at_freeze",
+      "selected_computed": "2026-11-05T14:20:48.329062+09:00",
+      "selected_quote": "2026-11-05T14:19:00+09:00",
+      "public_observed": "2026-11-05T14:27:36.205091+09:00",
+      "compute_to_public_seconds": 407.876029,
+      "missing_inputs": {
+        "exhibition": [],
+        "entry": [],
+        "signed_st": []
+      }
+    },
+    {
+      "race_code": "202611050408",
+      "freeze": "2026-11-05T14:07:00+09:00",
+      "reason": "quote_expired_at_freeze",
+      "selected_computed": "2026-11-05T14:01:47.670002+09:00",
+      "selected_quote": "2026-11-05T14:01:00+09:00",
+      "public_observed": "2026-11-05T14:06:17.031205+09:00",
+      "compute_to_public_seconds": 269.361203,
+      "missing_inputs": {
+        "exhibition": [],
+        "entry": [],
+        "signed_st": []
+      }
+    },
+    {
+      "race_code": "202611050808",
+      "freeze": "2026-11-05T13:46:00+09:00",
+      "reason": "preview_pending",
+      "selected_computed": "2026-11-05T13:42:34.594903+09:00",
+      "selected_quote": "2026-11-05T13:41:00+09:00",
+      "public_observed": "2026-11-05T13:44:03.372732+09:00",
+      "compute_to_public_seconds": 88.777829,
+      "missing_inputs": {
+        "exhibition": [
+          1,
+          2,
+          3,
+          4,
+          5,
+          6
+        ],
+        "entry": [
+          1,
+          2,
+          3,
+          4,
+          5,
+          6
+        ],
+        "signed_st": [
+          1,
+          2,
+          3,
+          4,
+          5,
+          6
+        ]
+      }
+    },
+    {
+      "race_code": "202611050809",
+      "freeze": "2026-11-05T14:17:00+09:00",
+      "reason": "quote_expired_at_freeze",
+      "selected_computed": "2026-11-05T14:07:43.788782+09:00",
+      "selected_quote": "2026-11-05T14:07:00+09:00",
+      "public_observed": "2026-11-05T14:14:17.642707+09:00",
+      "compute_to_public_seconds": 393.853925,
+      "missing_inputs": {
+        "exhibition": [],
+        "entry": [],
+        "signed_st": []
+      }
+    },
+    {
+      "race_code": "202611050908",
+      "freeze": "2026-11-05T13:51:00+09:00",
+      "reason": "preview_pending",
+      "selected_computed": "2026-11-05T13:42:35.821017+09:00",
+      "selected_quote": "2026-11-05T13:41:00+09:00",
+      "public_observed": "2026-11-05T13:46:56.171492+09:00",
+      "compute_to_public_seconds": 260.350475,
+      "missing_inputs": {
+        "exhibition": [
+          1,
+          2,
+          3,
+          4,
+          5,
+          6
+        ],
+        "entry": [
+          1,
+          2,
+          3,
+          4,
+          5,
+          6
+        ],
+        "signed_st": [
+          1,
+          2,
+          3,
+          4,
+          5,
+          6
+        ]
+      }
+    },
+    {
+      "race_code": "202611050909",
+      "freeze": "2026-11-05T14:22:00+09:00",
+      "reason": "quote_expired_at_freeze",
+      "selected_computed": "2026-11-05T14:14:13.383807+09:00",
+      "selected_quote": "2026-11-05T14:13:00+09:00",
+      "public_observed": "2026-11-05T14:20:54.995345+09:00",
+      "compute_to_public_seconds": 401.611538,
+      "missing_inputs": {
+        "exhibition": [],
+        "entry": [],
+        "signed_st": []
+      }
+    },
+    {
+      "race_code": "202611051011",
+      "freeze": "2026-11-05T13:48:00+09:00",
+      "reason": "quote_expired_at_freeze",
+      "selected_computed": "2026-11-05T13:42:35.391747+09:00",
+      "selected_quote": "2026-11-05T13:41:00+09:00",
+      "public_observed": "2026-11-05T13:46:56.171492+09:00",
+      "compute_to_public_seconds": 260.779745,
+      "missing_inputs": {
+        "exhibition": [],
+        "entry": [],
+        "signed_st": []
+      }
+    },
+    {
+      "race_code": "202611051012",
+      "freeze": "2026-11-05T14:25:00+09:00",
+      "reason": "quote_expired_at_freeze",
+      "selected_computed": "2026-11-05T14:17:11.124771+09:00",
+      "selected_quote": "2026-11-05T14:15:00+09:00",
+      "public_observed": "2026-11-05T14:20:54.995345+09:00",
+      "compute_to_public_seconds": 223.870574,
+      "missing_inputs": {
+        "exhibition": [],
+        "entry": [],
+        "signed_st": []
+      }
+    },
+    {
+      "race_code": "202611051109",
+      "freeze": "2026-11-05T14:04:00+09:00",
+      "reason": "risk_no_positive_value",
+      "selected_computed": "2026-11-05T14:01:46.993392+09:00",
+      "selected_quote": "2026-11-05T14:01:00+09:00",
+      "public_observed": "2026-11-05T14:03:18.420379+09:00",
+      "compute_to_public_seconds": 91.426987,
+      "missing_inputs": {
+        "exhibition": [],
+        "entry": [],
+        "signed_st": []
+      }
+    },
+    {
+      "race_code": "202611051709",
+      "freeze": "2026-11-05T13:55:00+09:00",
+      "reason": "preview_pending",
+      "selected_computed": "2026-11-05T13:51:00.743522+09:00",
+      "selected_quote": "2026-11-05T13:49:00+09:00",
+      "public_observed": "2026-11-05T13:54:36.426457+09:00",
+      "compute_to_public_seconds": 215.682935,
+      "missing_inputs": {
+        "exhibition": [
+          1,
+          2,
+          3,
+          4,
+          5,
+          6
+        ],
+        "entry": [
+          1,
+          2,
+          3,
+          4,
+          5,
+          6
+        ],
+        "signed_st": [
+          1,
+          2,
+          3,
+          4,
+          5,
+          6
+        ]
+      }
+    },
+    {
+      "race_code": "202611051710",
+      "freeze": "2026-11-05T14:21:00+09:00",
+      "reason": "quote_expired_at_freeze",
+      "selected_computed": "2026-11-05T14:14:17.337658+09:00",
+      "selected_quote": "2026-11-05T14:13:00+09:00",
+      "public_observed": "2026-11-05T14:20:54.995345+09:00",
+      "compute_to_public_seconds": 397.657687,
+      "missing_inputs": {
+        "exhibition": [],
+        "entry": [],
+        "signed_st": []
+      }
+    },
+    {
+      "race_code": "202611052112",
+      "freeze": "2026-11-05T14:09:00+09:00",
+      "reason": "quote_expired_at_freeze",
+      "selected_computed": "2026-11-05T14:01:48.290601+09:00",
+      "selected_quote": "2026-11-05T14:01:00+09:00",
+      "public_observed": "2026-11-05T14:06:17.031205+09:00",
+      "compute_to_public_seconds": 268.740604,
+      "missing_inputs": {
+        "exhibition": [],
+        "entry": [],
+        "signed_st": []
+      }
+    },
+    {
+      "race_code": "202611052208",
+      "freeze": "2026-11-05T14:13:00+09:00",
+      "reason": "quote_expired_at_freeze",
+      "selected_computed": "2026-11-05T14:08:21.721004+09:00",
+      "selected_quote": "2026-11-05T14:07:00+09:00",
+      "public_observed": "2026-11-05T14:12:45.361437+09:00",
+      "compute_to_public_seconds": 263.640433,
+      "missing_inputs": {
+        "exhibition": [],
+        "entry": [],
+        "signed_st": []
+      }
+    }
+  ],
+  "local_archive_benchmark": {
+    "records": 14,
+    "full_write_seconds": 1.5827174410001135,
+    "incremental_write_seconds": 0.16770642299979954,
+    "bytes_identical": true,
+    "scope": "14 archived races, one changed record, local executor. Not a production latency guarantee."
+  }
+}

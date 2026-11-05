@@ -29,6 +29,7 @@ function render(s,r,index){
  return out;
 }
 function learning(index){
+ globalThis.Boat24Study?.render(index);
  const el=typeof document!=='undefined'&&document.getElementById('fullLearning');if(!el)return;
  const x=index.integrated_learning||{},training=index.training||{},historical=training.integrated_experiments||{},replay=training.replay||{};
  const publicMode=x.policy==='public-frozen-learning-1';

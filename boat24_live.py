@@ -70,8 +70,10 @@ def reprice(base,quotes,model,code,now,clock=None,diagnostics=None):
     out['allocation']['comparison_input_digest']=digest(out)
     out['context_snapshot_at']=base.get('context_snapshot_at',base['created_at'])
     out['refresh_kind']='official_odds_reprice'
-    out['id']=hashlib.sha256(json.dumps([features,quotes,model.get('model_id'),PROTOCOL_ID,quality['policy'],quality['weather']['state'],'official-reprice-5-learning'],sort_keys=True,ensure_ascii=False).encode()).hexdigest()
+    out['id']=hashlib.sha256(json.dumps([features,quotes,model.get('model_id'),PROTOCOL_ID,quality['policy'],quality['weather']['state'],'official-reprice-6-study',__import__('boat24_study').CONFIG],sort_keys=True,ensure_ascii=False).encode()).hexdigest()
     out.update(created_at=now.isoformat(),computed_at=now.isoformat(),evaluation_eligible=True,race_code=code)
+    from boat24_study import attach as attach_study
+    attach_study(out,model,now)
     from boat24_reasoning import build as explain
     out['race_reasoning']=explain(out,model,include_sensitivity=quality['purchase_inputs_ready'])
     done=clock() if clock else now
@@ -127,12 +129,18 @@ def capture(model):
         if new and new['id'] in rec['revisions']:row_trace['state']='unchanged_saved_snapshot'
         if new and new['id'] not in rec['revisions']:
             rec['revisions'][new['id']]=new;register_offers(rec);changed+=1;dirty.add(code)
+    from boat24_learning import digest
+    for code,attempt in pipeline['races'].items():
+        ledger['records'][code].setdefault('collection_attempts',{}).setdefault(digest([pipeline['started_at'],code,attempt]),copy.deepcopy(attempt));dirty.add(code)
     ledger['quote_health']={'attempt_at':dt.datetime.now(JST).isoformat(),'targets':len(targets),'confirmed':len(rows),'updated':changed,'errors':errors,'context_errors':context_errors,'interval_seconds':30,'source':'official_odds3t_and_verified_context','pipeline':pipeline}
     settled=0
     for code in result_codes:
         row=result_rows.get(code)
         if row:dirty.add(code);settled+=int(settle(ledger['records'][code],row['result'],row['payout'],dt.datetime.now(JST)))
     result_at=dt.datetime.now(JST).isoformat()
+    for code in result_codes:
+        attempt={'at':result_at,'confirmed':code in result_rows,'error':result_errors.get(code),'result_id':(ledger['records'][code].get('result') or {}).get('id')}
+        ledger['records'][code].setdefault('settlement_attempts',{}).setdefault(digest([code,attempt]),attempt);dirty.add(code)
     ledger['result_health']={'attempt_at':result_at,'targets':result_codes,'confirmed':sum(c in result_rows for c in result_codes),'settled':settled,'errors':result_errors,'source':'official_raceresult_without_csv_gate'}
     if settled:ledger['settlement_updated_at']=result_at
     # Do not present a quote-only refresh as a fresh weather/feature collection.

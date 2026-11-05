@@ -327,6 +327,8 @@ def build_model(today,days=28):
     model['integrated_experiments']=historical_experiments(model,validation)
     from boat24_experiments import prior_forward_evidence
     model['forward_evidence']=prior_forward_evidence(today)
+    from boat24_study import fit as fit_study
+    model['prospective_study_training']=fit_study(today,model)
     model['learning_policy']='public-frozen-learning-1'
     model['learning_provenance_digest']=__import__('hashlib').sha256(json.dumps(replay_diagnostics.get('provenance',[]),sort_keys=True).encode()).hexdigest()
     model['approved_candidate_phases']=[r['phase'] for r in model['forward_evidence']['phase_reports'] if r['adoption_approved']]

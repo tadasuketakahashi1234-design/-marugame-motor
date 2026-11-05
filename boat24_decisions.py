@@ -55,7 +55,12 @@ def update(doc,view,archives,observed_at,proof):
             if now<freeze and s and timeparse(s.get('cutoff'))==cut and plan_hash(public.get('purchase_plan'))==plan_hash(s.get('purchase_plan')):
                 created=timeparse(s.get('created_at'));computed=timeparse(s.get('computed_at') or s.get('created_at'))
                 if created and computed and created<=computed<=now:
-                    key=hashlib.sha256(json.dumps([s['id'],observed_at,proof],sort_keys=True).encode()).hexdigest();r['receipts'].setdefault(key,{'snapshot_id':s['id'],'observed_at':observed_at,'payload_hash':plan_hash(s.get('purchase_plan')),'catalog_state':item.get('state'),'proof':copy.deepcopy(proof)})
+                    key=hashlib.sha256(json.dumps([s['id'],observed_at,proof],sort_keys=True).encode()).hexdigest()
+                    receipt={'snapshot_id':s['id'],'observed_at':observed_at,'payload_hash':plan_hash(s.get('purchase_plan')),'catalog_state':item.get('state'),'proof':copy.deepcopy(proof)}
+                    from boat24_study import evidence
+                    expected=evidence(s)
+                    if expected and public.get('study_evidence')==expected:receipt['study_digest']=expected['digest']
+                    r['receipts'].setdefault(key,receipt)
             if now>=freeze:
                 prior=[v for v in r['receipts'].values() if timeparse(v['observed_at'])<freeze]
                 receipt=max(prior,key=lambda x:(x['observed_at'],x['snapshot_id']),default=None)
@@ -64,6 +69,9 @@ def update(doc,view,archives,observed_at,proof):
                 if snap and receipt and plan_hash(snap.get('purchase_plan'))==receipt['payload_hash']:
                     state,reason=('cancelled','public_cancellation_observed') if receipt.get('catalog_state')=='cancelled' else outcome(snap,freeze)
                 r['decision']={'policy':POLICY,'state':state,'reason':reason,'finalized_at':observed_at,'snapshot_id':(receipt or {}).get('snapshot_id'),'receipt':copy.deepcopy(receipt),'model_id':(snap or {}).get('model_id'),'phase':(snap or {}).get('phase'),'plan':compact_plan((snap or {}).get('purchase_plan')),'paired':copy.deepcopy((snap or {}).get('research',{}).get('decision_arms',{}))}
+                if snap and receipt and receipt.get('study_digest'):
+                    from boat24_learning import digest
+                    if receipt['study_digest']==digest(snap.get('prospective_study')):r['decision']['study']=copy.deepcopy(snap['prospective_study'])
         decision=r.get('decision');result=rec.get('result')
         if decision and result:
             settle={'result_id':result.get('id'),'combo':result['combo'],'payout_100yen':result['payout_100yen'],'refund_verified':bool(result.get('refund_verified')),'refund_boats':copy.deepcopy(result.get('refund_boats',[])),'winning_trifectas':copy.deepcopy(result.get('winning_trifectas') or {result['combo']:result['payout_100yen']}),'settled_at':observed_at}

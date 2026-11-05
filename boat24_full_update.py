@@ -79,7 +79,7 @@ def make_snapshot(code,card,data,model,history,now,previous=None,clock=None):
     # fetched again or the wall clock advanced. Freshness is still displayed.
     digest_features=[{k:v for k,v in f.items() if k!='data_quality'} for f in built['features']]
     comments_identity={lane:{k:c.get(k) for k in ('racer','comment','source')} for lane,c in official.get('comments',{}).items()}
-    h=fingerprint(digest_features,built['previews']['odds'],model,{'before':official.get('before'),'comments':comments_identity,'race_flags':official.get('race_flags'),'purchase_policy':PURCHASE_POLICY,'purchase_protocol':PROTOCOL_ID,'presentation_schema':'race-commentary-4-frozen-learning','risk_policy':RISK_POLICY,'input_policy':INPUT_POLICY})
+    h=fingerprint(digest_features,built['previews']['odds'],model,{'before':official.get('before'),'comments':comments_identity,'race_flags':official.get('race_flags'),'purchase_policy':PURCHASE_POLICY,'purchase_protocol':PROTOCOL_ID,'presentation_schema':'race-commentary-5-prospective-study','study_config':__import__('boat24_study').CONFIG,'risk_policy':RISK_POLICY,'input_policy':INPUT_POLICY})
     if previous and previous.get('id')==h:return None,'unchanged_inputs'
     inference_model=model if model.get('validated_input_policy')==INPUT_POLICY else {**model,'phase_calibration':{}}
     result=predict(built['features'],int(code[8:10]),day,inference_model,built['previews']['odds'])
@@ -142,6 +142,8 @@ def make_snapshot(code,card,data,model,history,now,previous=None,clock=None):
                                      'feature_schema':SCHEMA,'supplemental_previews':{k:safe_row(data.get(k,{}).get(code),cutoff,now) for k in ('tokuten','od1','od2')},
                                      'missing_data_reasons':{lane:{'motor':ctx.get('status'),'period_verified':bool(ctx.get('period'))} for lane,ctx in built['contexts'].items()},'retained_sources':retained,'captured_at':now.isoformat()}})
     result['race_code']=code
+    from boat24_study import attach as attach_study
+    attach_study(result,model,now)
     from boat24_reasoning import build as explain
     result['race_reasoning']=explain(result,model,include_sensitivity=input_quality['purchase_inputs_ready'] and cutoff-now<=dt.timedelta(minutes=30))
     completed=clock() if clock else now
@@ -193,7 +195,7 @@ def build_index(directory=DIRECTORY,now=None):
     from boat24_decisions import report as decision_report,PATH as DECISION_PATH
     decision_file=directory.parent/Path(DECISION_PATH).name
     decisions=json.loads(decision_file.read_text()) if decision_file.exists() else {}
-    return {'pipeline_health':{'collector':latest_pipeline},'decision_report':decision_report(decisions),'purchase_policy':PURCHASE_POLICY,'integrated_learning':__import__('boat24_portfolio_validation').paired_frozen_report(all_records,decisions),'research_integrated_learning':paired_report(all_records),'factor_catalog':CATALOG,'catalogs':catalogs,'health':latest_health,'purchase_forward_report':offer_report(all_records),'forward_report':build_report(all_records,legacy),'schema':1,'model':VERSION,'updated_at':(now or dt.datetime.now(JST)).isoformat(),
+    return {'prospective_study':__import__('boat24_study').report(all_records,decisions,catalogs,now),'pipeline_health':{'collector':latest_pipeline},'decision_report':decision_report(decisions),'purchase_policy':PURCHASE_POLICY,'integrated_learning':__import__('boat24_portfolio_validation').paired_frozen_report(all_records,decisions),'research_integrated_learning':paired_report(all_records),'factor_catalog':CATALOG,'catalogs':catalogs,'health':latest_health,'purchase_forward_report':offer_report(all_records),'forward_report':build_report(all_records,legacy),'schema':1,'model':VERSION,'updated_at':(now or dt.datetime.now(JST)).isoformat(),
             'latest_day':max(days) if days else None,'days':days,'summary':summary(all_records),
             'venues':{str(v):summary([r for r in all_records if r['venue']==v]) for v in range(1,25)},
             'warning':'総合予想の保存履歴には過去版も含まれます。版別比較を参照してください。確率は別期間の校正検証条件を満たす場合のみ表示し、収益性は未証明です。'}
@@ -212,6 +214,8 @@ def merge_day(remote,local):
         if incoming.get('result_pending_reason') and not rec.get('result'):rec['result_pending_reason']=incoming['result_pending_reason']
         for key,revision in incoming.get('revisions',{}).items():rec.setdefault('revisions',{}).setdefault(key,revision)
         for key,value in incoming.get('offers',{}).items():rec.setdefault('offers',{}).setdefault(key,value)
+        for field in ('collection_attempts','settlement_attempts'):
+            for key,value in incoming.get(field,{}).items():rec.setdefault(field,{}).setdefault(key,value)
         register_offers(rec)
         for key,value in incoming.get('result_history',{}).items():rec.setdefault('result_history',{}).setdefault(key,value)
         new_result=incoming.get('result') or {};old_result=rec.get('result') or {}
@@ -312,6 +316,7 @@ def main():
     index=build_index(now=dt.datetime.now(JST));index['backfill_cursor']=day_key(pending[:14][-1][0]) if pending else ''
     index['diagnostics']=ledger['diagnostics'];index['training']={'frozen_for_forward_evaluation':__import__('os').environ.get('BOAT24_FREEZE_MODEL')=='1','through':model['trained_through'],'samples':len(model['samples']),'market_prior':model['market_alpha'],'validation':model['calibration'],'source_errors':model.get('source_errors',{}),'venue_coverage':model.get('venue_coverage',{}),'venue_profiles':model.get('venue_profiles',PROFILES),'water_source_errors':model.get('water_source_errors',{}),'surface_summary':{'venues_with_wind_history':sorted({k.split('|')[0] for k in model.get('surface_state',{}).get('wind',{})}),'venues_with_tide_data':sorted(model.get('tide_book',{}))},'course_window_days':model.get('course_window_days'),'surface_training_policy':model.get('surface_training_policy','legacy-before-replay')}
     index['training'].update({'integrated_experiments':model.get('integrated_experiments',{}),'replay':model.get('replay',{}),'candidate_policy':model.get('candidate_policy'),'feature_schema':model.get('feature_schema'),'learned_fields':sorted(model.get('scales',{})),'approved_candidate_phases':model.get('approved_candidate_phases',[]),'learning_policy':model.get('learning_policy'),'learning_provenance_digest':model.get('learning_provenance_digest'),'forward_evidence_policy':model.get('forward_evidence',{}).get('policy')})
+    index['training']['prospective_study_training']=model.get('prospective_study_training',{})
     atomic_write(INDEX,index)
     if changed:touched.append(str(MODEL))
     touched.append('omura/docs/boat24_official_cache.json')

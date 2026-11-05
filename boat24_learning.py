@@ -9,7 +9,7 @@ POLICY_ID='public-frozen-learning-1'
 def digest(value):
     return hashlib.sha256(json.dumps(value,sort_keys=True,ensure_ascii=False,separators=(',',':')).encode()).hexdigest()
 
-def frozen_cases(records,decisions,before=None):
+def frozen_cases(records,decisions,before=None,allow_prediction_only=False):
     cases=[];excluded=Counter();seen=set()
     for rec in records:
         code=rec.get('race_code','')
@@ -20,7 +20,7 @@ def frozen_cases(records,decisions,before=None):
         d=fixed.get('decision') or {};receipt=d.get('receipt') or {};proof=receipt.get('proof') or {}
         s=rec.get('revisions',{}).get(d.get('snapshot_id'));result=rec.get('result') or {}
         reason=None
-        if d.get('policy')!=POLICY or d.get('state') not in ('buy','skip'):reason='no_usable_frozen_decision'
+        if d.get('policy')!=POLICY or d.get('state') not in (('buy','skip','pending') if allow_prediction_only else ('buy','skip')):reason='no_usable_frozen_decision'
         elif not s or receipt.get('snapshot_id')!=s.get('id'):reason='frozen_snapshot_missing'
         elif s.get('phase') not in ('initial','preview'):reason='unsupported_learning_phase'
         elif not re.fullmatch('[a-f0-9]{40}',proof.get('source_commit','')) or not re.fullmatch('[a-f0-9]{64}',proof.get('sha256','')):reason='publication_proof_missing'

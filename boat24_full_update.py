@@ -79,14 +79,14 @@ def make_snapshot(code,card,data,model,history,now,previous=None,clock=None):
     # fetched again or the wall clock advanced. Freshness is still displayed.
     digest_features=[{k:v for k,v in f.items() if k!='data_quality'} for f in built['features']]
     comments_identity={lane:{k:c.get(k) for k in ('racer','comment','source')} for lane,c in official.get('comments',{}).items()}
-    h=fingerprint(digest_features,built['previews']['odds'],model,{'before':official.get('before'),'comments':comments_identity,'race_flags':official.get('race_flags'),'purchase_policy':PURCHASE_POLICY,'purchase_protocol':PROTOCOL_ID,'presentation_schema':'race-commentary-3-frozen-decision','risk_policy':RISK_POLICY,'input_policy':INPUT_POLICY})
+    h=fingerprint(digest_features,built['previews']['odds'],model,{'before':official.get('before'),'comments':comments_identity,'race_flags':official.get('race_flags'),'purchase_policy':PURCHASE_POLICY,'purchase_protocol':PROTOCOL_ID,'presentation_schema':'race-commentary-4-frozen-learning','risk_policy':RISK_POLICY,'input_policy':INPUT_POLICY})
     if previous and previous.get('id')==h:return None,'unchanged_inputs'
     inference_model=model if model.get('validated_input_policy')==INPUT_POLICY else {**model,'phase_calibration':{}}
     result=predict(built['features'],int(code[8:10]),day,inference_model,built['previews']['odds'])
     baseline=result
     candidate=predict(built['features'],int(code[8:10]),day,{**model,'enabled_groups':[g for g in ALL_GROUPS if g!='data_quality'],'phase_calibration':{}},built['previews']['odds'])
     gate=next((r for r in model.get('forward_evidence',{}).get('phase_reports',[]) if r['phase']==candidate['phase']),{})
-    if gate.get('adoption_approved') and str(int(code[8:10])) in gate.get('eligible_venues',[]):
+    if model.get('forward_evidence',{}).get('policy')=='public-frozen-learning-1' and gate.get('adoption_approved') and str(int(code[8:10])) in gate.get('eligible_venues',[]):
         result=candidate
         # Shadow gate does not establish calibrated candidate probabilities.
         result['probability_verified']=False
@@ -101,6 +101,7 @@ def make_snapshot(code,card,data,model,history,now,previous=None,clock=None):
     valid_odds={c:number(built['previews']['odds'].get('3連単_'+c)) for c in result['probabilities']}
     result['allocation']=optimize(result['probabilities'],valid_odds)
     result['input_quality']=input_quality
+    result['learning_lineage']={'model_id':model.get('model_id'),'trained_through':model.get('trained_through'),'policy':model.get('learning_policy'),'case_digest':model.get('learning_provenance_digest'),'public_cases':model.get('replay',{}).get('public_frozen',0)}
     if model.get('validated_input_policy')!=INPUT_POLICY:
         result['probability_verified']=False
         result['probability_verification_reason']='観測鮮度・決まり手欠損の新しい扱いを前向き検証中'
@@ -192,7 +193,7 @@ def build_index(directory=DIRECTORY,now=None):
     from boat24_decisions import report as decision_report,PATH as DECISION_PATH
     decision_file=directory.parent/Path(DECISION_PATH).name
     decisions=json.loads(decision_file.read_text()) if decision_file.exists() else {}
-    return {'pipeline_health':{'collector':latest_pipeline},'decision_report':decision_report(decisions),'purchase_policy':PURCHASE_POLICY,'integrated_learning':paired_report(all_records),'factor_catalog':CATALOG,'catalogs':catalogs,'health':latest_health,'purchase_forward_report':offer_report(all_records),'forward_report':build_report(all_records,legacy),'schema':1,'model':VERSION,'updated_at':(now or dt.datetime.now(JST)).isoformat(),
+    return {'pipeline_health':{'collector':latest_pipeline},'decision_report':decision_report(decisions),'purchase_policy':PURCHASE_POLICY,'integrated_learning':__import__('boat24_portfolio_validation').paired_frozen_report(all_records,decisions),'research_integrated_learning':paired_report(all_records),'factor_catalog':CATALOG,'catalogs':catalogs,'health':latest_health,'purchase_forward_report':offer_report(all_records),'forward_report':build_report(all_records,legacy),'schema':1,'model':VERSION,'updated_at':(now or dt.datetime.now(JST)).isoformat(),
             'latest_day':max(days) if days else None,'days':days,'summary':summary(all_records),
             'venues':{str(v):summary([r for r in all_records if r['venue']==v]) for v in range(1,25)},
             'warning':'総合予想の保存履歴には過去版も含まれます。版別比較を参照してください。確率は別期間の校正検証条件を満たす場合のみ表示し、収益性は未証明です。'}
@@ -310,7 +311,7 @@ def main():
         old_path=write_history(old_path,old);write_view(old_path,old);touched.append(str(old_path))
     index=build_index(now=dt.datetime.now(JST));index['backfill_cursor']=day_key(pending[:14][-1][0]) if pending else ''
     index['diagnostics']=ledger['diagnostics'];index['training']={'frozen_for_forward_evaluation':__import__('os').environ.get('BOAT24_FREEZE_MODEL')=='1','through':model['trained_through'],'samples':len(model['samples']),'market_prior':model['market_alpha'],'validation':model['calibration'],'source_errors':model.get('source_errors',{}),'venue_coverage':model.get('venue_coverage',{}),'venue_profiles':model.get('venue_profiles',PROFILES),'water_source_errors':model.get('water_source_errors',{}),'surface_summary':{'venues_with_wind_history':sorted({k.split('|')[0] for k in model.get('surface_state',{}).get('wind',{})}),'venues_with_tide_data':sorted(model.get('tide_book',{}))},'course_window_days':model.get('course_window_days'),'surface_training_policy':model.get('surface_training_policy','legacy-before-replay')}
-    index['training'].update({'integrated_experiments':model.get('integrated_experiments',{}),'replay':model.get('replay',{}),'candidate_policy':model.get('candidate_policy'),'feature_schema':model.get('feature_schema'),'learned_fields':sorted(model.get('scales',{})),'approved_candidate_phases':model.get('approved_candidate_phases',[])})
+    index['training'].update({'integrated_experiments':model.get('integrated_experiments',{}),'replay':model.get('replay',{}),'candidate_policy':model.get('candidate_policy'),'feature_schema':model.get('feature_schema'),'learned_fields':sorted(model.get('scales',{})),'approved_candidate_phases':model.get('approved_candidate_phases',[]),'learning_policy':model.get('learning_policy'),'learning_provenance_digest':model.get('learning_provenance_digest'),'forward_evidence_policy':model.get('forward_evidence',{}).get('policy')})
     atomic_write(INDEX,index)
     if changed:touched.append(str(MODEL))
     touched.append('omura/docs/boat24_official_cache.json')

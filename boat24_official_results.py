@@ -23,7 +23,7 @@ def parse_result(doc,code,observed_at,source):
         u=urlparse(html.unescape(link));q=parse_qs(u.query)
         if u.path.endswith('/racelist') and q.get('hd')==[code[:8]] and q.get('jcd')==[code[8:10]] and q.get('rno')==[str(int(code[-2:]))]:selected=True
     if not selected:return None
-    finishes={};lanes=set();refunds=None;winners={}
+    finishes={};lanes=set();refunds=None;winners={};nonfinish={}
     for table in re.findall(r'<table\b[^>]*>(.*?)</table>',doc,re.S|re.I):
         headings=[unicodedata.normalize('NFKC',text(v)) for v in re.findall(r'<th\b[^>]*>(.*?)</th>',table,re.S|re.I)]
         if '枠' in headings and '着' in headings:
@@ -33,7 +33,8 @@ def parse_result(doc,code,observed_at,source):
                 place=unicodedata.normalize('NFKC',c[0]);lane=c[1].strip()
                 if lane not in '123456' or len(lane)!=1:continue
                 lanes.add(lane)
-                if place in ('1','2','3'):finishes[place]=lane
+                if place in ('1','2','3','4','5','6'):finishes[place]=lane
+                else:nonfinish[lane]=place
         if headings==['返還']:
             body=re.search(r'<tbody\b[^>]*>(.*?)</tbody>',table,re.S|re.I)
             if not body:return None
@@ -49,11 +50,12 @@ def parse_result(doc,code,observed_at,source):
                 if kind!='3連単' or len(c)<2:continue
                 nums=re.findall(r'[1-6]',unicodedata.normalize('NFKC',c[0]));money=re.sub(r'[^0-9]','',c[1])
                 if len(nums)==3 and len(set(nums))==3 and money and int(money)>0:winners['-'.join(nums)]=int(money)
-    if len(lanes)!=6 or set(finishes)!=set('123') or refunds is None or not winners:return None
+    if len(lanes)!=6 or not set('123').issubset(finishes) or refunds is None or not winners:return None
     combo='-'.join(finishes[str(i)] for i in (1,2,3))
     if combo not in winners or any(set(c.split('-'))&set(refunds) for c in winners):return None
-    res={'レースコード':code,**{f'{i}着_艇番':finishes[str(i)] for i in (1,2,3)},'取得日時':observed_at,
+    res={'レースコード':code,**{f'{i}着_艇番':lane for i,lane in finishes.items()},'取得日時':observed_at,
          'official_refund_verified':True,'official_refund_boats':refunds,'official_result_source':source}
+    if nonfinish:res['official_finish_status']=nonfinish
     pay={'レースコード':code,'3連単_組番':combo,'3連単_払戻金':str(winners[combo]),'取得日時':observed_at,'official_payout_source':source}
     if len(winners)>1:pay['winning_trifectas']=[{'combo':c,'payout_100yen':p} for c,p in winners.items()]
     return {'race_code':code,'result':res,'payout':pay,'source':source,'observed_at':observed_at,'body_sha256':hashlib.sha256(doc.encode()).hexdigest()}

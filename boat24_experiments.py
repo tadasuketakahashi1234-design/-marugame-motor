@@ -117,4 +117,7 @@ def prior_forward_evidence(today,directory=Path('omura/docs/full_history')):
     records=[]
     for p in day_paths(directory):
         if day_key(p)<today.isoformat():records+=list(read_history(p).get('records',{}).values())
-    return paired_report(records)
+    from boat24_portfolio_validation import paired_frozen_report
+    path=Path(directory).parent/'boat24_decisions.json'
+    decisions=json.loads(path.read_text()) if path.exists() else {}
+    return paired_frozen_report(records,decisions)

@@ -44,11 +44,12 @@ def reprice(base,quotes,model,code,now,clock=None,diagnostics=None):
     inference_model=model if model.get('validated_input_policy')==INPUT_POLICY else {**model,'phase_calibration':{}}
     baseline=predict(features,int(code[8:10]),now.date().isoformat(),inference_model,quotes)
     candidate=predict(features,int(code[8:10]),now.date().isoformat(),{**model,'enabled_groups':[g for g in ALL_GROUPS if g!='data_quality'],'phase_calibration':{}},quotes)
-    out=copy.deepcopy(base);active=base.get('research',{}).get('candidate_active',False)
+    out=copy.deepcopy(base);active=base.get('research',{}).get('candidate_active',False) and model.get('forward_evidence',{}).get('policy')=='public-frozen-learning-1'
     out.update(candidate if active else baseline)
     out['complete_inputs']=bool(base.get('complete_inputs') and out.get('complete_inputs'))
     if active or model.get('validated_input_policy')!=INPUT_POLICY:out['probability_verified']=False
     out['input_quality']=quality
+    out['learning_lineage']={'model_id':model.get('model_id'),'trained_through':model.get('trained_through'),'policy':model.get('learning_policy'),'case_digest':model.get('learning_provenance_digest'),'public_cases':model.get('replay',{}).get('public_frozen',0)}
     compact=lambda p:{k:p[k] for k in ('phase','probabilities','selection')}
     out['research']={**base.get('research',{}),'baseline':compact(baseline),'candidate':compact(candidate)}
     odds={k[4:]:float(v) for k,v in quotes.items() if k.startswith('3連単_')}
@@ -69,7 +70,7 @@ def reprice(base,quotes,model,code,now,clock=None,diagnostics=None):
     out['allocation']['comparison_input_digest']=digest(out)
     out['context_snapshot_at']=base.get('context_snapshot_at',base['created_at'])
     out['refresh_kind']='official_odds_reprice'
-    out['id']=hashlib.sha256(json.dumps([features,quotes,model.get('model_id'),PROTOCOL_ID,quality['policy'],quality['weather']['state'],'official-reprice-4'],sort_keys=True,ensure_ascii=False).encode()).hexdigest()
+    out['id']=hashlib.sha256(json.dumps([features,quotes,model.get('model_id'),PROTOCOL_ID,quality['policy'],quality['weather']['state'],'official-reprice-5-learning'],sort_keys=True,ensure_ascii=False).encode()).hexdigest()
     out.update(created_at=now.isoformat(),computed_at=now.isoformat(),evaluation_eligible=True,race_code=code)
     from boat24_reasoning import build as explain
     out['race_reasoning']=explain(out,model,include_sensitivity=quality['purchase_inputs_ready'])

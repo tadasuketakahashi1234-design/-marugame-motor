@@ -129,7 +129,7 @@ function renderComparison(items){
 }
 function records(){const venue=Number($('venue').value);return Object.values(data?.records||{}).filter(r=>!venue||Number(r.venue)===venue).sort((a,b)=>b.race_code.localeCompare(a.race_code))}
 function catalogRows(){const v=Number($('venue').value);return Object.values(data?.catalog||index?.catalogs?.[$('fullDate').value]||{}).filter(r=>!v||r.venue===v).sort((a,b)=>a.race_code.localeCompare(b.race_code))}
-let quickRows=[],activeRace=null,quickScope='',raceObserver=null;
+let quickRows=[],activeRace=null,quickScope='',raceObserver=null,manualRaceUntil=0;
 function syncQuickSelection(){
  const pos=quickRows.findIndex(x=>x.race_code===activeRace);
  if($('fullQuickRace')){$('fullQuickRace').value=pos<0?'':activeRace;$('fullQuickRace').disabled=pos<0;}
@@ -150,7 +150,7 @@ function renderQuickNav(rows,scope){
 }
 function jumpToRace(code){
  const row=quickRows.find(x=>x.race_code===code);if(!row)return;
- activeRace=code;
+ activeRace=code;manualRaceUntil=Date.now()+1500;
  // The national list initially renders 24 races; make an off-screen selection available too.
  if(!$('race-'+code)&&String(Number($('venue').value))==='0'){raceVisible=Math.max(raceVisible,quickRows.length);render();}
  syncQuickSelection();const target=$('race-'+code);
@@ -159,6 +159,7 @@ function jumpToRace(code){
 function observeReadingRace(){
  if(typeof IntersectionObserver==='undefined')return;
  raceObserver?.disconnect();raceObserver=new IntersectionObserver(entries=>{
+  if(Date.now()<manualRaceUntil)return;
   const hit=entries.filter(x=>x.isIntersecting).sort((a,b)=>a.boundingClientRect.top-b.boundingClientRect.top)[0];
   if(hit){activeRace=hit.target.id.slice(5);syncQuickSelection();}
  },{rootMargin:'-8% 0px -65% 0px',threshold:0});

@@ -1,8 +1,6 @@
 name: Boat24 forward model comparison
 on:
   workflow_dispatch:
-  schedule:
-    - cron: '5,15,25,35,45,55 * * * *'
 permissions:
   contents: write
 concurrency:

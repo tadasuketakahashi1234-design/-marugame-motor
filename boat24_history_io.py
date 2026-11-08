@@ -94,6 +94,18 @@ def compact_day(doc):
             from boat24_commentary import build as commentary
             rec['race_commentary']=commentary(chosen)
             rec['boat_comparison']=__import__('boat24_boat_comparison').build(chosen,doc.get('records'))
+            # Verified live observations are display-only. Never revise frozen
+            # predictions, odds, purchase decisions or learning inputs.
+            from boat24_live_observation import latest_verified
+            observed=latest_verified(code,record,chosen)
+            if observed:
+                rec['latest_verified_entry']=observed
+                for boat in rec['boat_comparison']['boats']:
+                    lane=boat['lane']
+                    course=observed['courses'].get(str(lane))
+                    if course is not None:boat['course']=course
+                rec['boat_comparison']['entry_observed_at']=observed['observed_at']
+                rec['boat_comparison']['entry_scope']='展示進入は直近の公式確認値（予想計算への使用とは別）'
         valid=[s for s in revisions.values() if s.get('evaluation_eligible')]
         if valid:keep.add(max(valid,key=lambda s:(s['created_at'],s['id']))['id'])
         plans=[s for s in valid if s.get('purchase_plan')]

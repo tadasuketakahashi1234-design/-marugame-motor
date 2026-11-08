@@ -15,7 +15,9 @@ _LOCK_WAIT_SECONDS=0.
 from boat24_history_io import read_history,write_history,write_view,day_key,history_files,view_files
 
 
-def git(*args,cwd=None):return subprocess.check_output(['git',*args],cwd=cwd,text=True).strip()
+def git(*args,cwd=None):
+    timeout=75 if args and args[0]=='fetch' else 120
+    return subprocess.check_output(['git',*args],cwd=cwd,text=True,timeout=timeout).strip()
 
 
 def _publish():
@@ -25,7 +27,7 @@ def _publish():
     old_index=json.loads((root/manifest['index']).read_text())
     for attempt in range(5):
         trace['attempt']=attempt+1
-        with stage(trace,'fetch_main'):git('fetch','origin','+refs/heads/main:refs/remotes/origin/main',cwd=root)
+        with stage(trace,'fetch_main'):git('fetch','--depth=1','origin','+refs/heads/main:refs/remotes/origin/main',cwd=root)
         with tempfile.TemporaryDirectory(prefix='boat24-full-publish-') as tmp:
             work=Path(tmp)/'checkout'
             with stage(trace,'checkout'):git('worktree','add','--detach',str(work),'origin/main',cwd=root)
@@ -78,9 +80,10 @@ def _publish():
                 with stage(trace,'stage_files'):git('add','-A','--',*paths,cwd=work)
                 if not git('diff','--cached','--name-only',cwd=work):print('All-input observations already saved');return
                 with stage(trace,'commit_observations'):git('-c','user.name=github-actions[bot]','-c','user.email=41898282+github-actions[bot]@users.noreply.github.com','commit','-m','Save all-input forecasts and immutable input revisions',cwd=work)
-                with stage(trace,'push_main'):pushed=subprocess.run(['git','push','origin','HEAD:main'],cwd=work).returncode==0
+                with stage(trace,'push_main'):pushed=subprocess.run(['git','push','origin','HEAD:main'],cwd=work,timeout=90).returncode==0
                 if pushed:
                     trace.update(completed_at=dt.datetime.now(JST).isoformat(),source_commit=git('rev-parse','HEAD',cwd=work))
+                    print('Publication timing:',json.dumps(trace,ensure_ascii=False),flush=True)
                     print('All-input model and daily history saved')
                     try:
                         from boat24_public_receipts import publish as publish_receipts
@@ -88,6 +91,7 @@ def _publish():
                     except Exception as exc:print('Public receipt verification unavailable; excluded from fixed evaluation:',str(exc),flush=True)
                     return
             finally:git('worktree','remove','--force',str(work),cwd=root)
+        print('Publication retry timing:',json.dumps(trace,ensure_ascii=False),flush=True)
         time.sleep(2)
     raise SystemExit('All-input publication failed; local observations remain in the failure artifact')
 
@@ -103,6 +107,8 @@ def main():
     with (common/'boat24-publication.lock').open('a') as lock:
         waiting=time.perf_counter();fcntl.flock(lock,fcntl.LOCK_EX);_LOCK_WAIT_SECONDS=round(time.perf_counter()-waiting,4)
         try:return _publish()
-        finally:fcntl.flock(lock,fcntl.LOCK_UN)
+        finally:
+            print('Publication lock wait seconds:',_LOCK_WAIT_SECONDS,flush=True)
+            fcntl.flock(lock,fcntl.LOCK_UN)
 
 if __name__=='__main__':main()

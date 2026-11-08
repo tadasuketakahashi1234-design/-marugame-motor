@@ -31,13 +31,20 @@ def prepare(features,previews,now):
             for k in ('2コースイン逃げ許容率','イン敗戦確認数','イン敗戦中差され率','イン敗戦中まくられ率'):tactical.pop(k,None)
     entry=[f.get('start',{}).get('展示進入') for f in features]
     entry_ok=len(entry)==6 and set(entry)==set(range(1,7))
-    exhibition_ok=len(features)==6 and all(f.get('exhibition',{}).get('展示タイム相対') is not None for f in features)
-    st_ok=len(features)==6 and all(f.get('start',{}).get('展示ST符号付') is not None for f in features)
+    missing_entry_lanes=[i for i,v in enumerate(entry,1) if not isinstance(v,int) or v not in range(1,7)]
+    if len(entry)==6 and not missing_entry_lanes and not entry_ok:
+        missing_entry_lanes=list(range(1,7))  # duplicate courses: the entire entry order needs verification
+    missing_exhibition_lanes=[i for i,f in enumerate(features,1) if f.get('exhibition',{}).get('展示タイム相対') is None]
+    missing_start_lanes=[i for i,f in enumerate(features,1) if f.get('start',{}).get('展示ST符号付') is None]
+    exhibition_ok=len(features)==6 and not missing_exhibition_lanes
+    st_ok=len(features)==6 and not missing_start_lanes
     return {'policy':POLICY,'weather':{'state':state,'measured_at':measured.isoformat() if measured else None,
                 'age_seconds':age,'max_age_seconds':WEATHER_MAX_SECONDS,'excluded_from_prediction':state!='fresh',
                 'source':row.get('source_url') or row.get('source'),'fetched_at':row.get('取得日時')},
             'entry_verified':entry_ok,'exhibition_complete':exhibition_ok,'start_complete':st_ok,
-            'purchase_inputs_ready':entry_ok and exhibition_ok and st_ok,'excluded_groups':sorted(set(excluded)),
+            'purchase_inputs_ready':entry_ok and exhibition_ok and st_ok,
+            'missing_preview_lanes':{'entry':missing_entry_lanes,'exhibition':missing_exhibition_lanes,'start':missing_start_lanes},
+            'excluded_groups':sorted(set(excluded)),
             'method_label_unverified_lanes':method_excluded,
             'unmeasured':['スロー・ダッシュ','起こし位置','助走距離','映像の行き足・出口の押し','競走水面の実流速']}
 

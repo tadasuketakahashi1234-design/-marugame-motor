@@ -88,6 +88,13 @@ class PipelineEndToEnd(unittest.TestCase):
   self.assertEqual(rows,{})
   self.assertIn('original_today',errors)
   self.assertIn('レースコード',errors['original_today'])
+ def test_valid_csv_without_matching_race_is_distinct_from_parse_error(self):
+  from boat24_fast_context import collect
+  with patch('boat24_fast_context.download',return_value='レースコード,展示タイム\n202611049999,6.7\n'):
+   rows,errors=collect([(CODE,self.base())],AT)
+  self.assertEqual(rows[CODE]['source_checks']['original']['state'],'parsed_no_matching_races')
+  self.assertEqual(rows[CODE]['source_checks']['original']['matched_races'],0)
+  self.assertNotIn('original_today',errors)
  def test_stage_records_failures_without_turning_them_into_success(self):
   from boat24_pipeline import stage
   trace={}

@@ -170,4 +170,7 @@ def view_files(history_file):
     name=info.get('path') if isinstance(info,dict) else None
     if not isinstance(name,str) or not re.fullmatch(re.escape(day)+r'-[0-9a-f]{16}\.json',name):
         raise ValueError('Invalid day view pointer for '+day)
-    return [directory/(day+'.json'),pointer,directory/name]
+    previous=info.get('previous_paths',[])
+    if not isinstance(previous,list):previous=[]
+    rollback=[directory/item for item in previous if isinstance(item,str) and re.fullmatch(re.escape(day)+r'-[0-9a-f]{16}\.json',item) and (directory/item).is_file() and item!=name]
+    return [directory/(day+'.json'),pointer,directory/name,*rollback[:2]]

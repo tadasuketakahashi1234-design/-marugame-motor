@@ -27,7 +27,9 @@ def _main(seconds=180):
    today=dt.datetime.now(JST).date().isoformat();dayfile=history_path(boat24_full_update.DIRECTORY,today)
    if dayfile.exists():
     ledger=read_history(dayfile);h=ledger.setdefault('health',{});h.update({'state':'degraded','attempt_at':dt.datetime.now(JST).isoformat(),'collection_mode':'live_watch'});h.setdefault('source_errors',{})['collector']=str(exc);dayfile=write_history(dayfile,ledger)
-    index=json.loads(boat24_full_update.INDEX.read_text());atomic_write(boat24_full_update.MANIFEST,{'paths':[str(dayfile)],'index':str(boat24_full_update.INDEX)});boat24_full_publish.main()
+    # A failed collector must still publish the retained observation.
+    # Reading the index here served no purpose and could fail recovery.
+    atomic_write(boat24_full_update.MANIFEST,{'paths':[str(dayfile)],'index':str(boat24_full_update.INDEX)});boat24_full_publish.main()
    print('Live capture failed; retry while retaining history:',str(exc),flush=True)
    if time.monotonic()-start+60>=seconds:raise
    time.sleep(30);continue

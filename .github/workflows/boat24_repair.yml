@@ -13,7 +13,8 @@ permissions:
   pages: write
 concurrency:
   group: boat24-state
-  cancel-in-progress: ${{ github.event_name == 'push' || github.event_name == 'workflow_dispatch' }}
+  # Never cancel a running collector/publication mid-flight on new commits.
+  cancel-in-progress: false
 jobs:
   update-and-verify:
     runs-on: ubuntu-latest

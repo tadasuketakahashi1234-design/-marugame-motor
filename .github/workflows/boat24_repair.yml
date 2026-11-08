@@ -55,14 +55,13 @@ jobs:
       - name: Load current inputs and preserve original history for validation
         run: |
           python - <<'PY'
-          import json, os, subprocess
+          import json, os
           from pathlib import Path
           assert os.environ['GITHUB_REPOSITORY']=='tadasuketakahashi1234-design/-marugame-motor'
-          subprocess.run(['git','fetch','origin','+refs/heads/main:refs/remotes/origin/main'],check=True)
+          # Checkout already provides the three original files. Avoid a second
+          # potentially huge full-history fetch before time-critical collection.
           for path in ['omura/docs/boat24_ledger.json','omura/docs/boat24_comparison.json','omura/docs/boat24_motor_analysis.json']:
-              value=subprocess.check_output(['git','show','origin/main:'+path])
-              json.loads(value)
-              Path(path).write_bytes(value)
+              json.loads(Path(path).read_bytes())
           for kind,filename in [('predictions','boat24_ledger.json'),('comparison','boat24_comparison.json')]:
               Path(os.environ['RUNNER_TEMP'],'boat24-before-'+kind+'.json').write_bytes(Path('omura/docs',filename).read_bytes())
 

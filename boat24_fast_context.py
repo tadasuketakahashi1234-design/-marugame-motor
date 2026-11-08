@@ -65,8 +65,14 @@ def collect(targets,now):
         started=dt.datetime.now(JST).isoformat();tick=time.perf_counter();kind,key,value,error=acquire(task)
         trace={'started_at':started,'completed_at':dt.datetime.now(JST).isoformat(),'seconds':round(time.perf_counter()-tick,4),'state':'unconfirmed' if error else 'parsed','error':error}
         if kind=='before' and value:
-            trace.update(identity_verified=True,exhibition_parsed=bool(value['previews'].get('ex')),entry_parsed=bool(value['previews'].get('st')),body_sha256=value['body_sha256'])
-            if not trace['exhibition_parsed'] or not trace['entry_parsed']:trace['state']='verified_page_preview_incomplete'
+            ex=value['previews'].get('ex') or {}
+            st=value['previews'].get('st') or {}
+            trace.update(identity_verified=True,exhibition_parsed=bool(ex),entry_parsed=bool(st),body_sha256=value['body_sha256'])
+            trace['missing_parts']=[part for part,ok in (('exhibition',bool(ex)),('entry_start',bool(st))) if not ok]
+            if trace['missing_parts']:trace['state']='verified_page_preview_incomplete'
+        elif kind=='original' and value is not None:
+            trace['matched_races']=len(value)
+            if not value and targets:trace['state']='parsed_no_matching_races'
         return kind,key,value,error,trace
     tasks=[('before',code) for code,s in targets]+[('water',v) for v in sorted({c[8:10] for c,s in targets})]+[('original','today')]
     with ThreadPoolExecutor(max_workers=3) as pool:

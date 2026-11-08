@@ -105,6 +105,23 @@ class ProspectiveStudy(unittest.TestCase):
    root=Path(t);dr=root/'full_history';dr.mkdir();(dr/(r['date']+'.json')).write_text('{}')
    with patch.object(full,'DIRECTORY',dr),patch.object(full,'INDEX',root/'index.json'),patch.object(full,'MANIFEST',root/'pending.json'),patch.object(live,'read_history',return_value=book),patch.object(live,'collect',return_value=({}, {code:'timeout'})),patch('boat24_fast_context.collect',return_value=({code:{'source_checks':{'before':{'state':'unconfirmed','error':'timeout'}}}},{})),patch('boat24_official_results.collect_results',return_value=({},{})),patch.object(live.dt,'datetime',Clock),patch.object(live,'write_history') as write,patch.object(live,'write_view'),patch('boat24_full_publish.main'):self.assertTrue(live.capture(m))
   self.assertIn(code,write.call_args.kwargs['changed_codes']);z=list(r['collection_attempts'].values());self.assertEqual(z[0]['state'],'odds_unconfirmed_context_logged');self.assertEqual(z[0]['odds_error'],'timeout');self.assertIn('verified_context',z[0])
+ def test_verified_entry_persists_when_quote_succeeds_but_reprice_rejects(self):
+  import boat24_live as live
+  import boat24_full_update as full
+  r,d,c,n,m=fixture();r['result']=None;code=r['race_code'];book={'date':r['date'],'records':{code:r},'catalog':c}
+  st={'レースコード':code,'取得日時':(n-dt.timedelta(minutes=1)).isoformat(),**{f'艇{i}_コース':str(i) for i in range(1,7)}}
+  context={code:{'previews':{'st':st},'source_checks':{'before':{'state':'parsed'}}}}
+  class Clock(dt.datetime):
+   @classmethod
+   def now(cls,tz=None):return n
+  with tempfile.TemporaryDirectory() as t:
+   root=Path(t);dr=root/'full_history';dr.mkdir();(dr/(r['date']+'.json')).write_text('{}')
+   with patch.object(full,'DIRECTORY',dr),patch.object(full,'INDEX',root/'index.json'),patch.object(full,'MANIFEST',root/'pending.json'),patch.object(live,'read_history',return_value=book),patch.object(live,'collect',return_value=({code:{'取得日時':n.isoformat()}},{})),patch('boat24_fast_context.collect',return_value=(context,{})),patch('boat24_fast_context.refresh',return_value=snap(r)),patch.object(live,'reprice',return_value=None),patch('boat24_official_results.collect_results',return_value=({},{})),patch.object(live.dt,'datetime',Clock),patch.object(live,'write_history'),patch.object(live,'write_view'),patch('boat24_full_publish.main'):
+    self.assertTrue(live.capture(m))
+  attempt=list(r['collection_attempts'].values())[0]
+  self.assertEqual(attempt['verified_context']['previews']['st'],st)
+  self.assertEqual(attempt['state'],'not_saved_by_timing_or_model_gate')
+  self.assertEqual(len(r['revisions']),1)
  def test_expired_predictions_do_not_fit_price_weights(self):
   r,d,c,n,m=fixture(quote_age=2)
   with tempfile.TemporaryDirectory() as t:

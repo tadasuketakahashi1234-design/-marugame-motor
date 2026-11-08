@@ -6,6 +6,7 @@ import io
 import json
 import hashlib,time
 import urllib.request
+import urllib.error
 from concurrent.futures import ThreadPoolExecutor
 from boat24_integrity import JST,timeparse
 from boat24_context import make_features,safe_row,number
@@ -71,7 +72,13 @@ def collect(targets,now):
                         ambiguous.add(code)
                     elif code not in ambiguous:parsed[code]=record
             return kind,key,{'rows':parsed,'invalid_codes':invalid_codes,'duplicate_codes':duplicate_codes},None
-        except Exception as e:return kind,key,None,str(e)[:160]
+        except Exception as e:
+            # Keep transport, timeout and parsing failures distinguishable.
+            category=('timeout' if isinstance(e,TimeoutError) else
+                      'http_error' if isinstance(e,urllib.error.HTTPError) else
+                      'network_error' if isinstance(e,OSError) else
+                      'parse_error' if isinstance(e,(ValueError,KeyError,TypeError)) else 'unexpected_error')
+            return kind,key,None,category+': '+str(e)[:145]
     def job(task):
         started=dt.datetime.now(JST).isoformat();tick=time.perf_counter();kind,key,value,error=acquire(task)
         trace={'started_at':started,'completed_at':dt.datetime.now(JST).isoformat(),'seconds':round(time.perf_counter()-tick,4),'state':'unconfirmed' if error else 'parsed','error':error}

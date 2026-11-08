@@ -115,6 +115,17 @@ class PipelineEndToEnd(unittest.TestCase):
   self.assertEqual(rows[CODE]['source_checks']['before']['state'],'unconfirmed')
   self.assertTrue(errors['water_10'].startswith('http_error:'))
   self.assertEqual(rows[CODE]['source_checks']['original']['state'],'parsed_no_matching_races')
+ def test_stale_official_odds_are_not_silently_accepted(self):
+  from boat24_odds import attach
+  stale=(AT-dt.timedelta(minutes=7)).isoformat()
+  row={'レースコード':CODE,'取得日時':stale,'3連単_1-2-3':'12.3'}
+  data={'odds':{}}
+  with patch('boat24_odds.collect',return_value=({CODE:row},{})):
+   with patch('boat24_odds.dt.datetime') as clock:
+    clock.now.return_value=AT
+    errors=attach(data,[CODE],AT)
+  self.assertEqual(errors[CODE],'official_quote_stale_over_5min')
+  self.assertNotIn(CODE,data['odds'])
  def test_stage_records_failures_without_turning_them_into_success(self):
   from boat24_pipeline import stage
   trace={}

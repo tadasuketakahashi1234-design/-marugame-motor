@@ -158,7 +158,7 @@ def parse_venue_weather(body,venue,now):
  result={'venue':venue,'observed_at':now.isoformat(),'measured_at':measured.isoformat(),'wind_direction_literal':compass[1] if compass else None,'wind_quality_literal':re.search(r'[（(]([^）)]+)[）)]',c[3])[1] if re.search(r'[（(]([^）)]+)[）)]',c[3]) else None,'numeric':{}}
  # Official weather can be a Japanese label rather than a numeric code.
  # Keep the existing numeric encoding stable and reject unknown labels explicitly.
- weather_label=re.sub(r'\\s+','',c[1])
+ weather_label=re.sub(r'\s+','',c[1])
  weather_codes={'晴':1,'晴れ':1,'曇':2,'曇り':2,'くもり':2,'雨':3,'雪':4}
  weather_code=number(weather_label)
  if weather_code is None:weather_code=weather_codes.get(weather_label)

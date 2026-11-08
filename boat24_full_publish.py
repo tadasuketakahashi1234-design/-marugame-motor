@@ -78,18 +78,22 @@ def _publish():
                     if key in old_index:index[key]=old_index[key]
                 atomic_write(work/manifest['index'],index);paths.append(manifest['index'])
                 with stage(trace,'stage_files'):git('add','-A','--',*paths,cwd=work)
-                if not git('diff','--cached','--name-only',cwd=work):print('All-input observations already saved');return
-                with stage(trace,'commit_observations'):git('-c','user.name=github-actions[bot]','-c','user.email=41898282+github-actions[bot]@users.noreply.github.com','commit','-m','Save all-input forecasts and immutable input revisions',cwd=work)
-                with stage(trace,'push_main'):pushed=subprocess.run(['git','push','origin','HEAD:main'],cwd=work,timeout=90).returncode==0
-                if pushed:
-                    trace.update(completed_at=dt.datetime.now(JST).isoformat(),source_commit=git('rev-parse','HEAD',cwd=work))
-                    print('Publication timing:',json.dumps(trace,ensure_ascii=False),flush=True)
+                changed=bool(git('diff','--cached','--name-only',cwd=work))
+                if changed:
+                    with stage(trace,'commit_observations'):git('-c','user.name=github-actions[bot]','-c','user.email=41898282+github-actions[bot]@users.noreply.github.com','commit','-m','Save all-input forecasts and immutable input revisions',cwd=work)
+                    with stage(trace,'push_main'):pushed=subprocess.run(['git','push','origin','HEAD:main'],cwd=work,timeout=90).returncode==0
+                    if not pushed:
+                        continue
                     print('All-input model and daily history saved')
-                    try:
-                        from boat24_public_receipts import publish as publish_receipts
-                        publish_receipts(root,initial_work=work,publication=trace)
-                    except Exception as exc:print('Public receipt verification unavailable; excluded from fixed evaluation:',str(exc),flush=True)
-                    return
+                else:
+                    # Receipts can be missing even when the forecast has no new diff.
+                    # Always retry public observation; never backdate a receipt.
+                    print('All-input observations already saved; retrying public receipts',flush=True)
+                trace.update(completed_at=dt.datetime.now(JST).isoformat(),source_commit=git('rev-parse','HEAD',cwd=work))
+                print('Publication timing:',json.dumps(trace,ensure_ascii=False),flush=True)
+                from boat24_public_receipts import publish as publish_receipts
+                publish_receipts(root,initial_work=work,publication=trace)
+                return
             finally:git('worktree','remove','--force',str(work),cwd=root)
         print('Publication retry timing:',json.dumps(trace,ensure_ascii=False),flush=True)
         time.sleep(2)

@@ -30,7 +30,12 @@ def _main(seconds=180):
     ledger=read_history(dayfile);h=ledger.setdefault('health',{});h.update({'state':'degraded','attempt_at':dt.datetime.now(JST).isoformat(),'collection_mode':'live_watch'});h.setdefault('source_errors',{})['collector']=str(exc);dayfile=write_history(dayfile,ledger)
     # A failed collector must still publish the retained observation.
     # Reading the index here served no purpose and could fail recovery.
-    atomic_write(boat24_full_update.MANIFEST,{'paths':[str(dayfile)],'index':str(boat24_full_update.INDEX)});boat24_full_publish.main()
+    atomic_write(boat24_full_update.MANIFEST,{'paths':[str(dayfile)],'index':str(boat24_full_update.INDEX)})
+    try:
+     boat24_full_publish.main()
+    except Exception as publish_exc:
+     # Do not mask the collector failure with a secondary recovery error.
+     print('Saved forecast recovery publication failed:',str(publish_exc),flush=True)
    print('Live capture failed; retry while retaining history:',str(exc),flush=True)
    if seconds<3600 or time.monotonic()-start+60>=seconds:raise
    time.sleep(30);continue

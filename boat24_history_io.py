@@ -81,10 +81,10 @@ def history_files(path):
     path=Path(path);value=read_json(path)
     return [path]+[path.parent/name for name in value.get('history_storage',{}).get('record_paths',{}).values()]
 
-def compact_day(doc):
+def compact_day(doc,cache_root=None):
     from boat24_full_update import latest
     out={k:copy.deepcopy(v) for k,v in doc.items() if k!='records'};out['records']={};out['view_schema']=1
-    cache_path=Path('omura/docs/boat24_official_cache.json')
+    cache_path=(Path(cache_root) if cache_root is not None else Path.cwd())/'omura/docs/boat24_official_cache.json'
     cache=read_json(cache_path) if cache_path.exists() else {}
     for code,record in doc.get('records',{}).items():
         rec={k:copy.deepcopy(v) for k,v in record.items() if k not in ('revisions','result_history','collection_attempts','settlement_attempts')}
@@ -139,10 +139,10 @@ def compact_day(doc):
         out['records'][code]=rec
     return out
 
-def write_view(history_file,doc):
+def write_view(history_file,doc,cache_root=None):
     import hashlib
     path=Path(history_file);day=day_key(path);directory=path.parent.parent/'day_views';dest=directory/(day+'.json')
-    view=compact_day(doc);raw=json.dumps(view,ensure_ascii=False,separators=(',',':'),allow_nan=False).encode()
+    view=compact_day(doc,cache_root=cache_root);raw=json.dumps(view,ensure_ascii=False,separators=(',',':'),allow_nan=False).encode()
     digest=hashlib.sha256(raw).hexdigest();version=directory/(day+'-'+digest[:16]+'.json');pointer=directory/(day+'.pointer.json')
     try:
         old=read_json(pointer) if pointer.exists() else {}

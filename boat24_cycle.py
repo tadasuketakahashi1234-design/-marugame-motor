@@ -37,7 +37,12 @@ def _main(seconds=180):
    today=dt.datetime.now(JST).date().isoformat();dayfile=history_path(boat24_full_update.DIRECTORY,today);ledger=read_history(dayfile);ledger.setdefault('health',{})['collection_mode']='live_watch';dayfile=write_history(dayfile,ledger)
   if legacy_error:
    today=dt.datetime.now(JST).date().isoformat();dayfile=history_path(boat24_full_update.DIRECTORY,today);ledger=read_history(dayfile);ledger.setdefault('health',{}).setdefault('source_errors',{})['legacy_collector']=legacy_error;ledger['health']['state']='degraded';dayfile=write_history(dayfile,ledger)
-  manifest=json.loads(boat24_full_update.MANIFEST.read_text());manifest['paths']+=(['omura/docs/boat24_ledger.json','omura/docs/boat24_comparison.json'] if legacy else []);atomic_write(boat24_full_update.MANIFEST,manifest)
+  manifest=json.loads(boat24_full_update.MANIFEST.read_text())
+  if legacy:
+   for item in ('omura/docs/boat24_ledger.json','omura/docs/boat24_comparison.json'):
+    if Path(item).is_file() and item not in manifest['paths']:
+     manifest['paths'].append(item)
+  atomic_write(boat24_full_update.MANIFEST,manifest)
   boat24_full_publish.main()
   if time.monotonic()-start+60>=seconds:
    if legacy_error:raise RuntimeError('Legacy collector failed; new forecasts were published with degraded health: '+legacy_error)

@@ -53,7 +53,11 @@ def _main(seconds=180):
   atomic_write(boat24_full_update.MANIFEST,manifest)
   boat24_full_publish.main()
   if time.monotonic()-start+60>=seconds:
-   if legacy_error:raise RuntimeError('Legacy collector failed; new forecasts were published with degraded health: '+legacy_error)
+   if legacy_error:
+    # The independent new-forecast pipeline has already published successfully.
+    # A legacy-only failure is recorded as degraded health above; do not block
+    # the downstream site verification or another near-cutoff collection.
+    print('Legacy collector degraded but new forecasts published:',legacy_error,flush=True)
    break
   print('Next collection in 60 seconds; capture',attempt,dt.datetime.now(JST).isoformat(),flush=True)
   time.sleep(max(1,60-(time.monotonic()-tick)))

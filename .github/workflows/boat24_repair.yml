@@ -17,7 +17,7 @@ concurrency:
 jobs:
   update-and-verify:
     runs-on: ubuntu-latest
-    timeout-minutes: 360
+    timeout-minutes: 30
     env:
       BOAT24_FREEZE_MODEL: ${{ github.event_name == 'schedule' && github.event.schedule == '37 20 * * *' && '0' || '1' }}
     steps:
@@ -162,7 +162,7 @@ jobs:
 
           PY
       - name: Keep collecting live previews and results while the runner is active
-        run: BOAT24_LIVE_ODDS_WORKER=0 python boat24_cycle.py --seconds 18000
+        run: BOAT24_LIVE_ODDS_WORKER=0 python boat24_cycle.py --seconds 240
       - name: Stop the near-cutoff worker while retaining its observations
         if: always()
         run: python boat24_live.py --stop-workflow-worker

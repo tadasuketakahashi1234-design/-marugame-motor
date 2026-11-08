@@ -200,6 +200,18 @@ class PipelineEndToEnd(unittest.TestCase):
   self.assertEqual(selected[:8],[code for _,code in targets[-8:][::-1]])
   self.assertEqual(selected[-4:],[code for _,code in targets[:4]])
   self.assertEqual(select_result_targets(targets[:3]),[code for _,code in targets[:3][::-1]])
+ def test_official_result_collection_recovers_from_corrupt_cache(self):
+  from boat24_official_results import collect_results
+  with tempfile.TemporaryDirectory() as tmp:
+   path=Path(tmp)/'results.json'
+   for payload in ('{invalid json','[]','{"records": []}'):
+    path.write_text(payload)
+    rows,errors=collect_results([],AT,cache_path=path)
+    self.assertEqual(rows,{})
+    self.assertEqual(errors,{})
+    repaired=json.loads(path.read_text())
+    self.assertEqual(repaired['records'],{})
+    self.assertEqual(repaired['failures'],{})
  def test_stage_records_failures_without_turning_them_into_success(self):
   from boat24_pipeline import stage
   trace={}

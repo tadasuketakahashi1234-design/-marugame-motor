@@ -82,8 +82,17 @@ def _publish():
                 trace['stages']['merge_and_views']={'seconds':round(time.perf_counter()-merge_started,4),'state':'ok'}
                 with stage(trace,'statistics'):index=build_index(work/'omura/docs/full_history',dt.datetime.now(JST))
                 index.setdefault('pipeline_health',{})['publication']=trace
+                # The remote branch may contain fresher training and recovery
+                # metadata than the collector checkout. Never overwrite it with
+                # stale metadata from the start of this run.
+                try:
+                    remote_index=read_json(work/manifest['index']) if (work/manifest['index']).exists() else {}
+                except (OSError,ValueError,TypeError):
+                    remote_index={}
+                if not isinstance(remote_index,dict):remote_index={}
                 for key in ('training','diagnostics','backfill_cursor','recovery'):
-                    if key in old_index:index[key]=old_index[key]
+                    source=remote_index if key in remote_index else old_index
+                    if key in source:index[key]=source[key]
                 atomic_write(work/manifest['index'],index);paths.append(manifest['index'])
                 with stage(trace,'stage_files'):git('add','-A','--',*paths,cwd=work)
                 changed=bool(git('diff','--cached','--name-only',cwd=work))

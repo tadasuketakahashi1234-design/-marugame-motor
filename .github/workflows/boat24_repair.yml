@@ -197,7 +197,7 @@ jobs:
                           if key in data:lines.append('  '+key+': '+str(data[key])[:180])
                       diag=data.get('diagnostics') or {}
                       if isinstance(diag,dict):
-                          for key in ('new_forecasts','updated_forecasts','new_settlements','skipped','purchase_status_counts','missing_preview_lane_counts','record_count','source_errors'):
+                          for key in ('new_forecasts','updated_forecasts','new_settlements','skipped','purchase_status_counts','missing_preview_lane_counts','record_count','candidate_funnel','odds_collection_errors','source_errors'):
                               if key in diag:lines.append('  diagnostics.'+key+': '+json.dumps(diag[key],ensure_ascii=False)[:1200])
                       for key in ('days','records','predictions'):
                           if isinstance(data.get(key),dict):lines.append('  '+key+' count: '+str(len(data[key])))

@@ -26,8 +26,8 @@ def needs_previous_collector(model_path,version,marker):
  from boat24_model_io import read_json
  try:
   old=read_json(model_path);meta=json.loads(Path(marker).read_text());sha=meta.get('previous_source_commit','')
-  if old.get('version')!=version and len(sha)==40 and all(c in 'abcdef0123456789' for c in sha):return sha
- except (OSError,ValueError):pass
+  if isinstance(old,dict) and isinstance(sha,str) and old.get('version')!=version and len(sha)==40 and all(c in 'abcdef0123456789' for c in sha):return sha
+ except (OSError,ValueError,TypeError,AttributeError):pass
  return None
 
 @contextmanager

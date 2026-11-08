@@ -58,14 +58,18 @@ def collect(targets,now):
             reader=csv.DictReader(io.StringIO(body))
             if not reader.fieldnames or 'レースコード' not in reader.fieldnames:
                 raise ValueError('Original exhibition CSV missing レースコード column')
-            parsed={};invalid_codes=0;duplicate_codes=0
+            parsed={};ambiguous=set();invalid_codes=0;duplicate_codes=0
             for record in reader:
                 code=(record.get('レースコード') or '').strip()
                 if not code or len(code)!=12 or not code.isdigit():
                     invalid_codes+=1;continue
                 if code in rows:
-                    if code in parsed:duplicate_codes+=1
-                    parsed[code]=record
+                    if code in parsed:
+                        duplicate_codes+=1
+                        # Conflicting duplicate rows cannot be assigned safely.
+                        parsed.pop(code,None)
+                        ambiguous.add(code)
+                    elif code not in ambiguous:parsed[code]=record
             return kind,key,{'rows':parsed,'invalid_codes':invalid_codes,'duplicate_codes':duplicate_codes},None
         except Exception as e:return kind,key,None,str(e)[:160]
     def job(task):

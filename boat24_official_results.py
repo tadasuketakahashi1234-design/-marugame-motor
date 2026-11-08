@@ -67,7 +67,16 @@ def merge_cache(remote,local):
     return out
 
 def collect_results(codes,now,cache_path=None,limit=8,priority_codes=()):
-    path=cache_path or CACHE;cache=json.loads(path.read_text()) if path.exists() else {'schema':1,'records':{},'failures':{}}
+    path=cache_path or CACHE
+    try:
+        cache=json.loads(path.read_text()) if path.exists() else {'schema':1,'records':{},'failures':{}}
+        if not isinstance(cache,dict) or not isinstance(cache.get('records',{}),dict) or not isinstance(cache.get('failures',{}),dict):
+            raise ValueError('invalid result cache structure')
+    except (OSError,ValueError,TypeError) as exc:
+        # Result pages remain authoritative; a broken derived cache must not
+        # stop settlement. Preserve the bad file for forensic inspection.
+        print('Official result cache unreadable; recollecting:',type(exc).__name__,str(exc)[:120],flush=True)
+        cache={'schema':1,'records':{},'failures':{}}
     wanted=[];errors={}
     rank={code:i for i,code in enumerate(priority_codes)}
     for code in sorted(set(codes),key=lambda c:(c not in rank,rank.get(c,0),c)):

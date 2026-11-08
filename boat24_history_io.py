@@ -84,6 +84,8 @@ def history_files(path):
 def compact_day(doc):
     from boat24_full_update import latest
     out={k:copy.deepcopy(v) for k,v in doc.items() if k!='records'};out['records']={};out['view_schema']=1
+    cache_path=Path('omura/docs/boat24_official_cache.json')
+    cache=read_json(cache_path) if cache_path.exists() else {}
     for code,record in doc.get('records',{}).items():
         rec={k:copy.deepcopy(v) for k,v in record.items() if k not in ('revisions','result_history','collection_attempts','settlement_attempts')}
         rec['collection_attempt_count']=len(record.get('collection_attempts',{}));rec['settlement_attempt_count']=len(record.get('settlement_attempts',{}))
@@ -98,6 +100,9 @@ def compact_day(doc):
             # predictions, odds, purchase decisions or learning inputs.
             from boat24_live_observation import latest_verified
             observed=latest_verified(code,record,chosen)
+            if not observed and cache.get('date')==code[:4]+'-'+code[4:6]+'-'+code[6:8]:
+                from boat24_live_observation import verified_from_cache
+                observed=verified_from_cache(code,cache,chosen.get('cutoff'))
             if observed:
                 rec['latest_verified_entry']=observed
                 for boat in rec['boat_comparison']['boats']:

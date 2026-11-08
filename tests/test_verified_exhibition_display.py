@@ -1,7 +1,7 @@
 """Regression tests for display-only, verified exhibition data."""
 import datetime as dt
 import unittest
-from boat24_live_observation import latest_verified
+from boat24_live_observation import latest_verified, verified_from_cache
 from boat24_integrity import JST
 
 CODE = '202611081101'
@@ -35,6 +35,18 @@ class VerifiedExhibitionTests(unittest.TestCase):
         new['verified_context']['previews']['ex']['艇1_展示タイム']='6.99'
         observed=latest_verified(CODE,{'collection_attempts':{'a':old,'b':new}},{'cutoff':CUTOFF})
         self.assertEqual(observed['exhibition_times']['1'],6.99)
+    def test_verified_cache_fallback(self):
+        previews=attempt()['verified_context']['previews']
+        cache={'races':{CODE:{'live_previews':previews}}}
+        observed=verified_from_cache(CODE,cache,CUTOFF)
+        self.assertEqual(observed['courses']['1'],1)
+        self.assertEqual(observed['exhibition_times']['6'],6.76)
+        self.assertFalse(observed['prediction_used'])
+    def test_cache_rejects_wrong_race_and_late_observation(self):
+        previews=attempt()['verified_context']['previews']
+        cache={'races':{CODE:{'live_previews':previews}}}
+        self.assertIsNone(verified_from_cache('202611081102',cache,CUTOFF))
+        self.assertIsNone(verified_from_cache(CODE,cache,'2026-11-08T11:27:00+09:00'))
     def test_unverified_exhibition_is_not_invented(self):
         a=attempt()
         a['verified_context']['previews'].pop('ex')

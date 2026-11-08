@@ -13,7 +13,9 @@ permissions:
   pages: write
 concurrency:
   group: boat24-state
-  cancel-in-progress: ${{ github.event_name == 'push' || github.event_name == 'workflow_dispatch' }}
+  # Preserve running collection and immutable history verification on code pushes.
+  # A newer pending run may replace an older pending run, but active runs survive.
+  cancel-in-progress: false
 jobs:
   update-and-verify:
     runs-on: ubuntu-latest

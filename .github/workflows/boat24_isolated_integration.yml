@@ -2,7 +2,7 @@ name: Boat24 isolated integration test
 on:
   push:
     branches:
-      - fix/live-evidence-all-quote-states-20261108
+      - fix/beforeinfo-retry-test-20261108
     paths:
       - '.github/workflows/boat24_isolated_integration.yml'
       - 'boat24_*.py'

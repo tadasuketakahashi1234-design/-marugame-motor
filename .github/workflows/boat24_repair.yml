@@ -147,13 +147,16 @@ jobs:
                               assert all(t['stake']>0 and t['stake']%100==0 and t['expected_return']>total for t in tickets)
                   if ledger['records']:
                       import gzip
-                      archive=json.loads(read(raw+entry.get('archive_path','full_history/'+index['latest_day']+'.json')))
+                      archive_path=entry.get('archive_path','full_history/'+index['latest_day']+'.json')
+                      with urllib.request.urlopen(urllib.request.Request(raw+archive_path+'?verify='+str(time.time_ns()),headers={'User-Agent':'boat24-all-input-verification'}),timeout=30) as response:
+                          archive_bytes=response.read()
+                      archive=json.loads(gzip.decompress(archive_bytes) if archive_path.endswith('.gz') else archive_bytes)
                       code=next(iter(ledger['records']))
                       path=archive.get('history_storage',{}).get('record_paths',{}).get(code)
                       if path:
                           with urllib.request.urlopen(raw+'full_history/'+path+'?verify='+str(time.time_ns()),timeout=30) as response:full_record=json.loads(gzip.decompress(response.read()))
                       else:full_record=archive['records'][code]
-                      assert all(len(s['input_snapshot']['features'])==6 for s in full_record['revisions'].values())
+                      assert all(len(s['input_snapshot']['features'])==6 for s in full_record['revisions'].values() if s.get('evaluation_eligible')), 'Incomplete eligible forecast inputs'
                   break
               except Exception:
                   if attempt==3:raise

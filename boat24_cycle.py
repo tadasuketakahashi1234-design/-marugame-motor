@@ -23,7 +23,8 @@ def _main(seconds=180):
   try:
    with preserve_collection_during_rebuild(boat24_full_update.MODEL,__import__('boat24_context').VERSION):boat24_full_update.main()
   except Exception as exc:
-   if seconds<3600:raise
+   # Publish the last saved observation even for short scheduled cycles.
+   # The failed collector remains an error, never a false successful run.
    today=dt.datetime.now(JST).date().isoformat();dayfile=history_path(boat24_full_update.DIRECTORY,today)
    if dayfile.exists():
     ledger=read_history(dayfile);h=ledger.setdefault('health',{});h.update({'state':'degraded','attempt_at':dt.datetime.now(JST).isoformat(),'collection_mode':'live_watch'});h.setdefault('source_errors',{})['collector']=str(exc);dayfile=write_history(dayfile,ledger)
@@ -31,7 +32,7 @@ def _main(seconds=180):
     # Reading the index here served no purpose and could fail recovery.
     atomic_write(boat24_full_update.MANIFEST,{'paths':[str(dayfile)],'index':str(boat24_full_update.INDEX)});boat24_full_publish.main()
    print('Live capture failed; retry while retaining history:',str(exc),flush=True)
-   if time.monotonic()-start+60>=seconds:raise
+   if seconds<3600 or time.monotonic()-start+60>=seconds:raise
    time.sleep(30);continue
   if seconds>=3600:
    today=dt.datetime.now(JST).date().isoformat();dayfile=history_path(boat24_full_update.DIRECTORY,today);ledger=read_history(dayfile);ledger.setdefault('health',{})['collection_mode']='live_watch';dayfile=write_history(dayfile,ledger)

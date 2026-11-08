@@ -27,6 +27,9 @@ def publish(root,initial_work=None,publication=None):
     if not re.fullmatch(r'https://github.com/tadasuketakahashi1234-design/-marugame-motor(?:\.git)?',remote):return
     repo='tadasuketakahashi1234-design/-marugame-motor';base='https://raw.githubusercontent.com/'+repo+'/';pending=[]
     for attempt in range(3):
+        # Each retry must validate a fresh public observation; do not replay
+        # stale pending payloads against a new checkout.
+        pending=[]
         trace={'started_at':dt.datetime.now(JST).isoformat(),'reused_publication_checkout':initial_work is not None and attempt==0};loaded={}
         with receipt_worktree(root,initial_work,attempt) as work:
             source=git('rev-parse','HEAD',cwd=work);index_path=work/'omura/docs/boat24_full_index.json';index=json.loads(index_path.read_text())
@@ -58,7 +61,7 @@ def publish(root,initial_work=None,publication=None):
                 pending.append((view,archives,observed,proof))
             trace.setdefault('state','index_changed_before_verification')
             target=work/PATH;doc=json.loads(target.read_text()) if target.exists() else {}
-            for view,archives,observed,proof in pending:doc=update(doc,view,archives,observed,proof)
+            for view,archives,observed,proof in pending:doc=update(doc,view,archives,observed,proof,inplace=True)
             # Load each prior archive before finalizing its frozen decision.
             # An empty archive would permanently mark a valid receipt unavailable.
             now=dt.datetime.now(JST).isoformat()
@@ -78,7 +81,7 @@ def publish(root,initial_work=None,publication=None):
                 if ledger is None:
                     with stage(trace,'read_prior_archive_'+key):ledger=read_history(work/'omura/docs'/e['archive_path'])
                     loaded[key]=ledger
-                doc=update(doc,{'catalog':ledger.get('catalog',{})},ledger.get('records',{}),now,{})
+                doc=update(doc,{'catalog':ledger.get('catalog',{})},ledger.get('records',{}),now,{},inplace=True)
             if not doc: return
             index['decision_report']=report(doc);index['updated_at']=now
             from boat24_study import report as study_report

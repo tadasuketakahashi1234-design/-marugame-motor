@@ -18,7 +18,7 @@ concurrency:
 jobs:
   update-and-verify:
     runs-on: ubuntu-latest
-    timeout-minutes: 30
+    timeout-minutes: 45
     env:
       BOAT24_FREEZE_MODEL: ${{ github.event_name == 'schedule' && github.event.schedule == '37 20 * * *' && '0' || '1' }}
     steps:

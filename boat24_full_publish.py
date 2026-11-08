@@ -96,9 +96,11 @@ def _publish():
                     if key not in index:
                         source=remote_index if key in remote_index else old_index
                         if key in source:index[key]=source[key]
-                # Keep the historical settlement cursor from moving backwards.
-                cursors=[v.get('backfill_cursor','') for v in (old_index,remote_index) if isinstance(v.get('backfill_cursor',''),str)]
-                if cursors:index['backfill_cursor']=max([index.get('backfill_cursor',''),*cursors])
+                # The backfill cursor is a rotating scan position, not a
+                # monotonically increasing watermark. Preserve the collector's
+                # new position, including a deliberate wrap to older dates.
+                if not isinstance(index.get('backfill_cursor'),str):
+                    index['backfill_cursor']=remote_index.get('backfill_cursor',old_index.get('backfill_cursor',''))
                 if 'recovery' in remote_index:index['recovery']=remote_index['recovery']
                 elif 'recovery' in old_index:index['recovery']=old_index['recovery']
                 atomic_write(work/manifest['index'],index);paths.append(manifest['index'])

@@ -82,6 +82,13 @@ def reprice(base,quotes,model,code,now,clock=None,diagnostics=None):
     return out
 
 
+def select_result_targets(result_targets):
+    """Bound result requests while preventing old unresolved races from starvation."""
+    newest=[code for cut,code in sorted(result_targets,reverse=True)[:8]]
+    oldest=[code for cut,code in sorted(result_targets)[:4]]
+    return list(dict.fromkeys(newest+oldest))[:12]
+
+
 def capture(model):
     from boat24_full_update import DIRECTORY,INDEX,MANIFEST,latest,settle
     from boat24_official_results import collect_results,CACHE as RESULT_CACHE
@@ -97,9 +104,7 @@ def capture(model):
     targets=sorted(targets)[:24]
     # Prioritise fresh results without starving older unsettled races forever.
     # A permanent failure among the newest races must not block backfill.
-    newest=[code for cut,code in sorted(result_targets,reverse=True)[:8]]
-    oldest=[code for cut,code in sorted(result_targets)[:4]]
-    result_codes=list(dict.fromkeys(newest+oldest))[:12]
+    result_codes=select_result_targets(result_targets)
     if not targets and not result_codes:return False
     from boat24_fast_context import collect as collect_context,refresh as refresh_context
     acquire_started=time.perf_counter()

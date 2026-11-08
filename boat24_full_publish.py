@@ -104,6 +104,9 @@ def _publish():
                 collector_cursor=old_index.get('backfill_cursor')
                 remote_cursor=remote_index.get('backfill_cursor')
                 index['backfill_cursor']=collector_cursor if isinstance(collector_cursor,str) else (remote_cursor if isinstance(remote_cursor,str) else '')
+                for key in ('backfill_attempted_days','backfill_remaining_days'):
+                    if key in old_index:index[key]=old_index[key]
+                    elif key in remote_index:index[key]=remote_index[key]
                 if 'recovery' in remote_index:index['recovery']=remote_index['recovery']
                 elif 'recovery' in old_index:index['recovery']=old_index['recovery']
                 atomic_write(work/manifest['index'],index);paths.append(manifest['index'])

@@ -196,7 +196,8 @@ def build_index(directory=DIRECTORY,now=None):
         # A missing versioned view must not be advertised as a valid public URL.
         if not isinstance(view_name,str) or '/' in view_name or '\\' in view_name or not (directory.parent/'day_views'/view_name).is_file():
             view_name=day_key(path)+'.json'
-        days[day_key(path)]={'view_path':'day_views/'+view_name,'view_sha256':view_info.get('sha256'),'archive_path':'full_history/'+path.name,'summary':summary(records),'venues':{str(v):summary([r for r in records if r['venue']==v]) for v in range(1,25)}}
+        view_digest=view_info.get('sha256') if view_name==view_info.get('path') else None
+        days[day_key(path)]={'view_path':'day_views/'+view_name,'view_sha256':view_digest,'archive_path':'full_history/'+path.name,'summary':summary(records),'venues':{str(v):summary([r for r in records if r['venue']==v]) for v in range(1,25)}}
     legacy_path=directory.parent/'boat24_ledger.json'
     legacy=json.loads(legacy_path.read_text()) if legacy_path.exists() else {}
     from boat24_experiments import paired_report

@@ -95,7 +95,11 @@ def capture(model):
         if not rec.get('result') and cut and dt.timedelta(minutes=2)<cut-now<=dt.timedelta(minutes=25):targets.append((cut,code,s))
         if not rec.get('result') and cut and now>=cut+dt.timedelta(seconds=90):result_targets.append((cut,code))
     targets=sorted(targets)[:24]
-    result_codes=[code for cut,code in sorted(result_targets,reverse=True)][:12]
+    # Prioritise fresh results without starving older unsettled races forever.
+    # A permanent failure among the newest races must not block backfill.
+    newest=[code for cut,code in sorted(result_targets,reverse=True)[:8]]
+    oldest=[code for cut,code in sorted(result_targets)[:4]]
+    result_codes=list(dict.fromkeys(newest+oldest))[:12]
     if not targets and not result_codes:return False
     from boat24_fast_context import collect as collect_context,refresh as refresh_context
     acquire_started=time.perf_counter()

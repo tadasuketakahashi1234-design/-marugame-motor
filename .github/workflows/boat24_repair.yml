@@ -71,13 +71,13 @@ jobs:
       - name: Recover current-day history without replaying all prior archives
         run: python boat24_recover.py --today-only
       - name: Capture and publish all six improvements with repeated observations
-        run: BOAT24_LIVE_ODDS_WORKER=0 python boat24_cycle.py --seconds 180
+        run: BOAT24_LIVE_ODDS_WORKER=0 python boat24_cycle.py --seconds 90
       - name: Verify all original forecast and comparison records
         run: |
           python - <<'PY'
           import json, os, subprocess
           from pathlib import Path
-          subprocess.run(['git','fetch','origin','+refs/heads/main:refs/remotes/origin/main'],check=True)
+          subprocess.run(['git','fetch','--depth=1','origin','+refs/heads/main:refs/remotes/origin/main'],check=True)
           before=json.loads(Path(os.environ['RUNNER_TEMP'],'boat24-before-predictions.json').read_text())['predictions']
           latest=json.loads(subprocess.check_output(['git','show','origin/main:omura/docs/boat24_ledger.json']))
           for code,record in before.items():
@@ -123,7 +123,7 @@ jobs:
           raw='https://raw.githubusercontent.com/'+repo+'/main/omura/docs/'
           def read(url):
               with urllib.request.urlopen(urllib.request.Request(url+'?verify='+str(time.time_ns()),headers={'User-Agent':'boat24-all-input-verification'}),timeout=30) as r:return r.read().decode()
-          for attempt in range(12):
+          for attempt in range(4):
               try:
                   html=read(base+'boat24_results.html');assert 'fullForecastPanel' in html and 'boat24_full_ui.js' in html and 'fullReportGroup' in html and 'fullHealth' in html and 'fullVenueCoverage' in html and 'fullLearning' in html and 'boat24_integrated_ui.js' in html
                   integrated=read(base+'boat24_integrated_ui.js');assert 'factorRows' in integrated and '展示・進入・足の詳細' in integrated
@@ -153,15 +153,15 @@ jobs:
                       assert all(len(s['input_snapshot']['features'])==6 for s in full_record['revisions'].values())
                   break
               except Exception:
-                  if attempt==11:raise
-                  time.sleep(25)
+                  if attempt==3:raise
+                  time.sleep(10)
           with open(os.environ['GITHUB_STEP_SUMMARY'],'a') as f:
               f.write('\n- All-input source and public UI: PASS\n- Model: '+VERSION+'\n- Forecasts today: '+str(len(ledger['records']))+'\n- Updated: '+index['updated_at']+'\n- Separate forward statistics: '+json.dumps(index['summary'],ensure_ascii=False)+'\n')
           print('All-input public site verified:',index['updated_at'])
 
           PY
       - name: Keep collecting live previews and results while the runner is active
-        run: BOAT24_LIVE_ODDS_WORKER=0 python boat24_cycle.py --seconds 240
+        run: BOAT24_LIVE_ODDS_WORKER=0 python boat24_cycle.py --seconds 60
       - name: Stop the near-cutoff worker while retaining its observations
         if: always()
         run: python boat24_live.py --stop-workflow-worker

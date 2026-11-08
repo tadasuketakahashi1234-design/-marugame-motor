@@ -61,6 +61,26 @@ class PipelineEndToEnd(unittest.TestCase):
   base=self.base()
   with patch('boat24_fast_context.download',side_effect=TimeoutError('timeout')):rows,errors=collect([(CODE,base)],AT)
   self.assertIn('before_'+CODE,errors);self.assertEqual(rows[CODE]['source_checks']['before']['state'],'unconfirmed');self.assertNotIn('previews',rows[CODE])
+ def test_preview_diagnostics_pinpoint_missing_lane_without_approving_purchase(self):
+  from boat24_quality import prepare
+  features=[{'start':{'展示進入':i,'展示ST符号付':.12},'exhibition':{'展示タイム相対':0.01}} for i in range(1,7)]
+  features[2]['exhibition'].pop('展示タイム相対')
+  features[4]['start'].pop('展示ST符号付')
+  result=prepare(features,{},AT)
+  self.assertFalse(result['purchase_inputs_ready'])
+  self.assertEqual(result['missing_preview_lanes']['entry'],[])
+  self.assertEqual(result['missing_preview_lanes']['exhibition'],[3])
+  self.assertEqual(result['missing_preview_lanes']['start'],[5])
+  features[2]['exhibition']['展示タイム相対']=0.01
+  features[4]['start']['展示ST符号付']=.12
+  self.assertTrue(prepare(features,{},AT)['purchase_inputs_ready'])
+ def test_duplicate_entry_courses_fail_closed(self):
+  from boat24_quality import prepare
+  features=[{'start':{'展示進入':i,'展示ST符号付':.12},'exhibition':{'展示タイム相対':0.01}} for i in range(1,7)]
+  features[5]['start']['展示進入']=1
+  result=prepare(features,{},AT)
+  self.assertFalse(result['purchase_inputs_ready'])
+  self.assertEqual(result['missing_preview_lanes']['entry'],list(range(1,7)))
  def test_stage_records_failures_without_turning_them_into_success(self):
   from boat24_pipeline import stage
   trace={}

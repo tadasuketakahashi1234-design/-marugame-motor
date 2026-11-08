@@ -135,3 +135,20 @@ class ProspectiveStudy(unittest.TestCase):
   x=out(r,d,c,n)
   self.assertFalse(x['race_audit'][0]['public_receipt_verified'])
   self.assertIsNone(x['race_audit'][0]['public_at'])
+
+
+class DecisionUpdateMemoryTests(unittest.TestCase):
+ def test_inplace_opt_in_preserves_identity(self):
+  doc={'protocol':{'started_at':'2026-11-06T00:00:00+09:00'},'records':{'historical':{'race_code':'historical','receipts':{}}}}
+  original_records=doc['records']
+  result=update(doc,{'catalog':{}},{},'2026-11-08T12:00:00+09:00',{},inplace=True)
+  self.assertIs(result,doc)
+  self.assertIs(result['records'],original_records)
+  self.assertIn('historical',result['records'])
+
+ def test_default_update_keeps_input_unchanged(self):
+  doc={'records':{'historical':{'race_code':'historical','receipts':{}}}}
+  result=update(doc,{'catalog':{}},{},'2026-11-08T12:00:00+09:00',{})
+  self.assertIsNot(result,doc)
+  self.assertIsNot(result['records'],doc['records'])
+  self.assertNotIn('updated_at',doc)

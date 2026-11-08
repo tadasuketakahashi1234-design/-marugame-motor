@@ -160,7 +160,8 @@ jobs:
                   assert isinstance(index.get('days'),dict) and index.get('latest_day') in index['days'], 'Missing latest published forecast day'
                   assert isinstance(ledger.get('records'),dict), 'Malformed published forecast records'
                   break
-              except Exception:
+              except Exception as exc:
+                  print('Public forecast verification attempt',attempt+1,'failed:',repr(exc),flush=True)
                   if attempt==3:raise
                   time.sleep(10)
           with open(os.environ['GITHUB_STEP_SUMMARY'],'a') as f:

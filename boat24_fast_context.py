@@ -43,7 +43,10 @@ def collect(targets,now):
                     try:
                         body=download(u+'&v='+token+'&retry=1')
                     except (TimeoutError, OSError) as second_error:
-                        raise OSError(f'beforeinfo retry exhausted: {type(first_error).__name__}; {type(second_error).__name__}') from second_error
+                        # Preserve the final transport exception type so the
+                        # diagnostics can distinguish 503 from DNS and timeout.
+                        second_error.add_note(f'beforeinfo retry exhausted; first={type(first_error).__name__}')
+                        raise
                 at=dt.datetime.now(JST).isoformat();card=card_for(s);before=parse_before(body,key,card)
                 if not before:raise ValueError('Race/date/all six racer identities not verified')
                 preview=parse_live_previews(body,key,card,at)

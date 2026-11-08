@@ -21,3 +21,10 @@ class SixBoatComparisonTests(unittest.TestCase):
   s=self.snapshot();s.update(evaluation_eligible=True,cutoff='2026-11-05T13:41:00+09:00',phase='preview',probabilities={'1-2-3':1})
   x=compact_day({'records':{'202611050407':{'race_code':'202611050407','revisions':{'s':s}}}})
   self.assertEqual(x['records']['202611050407']['boat_comparison']['snapshot_id'],'s')
+
+ def test_saved_verified_entry_fallback_when_derived_feature_missing(self):
+  s=self.snapshot();s['input_snapshot']['features'][0]['start']={}
+  s['input_snapshot']['previews']={'st':{'レースコード':s['race_code'],'艇1_コース':'2'}}
+  self.assertEqual(build(s)['boats'][0]['course'],2)
+  s['input_snapshot']['previews']['st']['レースコード']='202611050408'
+  self.assertIsNone(build(s)['boats'][0]['course'])

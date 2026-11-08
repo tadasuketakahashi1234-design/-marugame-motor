@@ -44,7 +44,7 @@ def _main(seconds=180):
   if legacy_error:
    today=dt.datetime.now(JST).date().isoformat();dayfile=history_path(boat24_full_update.DIRECTORY,today);ledger=read_history(dayfile);ledger.setdefault('health',{}).setdefault('source_errors',{})['legacy_collector']=legacy_error;ledger['health']['state']='degraded';dayfile=write_history(dayfile,ledger)
   manifest=json.loads(boat24_full_update.MANIFEST.read_text())
-  if not isinstance(manifest,dict) or not isinstance(manifest.get('paths'),list):
+  if not isinstance(manifest,dict) or not isinstance(manifest.get('paths'),list) or not isinstance(manifest.get('index'),str):
    raise ValueError('Forecast collection manifest is invalid; publication stopped safely')
   if legacy:
    for item in ('omura/docs/boat24_ledger.json','omura/docs/boat24_comparison.json'):

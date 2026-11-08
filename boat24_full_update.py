@@ -187,7 +187,11 @@ def build_index(directory=DIRECTORY,now=None):
         latest_pipeline=data.get('quote_health',{}).get('pipeline',{}) or latest_pipeline
         pointer=directory.parent/'day_views'/(day_key(path)+'.pointer.json')
         view_info=json.loads(pointer.read_text()) if pointer.exists() else {}
-        days[day_key(path)]={'view_path':'day_views/'+view_info.get('path',day_key(path)+'.json'),'view_sha256':view_info.get('sha256'),'archive_path':'full_history/'+path.name,'summary':summary(records),'venues':{str(v):summary([r for r in records if r['venue']==v]) for v in range(1,25)}}
+        view_name=view_info.get('path') or day_key(path)+'.json'
+        # A missing versioned view must not be advertised as a valid public URL.
+        if not (directory.parent/'day_views'/view_name).exists():
+            view_name=day_key(path)+'.json'
+        days[day_key(path)]={'view_path':'day_views/'+view_name,'view_sha256':view_info.get('sha256'),'archive_path':'full_history/'+path.name,'summary':summary(records),'venues':{str(v):summary([r for r in records if r['venue']==v]) for v in range(1,25)}}
     legacy_path=directory.parent/'boat24_ledger.json'
     legacy=json.loads(legacy_path.read_text()) if legacy_path.exists() else {}
     from boat24_experiments import paired_report

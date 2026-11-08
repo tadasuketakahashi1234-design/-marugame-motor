@@ -90,12 +90,12 @@ def _publish():
                 except (OSError,ValueError,TypeError):
                     remote_index={}
                 if not isinstance(remote_index,dict):remote_index={}
-                # Keep freshly computed training and diagnostics, and only
-                # recover them from existing indexes if missing.
+                # build_index computes summary statistics but not the model's
+                # training metadata. The collector's index is the source for
+                # this run; the remote index is only a fallback.
                 for key in ('training','diagnostics'):
-                    if key not in index:
-                        source=remote_index if key in remote_index else old_index
-                        if key in source:index[key]=source[key]
+                    source=old_index if key in old_index else remote_index
+                    if key in source:index[key]=source[key]
                 # The backfill cursor is a rotating scan position, not a
                 # monotonically increasing watermark. Preserve the collector's
                 # new position, including a deliberate wrap to older dates.

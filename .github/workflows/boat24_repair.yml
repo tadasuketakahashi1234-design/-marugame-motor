@@ -170,6 +170,42 @@ jobs:
           PY
       - name: Keep collecting live previews and results while the runner is active
         run: BOAT24_LIVE_ODDS_WORKER=0 python boat24_cycle.py --seconds 60
+      - name: Record pipeline diagnostics even after a failed step
+        if: always()
+        env:
+          BOAT24_RUN_URL: ${{ github.server_url }}/${{ github.repository }}/actions/runs/${{ github.run_id }}
+        run: |
+          python - <<'PY'
+          import datetime, json, os
+          from pathlib import Path
+          out=Path(os.environ['RUNNER_TEMP'])/'boat24-pipeline-diagnostics.txt'
+          lines=['Run: '+os.environ.get('BOAT24_RUN_URL',''), 'UTC: '+datetime.datetime.now(datetime.timezone.utc).isoformat()]
+          for name in ('omura/docs/boat24_full_index.json','boat24_full_pending.json','omura/docs/boat24_ledger.json','omura/docs/boat24_comparison.json'):
+              p=Path(name)
+              try:
+                  if not p.is_file():
+                      lines.append(name+': MISSING');continue
+                  data=json.loads(p.read_text())
+                  lines.append(name+': valid JSON, bytes='+str(p.stat().st_size)+', top-level='+type(data).__name__)
+                  if isinstance(data,dict):
+                      for key in ('updated_at','latest_day','backfill_cursor','backfill_attempted_days','backfill_remaining_days'):
+                          if key in data:lines.append('  '+key+': '+str(data[key])[:180])
+                      for key in ('days','records','predictions'):
+                          if isinstance(data.get(key),dict):lines.append('  '+key+' count: '+str(len(data[key])))
+              except Exception as exc:lines.append(name+': INVALID: '+str(exc))
+          out.write_text('\n'.join(lines)+'\n')
+          print(out.read_text())
+          with open(os.environ['GITHUB_STEP_SUMMARY'],'a') as f:
+              f.write('\n## Pipeline diagnostics\n\n```\n'+out.read_text()+'\n```\n')
+          PY
+      - name: Upload compact pipeline diagnostics
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: boat24-diagnostics-${{ github.run_id }}
+          path: ${{ runner.temp }}/boat24-pipeline-diagnostics.txt
+          if-no-files-found: warn
+          retention-days: 14
       - name: Stop the near-cutoff worker while retaining its observations
         if: always()
         run: python boat24_live.py --stop-workflow-worker

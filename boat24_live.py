@@ -177,7 +177,7 @@ def watch(stop):
         start=time.monotonic()
         try:
             if pending:publish();pending=False
-            subprocess.run(['git','fetch','origin','+refs/heads/main:refs/remotes/origin/main'],check=True,stdout=subprocess.DEVNULL)
+            subprocess.run(['git','fetch','--depth=1','origin','+refs/heads/main:refs/remotes/origin/main'],check=True,stdout=subprocess.DEVNULL,timeout=45)
             # This is an isolated, agent-created worktree. Only reset after all
             # its previously generated observations have been published.
             subprocess.run(['git','reset','--hard','origin/main'],check=True,stdout=subprocess.DEVNULL)
@@ -226,14 +226,28 @@ def start_workflow_worker():
 def stop_workflow_worker():
     root=Path.cwd();(root/'.boat24-live-stop').touch();pidfile=root/'.boat24-live-pid'
     if not pidfile.exists():return
-    pid=int(pidfile.read_text());deadline=time.monotonic()+300
+    pid=int(pidfile.read_text());deadline=time.monotonic()+20
     while time.monotonic()<deadline:
         try:
             state=Path(f'/proc/{pid}/stat').read_text().rsplit(')',1)[1].split()[0]
             if state=='Z':return
         except FileNotFoundError:return
         time.sleep(1)
-    raise RuntimeError('Live worker did not stop; its worktree and log are retained for recovery')
+    # A stalled network fetch must not hold the next scheduled forecast run for five minutes.
+    # The worker was started in its own process group; terminate that group while
+    # keeping its worktree and logs available for recovery and investigation.
+    import signal
+    try:os.killpg(pid,signal.SIGTERM)
+    except ProcessLookupError:return
+    for _ in range(5):
+        try:
+            state=Path(f'/proc/{pid}/stat').read_text().rsplit(')',1)[1].split()[0]
+            if state=='Z':return
+        except FileNotFoundError:return
+        time.sleep(1)
+    try:os.killpg(pid,signal.SIGKILL)
+    except ProcessLookupError:pass
+    print('Stalled live worker terminated; worktree and log retained for recovery',flush=True)
 
 if __name__=='__main__':
     if sys.argv[1]=='--start-workflow-worker':start_workflow_worker()

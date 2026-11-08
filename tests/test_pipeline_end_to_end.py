@@ -81,6 +81,13 @@ class PipelineEndToEnd(unittest.TestCase):
   result=prepare(features,{},AT)
   self.assertFalse(result['purchase_inputs_ready'])
   self.assertEqual(result['missing_preview_lanes']['entry'],list(range(1,7)))
+ def test_malformed_original_exhibition_csv_is_reported(self):
+  from boat24_fast_context import collect
+  with patch('boat24_fast_context.download',return_value='wrong_column,value\\nabc,1\\n'):
+   rows,errors=collect({},AT)
+  self.assertEqual(rows,{})
+  self.assertIn('original_today',errors)
+  self.assertIn('レースコード',errors['original_today'])
  def test_stage_records_failures_without_turning_them_into_success(self):
   from boat24_pipeline import stage
   trace={}

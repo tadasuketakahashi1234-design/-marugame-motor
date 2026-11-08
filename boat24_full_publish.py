@@ -90,9 +90,17 @@ def _publish():
                 except (OSError,ValueError,TypeError):
                     remote_index={}
                 if not isinstance(remote_index,dict):remote_index={}
-                for key in ('training','diagnostics','backfill_cursor','recovery'):
-                    source=remote_index if key in remote_index else old_index
-                    if key in source:index[key]=source[key]
+                # Keep freshly computed training and diagnostics, and only
+                # recover them from existing indexes if missing.
+                for key in ('training','diagnostics'):
+                    if key not in index:
+                        source=remote_index if key in remote_index else old_index
+                        if key in source:index[key]=source[key]
+                # Keep the historical settlement cursor from moving backwards.
+                cursors=[v.get('backfill_cursor','') for v in (old_index,remote_index) if isinstance(v.get('backfill_cursor',''),str)]
+                if cursors:index['backfill_cursor']=max([index.get('backfill_cursor',''),*cursors])
+                if 'recovery' in remote_index:index['recovery']=remote_index['recovery']
+                elif 'recovery' in old_index:index['recovery']=old_index['recovery']
                 atomic_write(work/manifest['index'],index);paths.append(manifest['index'])
                 with stage(trace,'stage_files'):git('add','-A','--',*paths,cwd=work)
                 changed=bool(git('diff','--cached','--name-only',cwd=work))

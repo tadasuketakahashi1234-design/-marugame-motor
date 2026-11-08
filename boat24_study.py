@@ -75,7 +75,8 @@ def fit(today,model,directory=Path('omura/docs/full_history')):
  for p in day_paths(directory):
   if (today-dt.timedelta(days=28)).isoformat()<=day_key(p)<today.isoformat():records.extend(read_history(p).get('records',{}).values())
  cases,audit=frozen_cases(records,decisions,before=today,allow_prediction_only=True);rows=[];excluded=Counter()
- for c in sorted(cases,key=lambda z:(z['date'],z['race_code']))[-200:]:
+ # Validate first so invalid recent cases cannot displace usable older cases.
+ for c in sorted(cases,key=lambda z:(z['date'],z['race_code'])):
   x,error=matched_study(c)
   if not x:excluded[error]+=1;continue
   freeze=timeparse(c['provenance']['freeze_at'])
@@ -83,6 +84,7 @@ def fit(today,model,directory=Path('omura/docs/full_history')):
   raw=x.get('basis',{})
   if set(raw)!=set(('foot_residual','duel_residual')) or not all(distribution(p) for p in raw.values()):excluded['training_basis_missing']+=1;continue
   rows.append({'date':c['date'],'code':c['race_code'],'case_id':c['provenance']['case_id'],'market':x['arms']['market']['probabilities'],'basis':raw,'actual':c['result']['combo']})
+ rows=rows[-RULES['maximum_training_races']:]
  days=len({r['date'] for r in rows});ready=len(rows)>=30 and days>=3;losses={};betas={}
  for name in ('foot_residual','duel_residual'):
   losses[name]={str(b):sum(-math.log(max(mixture(r['market'],r['basis'][name],b)[r['actual']],1e-12)) for r in rows)/len(rows)+RULES['penalty']*b*b for b in RULES['beta_grid']} if rows else {}

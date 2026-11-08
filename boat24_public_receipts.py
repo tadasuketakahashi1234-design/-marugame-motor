@@ -59,18 +59,20 @@ def publish(root,initial_work=None,publication=None):
             trace.setdefault('state','index_changed_before_verification')
             target=work/PATH;doc=json.loads(target.read_text()) if target.exists() else {}
             for view,archives,observed,proof in pending:doc=update(doc,view,archives,observed,proof)
-            # Settle/finalize old observed dates using local immutable data,
-            # without creating any publication evidence for those dates.
+            # Load each prior archive before finalizing its frozen decision.
+            # An empty archive would permanently mark a valid receipt unavailable.
             now=dt.datetime.now(JST).isoformat()
-            if doc.get('protocol',{}).get('started_at'):
-                for old_day,catalog in index.get('catalogs',{}).items():
-                    if old_day<day:doc=update(doc,{'catalog':catalog},{},now,{})
-            for prior in sorted({r['race_code'][:8] for r in doc.get('records',{}).values() if (r.get('decision') or {}).get('state')!='historical_unverified'}):
-                key=prior[:4]+'-'+prior[4:6]+'-'+prior[6:];e=index.get('days',{}).get(key)
-                if not e:continue
+            prior_days={r['race_code'][:4]+'-'+r['race_code'][4:6]+'-'+r['race_code'][6:8] for r in doc.get('records',{}).values()}
+            prior_days.update(k for k in index.get('catalogs',{}) if k<day)
+            for key in sorted(prior_days):
+                e=index.get('days',{}).get(key)
+                if not e:
+                    # Never finalize an old decision without its source archive.
+                    continue
                 ledger=loaded.get(key)
                 if ledger is None:
                     with stage(trace,'read_prior_archive_'+key):ledger=read_history(work/'omura/docs'/e['archive_path'])
+                    loaded[key]=ledger
                 doc=update(doc,{'catalog':ledger.get('catalog',{})},ledger.get('records',{}),now,{})
             if not doc: return
             index['decision_report']=report(doc);index['updated_at']=now

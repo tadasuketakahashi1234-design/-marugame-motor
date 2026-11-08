@@ -348,7 +348,13 @@ def main():
     cursor=old_index.get('backfill_cursor','')
     if not isinstance(cursor,str) or not __import__('re').fullmatch(r'\d{4}-\d{2}-\d{2}',cursor):cursor=''
     pending=[item for item in pending if day_key(item[0])>cursor]+[item for item in pending if day_key(item[0])<=cursor]
-    for old_path,old in pending[:14]:
+    # Scheduled short cycles must prioritize fresh forecasts; rotate through
+    # older unsettled days in small bounded batches rather than replaying 14
+    # full days of CSV downloads and view regeneration on every invocation.
+    import os
+    backfill_limit=max(1,min(14,int(os.environ.get('BOAT24_BACKFILL_DAYS','3'))))
+    batch=pending[:backfill_limit]
+    for old_path,old in batch:
         # Snapshot before settlement: unchanged compressed race archives need no rewrite.
         import copy
         before_settlement=copy.deepcopy(old)
@@ -358,9 +364,9 @@ def main():
         if data.get('_live_collection'):attach_results(past,set(old['records'])&(set(res)|set(pay)),dt.datetime.now(JST))
         for code,rec in old['records'].items():settle(rec,res.get(code),pay.get(code),dt.datetime.now(JST))
         old_path=write_history(old_path,old,previous=before_settlement);write_view(old_path,old);touched.append(str(old_path))
-    index=build_index(now=dt.datetime.now(JST));index['backfill_cursor']=day_key(pending[:14][-1][0]) if pending else cursor
-    index['backfill_attempted_days']=len(pending[:14])
-    index['backfill_remaining_days']=max(0,len(pending)-14)
+    index=build_index(now=dt.datetime.now(JST));index['backfill_cursor']=day_key(batch[-1][0]) if batch else cursor
+    index['backfill_attempted_days']=len(batch)
+    index['backfill_remaining_days']=max(0,len(pending)-len(batch))
     index['diagnostics']=ledger['diagnostics'];index['training']={'frozen_for_forward_evaluation':__import__('os').environ.get('BOAT24_FREEZE_MODEL')=='1','through':model['trained_through'],'samples':len(model['samples']),'market_prior':model['market_alpha'],'validation':model['calibration'],'source_errors':model.get('source_errors',{}),'venue_coverage':model.get('venue_coverage',{}),'venue_profiles':model.get('venue_profiles',PROFILES),'water_source_errors':model.get('water_source_errors',{}),'surface_summary':{'venues_with_wind_history':sorted({k.split('|')[0] for k in model.get('surface_state',{}).get('wind',{})}),'venues_with_tide_data':sorted(model.get('tide_book',{}))},'course_window_days':model.get('course_window_days'),'surface_training_policy':model.get('surface_training_policy','legacy-before-replay')}
     index['training'].update({'integrated_experiments':model.get('integrated_experiments',{}),'replay':model.get('replay',{}),'candidate_policy':model.get('candidate_policy'),'feature_schema':model.get('feature_schema'),'learned_fields':sorted(model.get('scales',{})),'approved_candidate_phases':model.get('approved_candidate_phases',[]),'learning_policy':model.get('learning_policy'),'learning_provenance_digest':model.get('learning_provenance_digest'),'forward_evidence_policy':model.get('forward_evidence',{}).get('policy')})
     index['training']['prospective_study_training']=model.get('prospective_study_training',{})

@@ -123,7 +123,9 @@ function renderResultPanel(record,snapshot,cutoff,health={}){
 function renderComparison(items){
  return '<h3>予想と結果をまとめて確認</h3><table class="race-comparison"><thead><tr><th scope="col">R</th><th scope="col">予想・購入判定</th><th scope="col">結果・払戻</th></tr></thead><tbody>'+[...items].sort((a,b)=>a.race_code.localeCompare(b.race_code)).map(item=>{
  const r=data.records?.[item.race_code],s=r&&latest(r),ps=s&&purchaseSnapshot(r,s),p=ps?.purchase_plan,result=r?.result;
- const prediction=p?.status==='ready'?(p.tickets||[]).map(t=>esc(t.combo)).join('／')+'<br>'+p.tickets.length+'点・'+esc(p.budget)+'円':s?'購入候補なし<br>'+esc(p?.status==='odds_stale'||p?.status==='odds_incomplete'?'オッズ確認待ち':p?.status==='preview_pending'?'保存時：展示未確認':'保存時は見送り'):'予想保存待ち';
+ const reason={odds_stale:'保存時：オッズ更新遅延',odds_incomplete:'保存時：オッズ不足',preview_pending:'保存時：展示未確認',no_feasible_plan:'保存時：条件を満たす買い目なし',no_value:'保存時：期待値条件未達',no_bet:'保存時：見送り'};
+ const ready=p?.status==='ready'&&Array.isArray(p.tickets)&&p.tickets.length>0;
+ const prediction=ready?p.tickets.map(t=>esc(t.combo)).join('／')+'<br>'+p.tickets.length+'点・'+esc(p.budget)+'円（保存時）':s?'購入候補なし<br>'+esc(reason[p?.status]||('保存時：'+(p?.status||'判定情報なし'))):'予想保存待ち';
  return '<tr><th scope="row"><a href="#race-'+esc(item.race_code)+'">'+(Number($('venue').value)?'':esc(names[item.venue])+' ')+esc(item.race)+'R</a></th><td>'+prediction+'</td><td>'+ (result?'<b>'+esc(result.combo)+'</b><br>'+esc(result.payout_100yen)+'円 / 100円':Date.now()>=Date.parse(item.cutoff||s?.cutoff)?'結果確認中':'レース前')+'</td></tr>';
  }).join('')+'</tbody></table>';
 }

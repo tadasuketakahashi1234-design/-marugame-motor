@@ -58,8 +58,15 @@ def collect(targets,now):
             reader=csv.DictReader(io.StringIO(body))
             if not reader.fieldnames or 'レースコード' not in reader.fieldnames:
                 raise ValueError('Original exhibition CSV missing レースコード column')
-            parsed={r['レースコード']:r for r in reader if r.get('レースコード') in rows}
-            return kind,key,parsed,None
+            parsed={};invalid_codes=0;duplicate_codes=0
+            for record in reader:
+                code=(record.get('レースコード') or '').strip()
+                if not code or len(code)!=12 or not code.isdigit():
+                    invalid_codes+=1;continue
+                if code in rows:
+                    if code in parsed:duplicate_codes+=1
+                    parsed[code]=record
+            return kind,key,{'rows':parsed,'invalid_codes':invalid_codes,'duplicate_codes':duplicate_codes},None
         except Exception as e:return kind,key,None,str(e)[:160]
     def job(task):
         started=dt.datetime.now(JST).isoformat();tick=time.perf_counter();kind,key,value,error=acquire(task)
@@ -71,8 +78,10 @@ def collect(targets,now):
             trace['missing_parts']=[part for part,ok in (('exhibition',bool(ex)),('entry_start',bool(st))) if not ok]
             if trace['missing_parts']:trace['state']='verified_page_preview_incomplete'
         elif kind=='original' and value is not None:
-            trace['matched_races']=len(value)
-            if not value and targets:trace['state']='parsed_no_matching_races'
+            trace['matched_races']=len(value['rows'])
+            trace['invalid_race_codes']=value['invalid_codes']
+            trace['duplicate_matching_race_codes']=value['duplicate_codes']
+            if not value['rows'] and targets:trace['state']='parsed_no_matching_races'
         return kind,key,value,error,trace
     tasks=[('before',code) for code,s in targets]+[('water',v) for v in sorted({c[8:10] for c,s in targets})]+[('original','today')]
     with ThreadPoolExecutor(max_workers=3) as pool:
@@ -85,7 +94,7 @@ def collect(targets,now):
                 for code in rows:
                     if code[8:10]==key:rows[code]['water']=value
             else:
-                for code,row in value.items():rows[code]['original']=row
+                for code,row in value['rows'].items():rows[code]['original']=row
     return rows,errors
 
 def refresh(base,bundle,model,code,now):

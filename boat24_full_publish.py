@@ -32,7 +32,11 @@ def _publish():
             try:
                 paths=[]
                 merge_started=time.perf_counter()
-                for path,incoming in local.items():
+                # The compact day views read the verified official cache from
+                # this worktree. Merge that cache before generating any views.
+                # Otherwise views silently use yesterday's/earlier cache.
+                ordered=sorted(local.items(),key=lambda item: 0 if item[0].endswith('boat24_official_cache.json') else 1)
+                for path,incoming in ordered:
                     dest=work/path
                     if day_key(dest) and dest.parent.name=='full_history':
                         legacy=Path(str(dest)[:-3]) if dest.suffix=='.gz' else Path(str(dest)+'.gz')

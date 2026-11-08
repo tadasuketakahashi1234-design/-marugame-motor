@@ -157,6 +157,8 @@ jobs:
                           with urllib.request.urlopen(raw+'full_history/'+path+'?verify='+str(time.time_ns()),timeout=30) as response:full_record=json.loads(gzip.decompress(response.read()))
                       else:full_record=archive['records'][code]
                       assert all(len(s['input_snapshot']['features'])==6 for s in full_record['revisions'].values() if s.get('evaluation_eligible')), 'Incomplete eligible forecast inputs'
+                  assert isinstance(index.get('days'),dict) and index.get('latest_day') in index['days'], 'Missing latest published forecast day'
+                  assert isinstance(ledger.get('records'),dict), 'Malformed published forecast records'
                   break
               except Exception:
                   if attempt==3:raise

@@ -2,11 +2,14 @@ name: Boat24 isolated integration test
 on:
   push:
     branches:
-      - fix/boat24-cache-bust-20261108
+      - 'fix/**'
+      - main
     paths:
       - '.github/workflows/boat24_isolated_integration.yml'
       - 'boat24_*.py'
       - 'tests/**'
+      - 'omura/docs/boat24_*.js'
+      - 'omura/docs/boat24_results.html'
 permissions:
   contents: read
 jobs:

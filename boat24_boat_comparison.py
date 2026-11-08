@@ -5,7 +5,10 @@ from boat24_integrity import timeparse
 def build(s,records=None):
  raw=s.get('input_snapshot') or {};fs=raw.get('features') or [];card=raw.get('card') or {};ids={int(x['lane']):x for x in s.get('boat_identities',[]) if x.get('lane')};support={r['lane']:r for r in s.get('race_reasoning',{}).get('support',[])};at=timeparse(s.get('computed_at') or s.get('created_at'));code=s.get('race_code') or card.get('レースコード') or '';boats=[]
  for lane in range(1,7):
-  f=fs[lane-1] if len(fs)>=lane else {};ident=ids.get(lane,{});rid=str(ident.get('racer') or card.get(f'艇{lane}_登録番号') or '');course=f.get('start',{}).get('展示進入');stats=f.get('course') or {};series=[]
+  f=fs[lane-1] if len(fs)>=lane else {};ident=ids.get(lane,{});rid=str(ident.get('racer') or card.get(f'艇{lane}_登録番号') or '');course=f.get('start',{}).get('展示進入');verified_st=raw.get('previews',{}).get('st') or {};verified_course=number(verified_st.get(f'艇{lane}_コース'));
+  # Display the saved, verified entry even if feature assembly omitted it.
+  if course is None and verified_st.get('レースコード')==code and verified_course is not None and 1<=verified_course<=6:course=int(verified_course)
+  stats=f.get('course') or {};series=[]
   for rec in (records or {}).values():
    oldcode=rec.get('race_code','');result=rec.get('result') or {};rt=timeparse(result.get('settled_at'));source=result.get('result_source') or {}
    if not at or not rt or rt>at or not code or oldcode>=code or oldcode[:10]!=code[:10]:continue

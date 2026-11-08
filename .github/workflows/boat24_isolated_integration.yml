@@ -1,0 +1,36 @@
+name: Boat24 isolated integration test
+on:
+  push:
+    branches:
+      - fix/weather-input-validation-20261108
+    paths:
+      - '.github/workflows/boat24_isolated_integration.yml'
+      - 'boat24_*.py'
+      - 'tests/**'
+permissions:
+  contents: read
+jobs:
+  integration:
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.11'
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+      - name: Python regression and integration suite
+        run: python -m unittest discover -s tests -v
+      - name: UI syntax and integration smoke
+        run: |
+          node --check omura/docs/boat24_full_ui.js
+          node --check omura/docs/boat24_integrated_ui.js
+          node tests/integrated_ui_smoke.js
+          node tests/ui_smoke.js
+          node tests/no_gami_ui.js
+          node tests/forecast_ui.js
+          node tests/results_ui.js
+          node tests/frozen_decisions_ui.js
+          node tests/pipeline_ui.js

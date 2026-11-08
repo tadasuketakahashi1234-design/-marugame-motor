@@ -24,7 +24,11 @@ def _publish():
     root=Path(git('rev-parse','--show-toplevel'));manifest=json.loads((root/MANIFEST).read_text())
     trace={'started_at':dt.datetime.now(JST).isoformat(),'lock_wait_seconds':_LOCK_WAIT_SECONDS,'stages':{}}
     with stage(trace,'read_local_observations'):local={p:(read_history(root/p) if day_key(p) and Path(p).parent.name=='full_history' else read_json(root/p)) for p in manifest['paths']}
-    old_index=json.loads((root/manifest['index']).read_text())
+    try:
+        old_index=json.loads((root/manifest['index']).read_text())
+    except (OSError,ValueError,TypeError):
+        old_index={}
+    if not isinstance(old_index,dict):old_index={}
     for attempt in range(5):
         trace['attempt']=attempt+1
         with stage(trace,'fetch_main'):git('fetch','--depth=1','origin','+refs/heads/main:refs/remotes/origin/main',cwd=root)

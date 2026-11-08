@@ -166,6 +166,22 @@ class PipelineEndToEnd(unittest.TestCase):
   self.assertFalse(validate_quotes(missing))
   extra=dict(valid);extra['3連単_1-1-2']='12.3'
   self.assertFalse(validate_quotes(extra))
+ def test_independent_collector_failure_does_not_mask_other_future_results(self):
+  # A failed source future must become a diagnostic, not an exception
+  # that aborts processing of successful independent sources.
+  from concurrent.futures import Future
+  def completed(job,source):
+   if job is None:return {},{}
+   try:return job.result()
+   except Exception as exc:return {},{source+'_collector_failed':type(exc).__name__+': '+str(exc)[:180]}
+  failed=Future();failed.set_exception(RuntimeError('upstream unavailable'))
+  successful=Future();successful.set_result(({CODE:{'confirmed':True}},{}))
+  rows,errors=completed(failed,'context')
+  self.assertEqual(rows,{})
+  self.assertIn('context_collector_failed',errors)
+  result_rows,result_errors=completed(successful,'results')
+  self.assertIn(CODE,result_rows)
+  self.assertEqual(result_errors,{})
  def test_stage_records_failures_without_turning_them_into_success(self):
   from boat24_pipeline import stage
   trace={}

@@ -104,6 +104,8 @@ def compact_day(doc):
                     lane=boat['lane']
                     course=observed['courses'].get(str(lane))
                     if course is not None:boat['course']=course
+                    boat['exhibition_time']=observed.get('exhibition_times',{}).get(str(lane))
+                    boat['exhibition_st']=observed.get('exhibition_starts',{}).get(str(lane))
                 rec['boat_comparison']['entry_observed_at']=observed['observed_at']
                 rec['boat_comparison']['entry_scope']='展示進入は直近の公式確認値（予想計算への使用とは別）'
         valid=[s for s in revisions.values() if s.get('evaluation_eligible')]

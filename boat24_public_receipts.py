@@ -62,8 +62,13 @@ def publish(root,initial_work=None,publication=None):
             # Load each prior archive before finalizing its frozen decision.
             # An empty archive would permanently mark a valid receipt unavailable.
             now=dt.datetime.now(JST).isoformat()
-            prior_days={r['race_code'][:4]+'-'+r['race_code'][4:6]+'-'+r['race_code'][6:8] for r in doc.get('records',{}).values()}
-            prior_days.update(k for k in index.get('catalogs',{}) if k<day)
+            from boat24_study import START_DAY
+            # Study reports only need registered forward days. Older decisions
+            # with existing receipts still need their archive for settlement.
+            prior_days={r['race_code'][:4]+'-'+r['race_code'][4:6]+'-'+r['race_code'][6:8]
+                        for r in doc.get('records',{}).values()
+                        if r.get('receipts') or (r.get('decision') or {}).get('receipt')}
+            prior_days.update(k for k in index.get('days',{}) if START_DAY<=k<=day)
             for key in sorted(prior_days):
                 e=index.get('days',{}).get(key)
                 if not e:

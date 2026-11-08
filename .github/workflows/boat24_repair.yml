@@ -195,6 +195,10 @@ jobs:
                   if isinstance(data,dict):
                       for key in ('updated_at','latest_day','backfill_cursor','backfill_attempted_days','backfill_remaining_days'):
                           if key in data:lines.append('  '+key+': '+str(data[key])[:180])
+                      diag=data.get('diagnostics') or {}
+                      if isinstance(diag,dict):
+                          for key in ('new_forecasts','updated_forecasts','new_settlements','skipped','purchase_status_counts','missing_preview_lane_counts','record_count','source_errors'):
+                              if key in diag:lines.append('  diagnostics.'+key+': '+json.dumps(diag[key],ensure_ascii=False)[:1200])
                       for key in ('days','records','predictions'):
                           if isinstance(data.get(key),dict):lines.append('  '+key+' count: '+str(len(data[key])))
               except Exception as exc:lines.append(name+': INVALID: '+str(exc))

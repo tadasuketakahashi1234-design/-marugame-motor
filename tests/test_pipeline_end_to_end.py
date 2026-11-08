@@ -182,6 +182,15 @@ class PipelineEndToEnd(unittest.TestCase):
   result_rows,result_errors=completed(successful,'results')
   self.assertIn(CODE,result_rows)
   self.assertEqual(result_errors,{})
+ def test_official_odds_freshness_uses_capture_time_not_wall_clock(self):
+  from boat24_odds import attach
+  observed=(AT-dt.timedelta(minutes=4)).isoformat()
+  quote={'レースコード':CODE,'取得日時':observed,'3連単_1-2-3':'12.3'}
+  data={'odds':{}}
+  with patch('boat24_odds.collect',return_value=({CODE:quote},{})):
+   errors=attach(data,[CODE],AT)
+  self.assertEqual(errors,{})
+  self.assertEqual(data['odds'][CODE]['取得日時'],observed)
  def test_stage_records_failures_without_turning_them_into_success(self):
   from boat24_pipeline import stage
   trace={}

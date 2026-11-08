@@ -81,7 +81,9 @@ def attach(data,codes,now):
     for code,row in rows.items():
         prior=data.get('odds',{}).get(code,{})
         observed=timeparse(row.get('取得日時'))
-        age=dt.datetime.now(JST)-observed if observed else None
+        # Use the caller's fixed observation time, not a second wall-clock read.
+        # This makes the freshness gate deterministic and replayable.
+        age=timeparse(now)-observed if observed and timeparse(now) else None
         if age is not None and dt.timedelta(0)<=age<=dt.timedelta(minutes=5):
             # Cutoff comes from the independently saved race schedule.
             data.setdefault('odds',{})[code]={**{k:v for k,v in prior.items() if not k.startswith('3連単_')},**row}

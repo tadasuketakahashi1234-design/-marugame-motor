@@ -97,7 +97,7 @@ class PipelineEndToEnd(unittest.TestCase):
   self.assertNotIn('original_today',errors)
  def test_duplicate_exhibition_race_codes_are_quarantined(self):
   from boat24_fast_context import collect
-  csv_text='レースコード,展示タイム\\n'+CODE+',6.70\\n'+CODE+',6.99\\n'
+  csv_text='レースコード,展示タイム\n'+CODE+',6.70\n'+CODE+',6.99\n'
   with patch('boat24_fast_context.download',return_value=csv_text):
    rows,errors=collect([(CODE,self.base())],AT)
   self.assertNotIn('original',rows[CODE])

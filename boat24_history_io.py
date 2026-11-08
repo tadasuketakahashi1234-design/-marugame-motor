@@ -144,10 +144,16 @@ def write_view(history_file,doc):
     path=Path(history_file);day=day_key(path);directory=path.parent.parent/'day_views';dest=directory/(day+'.json')
     view=compact_day(doc);raw=json.dumps(view,ensure_ascii=False,separators=(',',':'),allow_nan=False).encode()
     digest=hashlib.sha256(raw).hexdigest();version=directory/(day+'-'+digest[:16]+'.json');pointer=directory/(day+'.pointer.json')
-    old=read_json(pointer) if pointer.exists() else {}
+    try:
+        old=read_json(pointer) if pointer.exists() else {}
+    except (OSError,ValueError,TypeError):
+        old={}
+    if not isinstance(old,dict):old={}
+    previous=old.get('previous_paths',[])
+    if not isinstance(previous,list):previous=[]
     history=[]
-    for name in [old.get('path'),*old.get('previous_paths',[])]:
-        if name and name!=version.name and name not in history:history.append(name)
+    for name in [old.get('path'),*previous]:
+        if isinstance(name,str) and re.fullmatch(re.escape(day)+r'-[0-9a-f]{16}\.json',name) and name!=version.name and (directory/name).is_file() and name not in history:history.append(name)
     # Keep the latest view plus two rollback versions. Full immutable forecast
     # history remains in full_history and is never pruned here.
     history=history[:2]

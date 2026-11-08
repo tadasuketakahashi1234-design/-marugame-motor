@@ -24,7 +24,7 @@ def _publish():
     root=Path(git('rev-parse','--show-toplevel'));manifest=json.loads((root/MANIFEST).read_text())
     if not isinstance(manifest,dict) or not isinstance(manifest.get('paths'),list) or not isinstance(manifest.get('index'),str):
         raise ValueError('Invalid forecast publication manifest; source histories remain untouched')
-    if not manifest['index'].startswith('omura/docs/') or '..' in Path(manifest['index']).parts or any(not isinstance(path,str) or not path.startswith('omura/docs/') or '..' in Path(path).parts for path in manifest['paths']):
+    if not manifest['index'].startswith('omura/docs/') or Path(manifest['index']).is_absolute() or '..' in Path(manifest['index']).parts or any(not isinstance(path,str) or not path.startswith('omura/docs/') or '..' in Path(path).parts for path in manifest['paths']):
         raise ValueError('Unsafe forecast publication manifest paths')
     trace={'started_at':dt.datetime.now(JST).isoformat(),'lock_wait_seconds':_LOCK_WAIT_SECONDS,'stages':{}}
     with stage(trace,'read_local_observations'):local={p:(read_history(root/p) if day_key(p) and Path(p).parent.name=='full_history' else read_json(root/p)) for p in manifest['paths']}

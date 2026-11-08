@@ -37,7 +37,8 @@ def reprice(base,quotes,model,code,now,clock=None,diagnostics=None):
     if base.get('model_id')!=model.get('model_id') or model.get('trained_through','9999')>=now.date().isoformat():return reject('model_or_training_date_mismatch')
     features=copy.deepcopy(base.get('input_snapshot',{}).get('features',[]))
     if len(features)!=6:return reject('incomplete_boat_inputs')
-    from boat24_odds import add_market
+    from boat24_odds import add_market,validate_quotes
+    if not validate_quotes(quotes):return reject('incomplete_or_invalid_quote_matrix')
     # Market-derived features must follow the same new quotes as the blend.
     add_market(features,quotes,{},{})
     quality=prepare_quality(features,base.get('input_snapshot',{}).get('previews',{}),now)
@@ -53,7 +54,6 @@ def reprice(base,quotes,model,code,now,clock=None,diagnostics=None):
     compact=lambda p:{k:p[k] for k in ('phase','probabilities','selection')}
     out['research']={**base.get('research',{}),'baseline':compact(baseline),'candidate':compact(candidate)}
     odds={k[4:]:float(v) for k,v in quotes.items() if k.startswith('3連単_')}
-    if len(odds)!=120:return reject('incomplete_quote_matrix')
     plan=robust_plan(out['probabilities'],odds,verified=bool(out.get('probability_verified')),inputs_ready=quality['purchase_inputs_ready'])
     plan.update(protocol_id=PROTOCOL_ID,odds_observed_at=quotes['取得日時'],odds_source=quotes.get('source_url'),odds_fetched_at=quotes.get('取得完了日時'))
     out['purchase_plan']=plan

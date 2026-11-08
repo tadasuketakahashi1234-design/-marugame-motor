@@ -73,7 +73,7 @@ jobs:
       - name: Recover current-day history without replaying all prior archives
         run: python boat24_recover.py --today-only
       - name: Capture and publish all six improvements with repeated observations
-        run: BOAT24_LIVE_ODDS_WORKER=0 python boat24_cycle.py --seconds 90
+        run: BOAT24_SKIP_LEGACY=1 BOAT24_LIVE_ODDS_WORKER=0 python boat24_cycle.py --seconds 90
       - name: Verify all original forecast and comparison records
         run: |
           python - <<'PY'
@@ -105,7 +105,7 @@ jobs:
       - name: Validate local saved pre-cutoff revisions and purchase constraints
         run: python boat24_validate_saved.py
       - name: Keep collecting live previews and results while the runner is active
-        run: BOAT24_LIVE_ODDS_WORKER=0 python boat24_cycle.py --seconds 60
+        run: BOAT24_SKIP_LEGACY=1 BOAT24_LIVE_ODDS_WORKER=0 python boat24_cycle.py --seconds 60
       - name: Verify all-input public website and saved pre-cutoff revisions
         # A failed website verification must be visible as a failed workflow.
         continue-on-error: false

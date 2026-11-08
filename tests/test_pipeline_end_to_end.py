@@ -107,7 +107,7 @@ class PipelineEndToEnd(unittest.TestCase):
   from urllib.error import HTTPError
   from boat24_fast_context import collect
   def broken(url,*args):
-   if 'original_exhibition' in url:return 'レースコード,展示タイム\\n'
+   if 'original_exhibition' in url:return 'レースコード,展示タイム\n'
    raise HTTPError(url,503,'temporarily unavailable',{},None)
   with patch('boat24_fast_context.download',side_effect=broken):
    rows,errors=collect([(CODE,self.base())],AT)

@@ -160,9 +160,11 @@ def capture(model):
     if settled:ledger['settlement_updated_at']=result_at
     # Do not present a quote-only refresh as a fresh weather/feature collection.
     write_history(path,ledger,changed_codes=dirty);write_view(path,ledger)
-    old_index=json.loads(INDEX.read_text()) if INDEX.exists() else {}
+    # The publisher rebuilds the index from immutable day histories.
+    # Never let a missing or malformed derived index stop near-cutoff capture.
+    # In particular, do not rewrite the index with a stale copy here.
     paths=[str(path)]+([str(RESULT_CACHE)] if RESULT_CACHE.exists() else [])
-    atomic_write(INDEX,old_index);atomic_write(MANIFEST,{'paths':paths,'index':str(INDEX)})
+    atomic_write(MANIFEST,{'paths':paths,'index':str(INDEX)})
     import boat24_full_publish
     boat24_full_publish.main()
     print('Official quote capture:',json.dumps(ledger['quote_health'],ensure_ascii=False),'results:',json.dumps(ledger['result_health'],ensure_ascii=False),flush=True)

@@ -74,7 +74,7 @@ def _publish():
                             if rejected:trace.setdefault('rejected_context_updates',{})[code]=sorted(rejected)
                         original=dest;had_original=original.exists()
                         cache_dir=dest.parent.parent/'day_views';before_views=set(cache_dir.glob(day_key(dest)+'-*.json'))
-                        dest=write_history(dest,chosen,previous=remote);view=write_view(dest,chosen)
+                        dest=write_history(dest,chosen,previous=remote);view=write_view(dest,chosen,cache_root=work)
                         removed_views=before_views-set(cache_dir.glob(day_key(dest)+'-*.json'))
                         paths.extend([str(p.relative_to(work)) for p in history_files(dest)]+[str(p.relative_to(work)) for p in view_files(dest)]+[str(p.relative_to(work)) for p in removed_views])
                         if had_original and not original.exists():paths.append(str(original.relative_to(work)))

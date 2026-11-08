@@ -148,7 +148,9 @@ def write_view(history_file,doc):
     history=[]
     for name in [old.get('path'),*old.get('previous_paths',[])]:
         if name and name!=version.name and name not in history:history.append(name)
-    history=history[:32]
+    # Keep the latest view plus two rollback versions. Full immutable forecast
+    # history remains in full_history and is never pruned here.
+    history=history[:2]
     write_json(version,view);write_json(dest,view)
     write_json(pointer,{'path':version.name,'sha256':digest,'previous_paths':history})
     # Display caches are expendable; all immutable inputs remain in full_history.

@@ -112,6 +112,7 @@ class PipelineEndToEnd(unittest.TestCase):
   with patch('boat24_fast_context.download',side_effect=broken):
    rows,errors=collect([(CODE,self.base())],AT)
   self.assertTrue(errors['before_'+CODE].startswith('http_error:'))
+  self.assertEqual(rows[CODE]['source_checks']['before']['state'],'unconfirmed')
   self.assertTrue(errors['water_10'].startswith('http_error:'))
   self.assertEqual(rows[CODE]['source_checks']['original']['state'],'parsed_no_matching_races')
  def test_stage_records_failures_without_turning_them_into_success(self):

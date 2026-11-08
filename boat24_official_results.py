@@ -74,7 +74,7 @@ def collect_results(codes,now,cache_path=None,limit=8,priority_codes=()):
             raise ValueError('invalid result cache structure')
     except (OSError,ValueError,TypeError) as exc:
         # Result pages remain authoritative; a broken derived cache must not
-        # stop settlement. Preserve the bad file for forensic inspection.
+        # stop settlement. Keep a diagnostic before replacing the cache.
         print('Official result cache unreadable; recollecting:',type(exc).__name__,str(exc)[:120],flush=True)
         cache={'schema':1,'records':{},'failures':{}}
     wanted=[];errors={}

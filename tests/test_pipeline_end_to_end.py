@@ -154,6 +154,18 @@ class PipelineEndToEnd(unittest.TestCase):
     with patch.object(INDEX,'read_text',side_effect=ValueError('corrupt index')) as read:
      self.assertFalse(capture({}))
      read.assert_not_called()
+ def test_trifecta_quote_validator_rejects_invalid_price_and_missing_combination(self):
+  import itertools
+  from boat24_odds import validate_quotes
+  valid={'3連単_'+'-'.join(map(str,p)):'12.3' for p in itertools.permutations(range(1,7),3)}
+  self.assertTrue(validate_quotes(valid))
+  for value in ('nan','inf','0','-1','invalid'):
+   invalid=dict(valid,**{'3連単_1-2-3':value})
+   self.assertFalse(validate_quotes(invalid))
+  missing=dict(valid);missing.pop('3連単_1-2-3')
+  self.assertFalse(validate_quotes(missing))
+  extra=dict(valid);extra['3連単_1-1-2']='12.3'
+  self.assertFalse(validate_quotes(extra))
  def test_stage_records_failures_without_turning_them_into_success(self):
   from boat24_pipeline import stage
   trace={}

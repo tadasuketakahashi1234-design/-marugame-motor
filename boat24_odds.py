@@ -91,6 +91,17 @@ def attach(data,codes,now):
     return errors
 
 
+
+def validate_quotes(quotes):
+    """Require exactly the 120 legal, finite, positive trifecta quotes."""
+    import itertools, math
+    expected={'3連単_'+'-'.join(map(str,p)) for p in itertools.permutations(range(1,7),3)}
+    found={k for k in quotes if k.startswith('3連単_')}
+    if found!=expected:return False
+    try:return all(math.isfinite(float(quotes[k])) and float(quotes[k])>0 for k in expected)
+    except (TypeError,ValueError,OverflowError):return False
+
+
 def add_market(features,quotes,*unused):
     import math
     odds={k[4:]:float(v) for k,v in quotes.items() if k.startswith('3連単_') and float(v)>0}

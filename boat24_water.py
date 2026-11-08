@@ -156,7 +156,13 @@ def parse_venue_weather(body,venue,now):
  if measured>now+dt.timedelta(minutes=2) or now-measured>dt.timedelta(minutes=90):raise ValueError('Future or stale surface weather')
  compass=re.match(r'\s*(北東|南東|南西|北西|北|東|南|西)',c[3]);code={'北':1,'北東':2,'東':3,'南東':4,'南':5,'南西':6,'西':7,'北西':8}.get(compass[1]) if compass else None
  result={'venue':venue,'observed_at':now.isoformat(),'measured_at':measured.isoformat(),'wind_direction_literal':compass[1] if compass else None,'wind_quality_literal':re.search(r'[（(]([^）)]+)[）)]',c[3])[1] if re.search(r'[（(]([^）)]+)[）)]',c[3]) else None,'numeric':{}}
- for key,v in [('風向',code),('天候',c[1]),('波の高さ(cm)',c[2]),('風速(m)',c[4]),('気温(℃)',c[5]),('水温(℃)',c[6])]:
+ # Official weather can be a Japanese label rather than a numeric code.
+ # Keep the existing numeric encoding stable and reject unknown labels explicitly.
+ weather_label=re.sub(r'\\s+','',c[1])
+ weather_codes={'晴':1,'晴れ':1,'曇':2,'曇り':2,'くもり':2,'雨':3,'雪':4}
+ weather_code=number(weather_label)
+ if weather_code is None:weather_code=weather_codes.get(weather_label)
+ for key,v in [('風向',code),('天候',weather_code),('波の高さ(cm)',c[2]),('風速(m)',c[4]),('気温(℃)',c[5]),('水温(℃)',c[6])]:
   n=number(v)
   if n is not None:result['numeric'][key]=str(n)
  if len(result['numeric'])!=6:raise ValueError('Incomplete official surface weather')

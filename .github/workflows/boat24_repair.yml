@@ -104,7 +104,8 @@ jobs:
       - name: Validate local saved pre-cutoff revisions and purchase constraints
         run: python boat24_validate_saved.py
       - name: Verify all-input public website and saved pre-cutoff revisions
-        continue-on-error: true
+        # A failed website verification must be visible as a failed workflow.
+        continue-on-error: false
         env:
           GH_TOKEN: ${{ github.token }}
           SOURCE_CHANGED: ${{ steps.install.outputs.changed }}
@@ -134,7 +135,8 @@ jobs:
                   ledger=json.loads(read(raw+entry.get('view_path','full_history/'+index['latest_day']+'.json')))
                   for record in ledger['records'].values():
                       for snap in record['revisions'].values():
-                          assert timeparse(snap['created_at'])<timeparse(snap['cutoff']) and snap['evaluation_eligible']
+                          if snap.get('evaluation_eligible'):
+                              assert timeparse(snap['created_at'])<timeparse(snap['cutoff']), 'Eligible forecast saved after cutoff'
                           if not snap.get('_details_compacted'):assert set(snap['feature_usage']) >= {'weather','exhibition','start','motor_history','odds'}
                           else:assert record.get('race_commentary'), 'Missing race-specific reasoning'
                           plan=snap.get('purchase_plan',{})

@@ -4,13 +4,14 @@ from boat24_integrity import timeparse
 
 def latest_verified(code, record, snapshot):
     cutoff=timeparse(snapshot.get('cutoff'))
+    if not cutoff:return None
     chosen=None
     for attempt in (record.get('collection_attempts') or {}).values():
         evidence=(attempt.get('verified_context') or {}).get('previews') or {}
         st=evidence.get('st') or {}
         if st.get('レースコード')!=code:continue
         observed=timeparse(st.get('取得日時'))
-        if not observed or (cutoff and observed>=cutoff):continue
+        if not observed or observed>=cutoff:continue
         courses={}
         for lane in range(1,7):
             value=number(st.get(f'艇{lane}_コース'))

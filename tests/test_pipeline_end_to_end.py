@@ -126,6 +126,24 @@ class PipelineEndToEnd(unittest.TestCase):
     errors=attach(data,[CODE],AT)
   self.assertEqual(errors[CODE],'official_quote_stale_over_5min')
   self.assertNotIn(CODE,data['odds'])
+ def test_official_odds_partial_table_is_retried_once(self):
+  from boat24_odds import collect as collect_odds
+  observed=AT.isoformat()
+  with patch('boat24_odds.get',side_effect=['incomplete page','complete page']) as get:
+   with patch('boat24_odds.parse_odds',side_effect=[None,{'取得日時':observed,'レースコード':CODE}]) as parser:
+    rows,errors=collect_odds([CODE],AT)
+  self.assertEqual(errors,{})
+  self.assertEqual(rows[CODE]['レースコード'],CODE)
+  self.assertEqual(get.call_count,2)
+  self.assertEqual(parser.call_count,2)
+ def test_official_odds_still_rejects_two_incomplete_tables(self):
+  from boat24_odds import collect as collect_odds
+  with patch('boat24_odds.get',return_value='incomplete page') as get:
+   with patch('boat24_odds.parse_odds',return_value=None):
+    rows,errors=collect_odds([CODE],AT)
+  self.assertEqual(rows,{})
+  self.assertIn('再取得後',errors[CODE])
+  self.assertEqual(get.call_count,2)
  def test_stage_records_failures_without_turning_them_into_success(self):
   from boat24_pipeline import stage
   trace={}

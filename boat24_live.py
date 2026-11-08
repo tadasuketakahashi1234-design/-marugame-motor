@@ -103,9 +103,15 @@ def capture(model):
         quotes_job=pool.submit(collect,[c for _,c,_ in targets],now)
         context_job=pool.submit(collect_context,[(c,s) for _,c,s in targets],now) if targets else None
         result_job=pool.submit(collect_results,result_codes,now,limit=12,priority_codes=result_codes)
-        rows,errors=quotes_job.result()
-        contexts,context_errors=context_job.result() if context_job else ({},{})
-        result_rows,result_errors=result_job.result()
+        # Independent source failures must not suppress successful quote capture
+        # or block result settlement. Keep each exception visible in health.
+        def completed(job,source):
+            if job is None:return {},{}
+            try:return job.result()
+            except Exception as exc:return {},{source+'_collector_failed':type(exc).__name__+': '+str(exc)[:180]}
+        rows,errors=completed(quotes_job,'odds')
+        contexts,context_errors=completed(context_job,'context')
+        result_rows,result_errors=completed(result_job,'results')
     pipeline['stages']['acquire']={'seconds':round(time.perf_counter()-acquire_started,4),'completed_at':dt.datetime.now(JST).isoformat(),'state':'ok' if not errors and not context_errors else 'partial'}
     unconfirmed=[code for _,code,_ in targets if contexts.get(code,{}).get('source_checks',{}).get('before',{}).get('state')!='parsed']
     pipeline['unconfirmed_previews']=unconfirmed

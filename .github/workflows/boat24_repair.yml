@@ -130,9 +130,12 @@ jobs:
                   html=read(base+'boat24_results.html');assert 'fullForecastPanel' in html and 'boat24_full_ui.js' in html and 'fullReportGroup' in html and 'fullHealth' in html and 'fullVenueCoverage' in html and 'fullLearning' in html and 'boat24_integrated_ui.js' in html
                   integrated=read(base+'boat24_integrated_ui.js');assert 'factorRows' in integrated and '展示・進入・足の詳細' in integrated
                   script=read(base+'boat24_full_ui.js');assert all(marker in script for marker in ('contextOrder','renderResultPanel','feature_usage','purchaseView','purchaseSnapshot','expected_return','estimated_roi','displayAudit','renderWater',PURCHASE_POLICY)), 'Published UI does not contain the current purchase policy'
-                  index=json.loads(read(raw+'boat24_full_index.json'));assert index['model']==VERSION
+                  index=json.loads(read(raw+'boat24_full_index.json'))
+                  assert isinstance(index,dict) and index.get('model')==VERSION, 'Published forecast model missing or outdated'
+                  assert isinstance(index.get('days'),dict) and index.get('latest_day') in index['days'], 'Latest forecast day missing from public index'
                   entry=index['days'][index['latest_day']]
-                  ledger=json.loads(read(raw+entry.get('view_path','full_history/'+index['latest_day']+'.json')))
+                  ledger=json.loads(read(raw+entry.get('view_path','day_views/'+index['latest_day']+'.json')))
+                  assert isinstance(ledger,dict) and isinstance(ledger.get('records'),dict), 'Published forecast view has no valid records'
                   for record in ledger['records'].values():
                       for snap in record['revisions'].values():
                           if snap.get('evaluation_eligible'):

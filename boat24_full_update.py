@@ -272,11 +272,18 @@ def main():
     if day!=now.date().isoformat():raise RuntimeError('JST date changed during collection')
     if now.hour>=8 and not data['cards'] and not data['results'] and not data['payouts']:raise RuntimeError('All race sources unavailable; existing all-input forecasts kept')
     candidates=[]
+    candidate_funnel={'cards':len(data['cards']),'with_deadline':0,'before_freeze':0,'within_30_minutes':0,'selected':0,'missing_deadline':0,'past_freeze':0,'result_known':0}
     from boat24_context import deadline
     for code,card in data['cards'].items():
         limit=next((deadline(data.get(k,{}).get(code),day) for k in ('odds','ex','st','title') if deadline(data.get(k,{}).get(code),day)),None)
-        if limit and now<limit-dt.timedelta(minutes=2) and not data['results'].get(code) and not data['payouts'].get(code):candidates.append((limit,code))
-    candidates=[code for limit,code in sorted(candidates) if limit<=now+dt.timedelta(minutes=30)][:32]
+        if not limit:candidate_funnel['missing_deadline']+=1;continue
+        candidate_funnel['with_deadline']+=1
+        if data['results'].get(code) or data['payouts'].get(code):candidate_funnel['result_known']+=1;continue
+        if now>=limit-dt.timedelta(minutes=2):candidate_funnel['past_freeze']+=1;continue
+        candidate_funnel['before_freeze']+=1
+        if limit<=now+dt.timedelta(minutes=30):candidate_funnel['within_30_minutes']+=1;candidates.append((limit,code))
+    candidates=[code for limit,code in sorted(candidates)][:32]
+    candidate_funnel['selected']=len(candidates)
     data['official']=collect_official(candidates,data['cards'],now,data.get('title'))
     from boat24_odds import attach as attach_live_odds
     if data.get('_live_collection'):data['odds_errors']=attach_live_odds(data,candidates,dt.datetime.now(JST))
@@ -325,7 +332,7 @@ def main():
         missing=(snap.get('input_quality') or {}).get('missing_preview_lanes') or {}
         for kind,lanes in missing.items():
             if isinstance(lanes,list):missing_preview[kind]+=len(lanes)
-    ledger['updated_at']=dt.datetime.now(JST).isoformat();ledger['diagnostics']={'new_forecasts':made,'updated_forecasts':updated,'new_settlements':settled,'skipped':skipped,'source_errors':dict(ERRORS),'purchase_status_counts':dict(purchase_statuses),'missing_preview_lane_counts':dict(missing_preview),'record_count':len(records)}
+    ledger['updated_at']=dt.datetime.now(JST).isoformat();ledger['diagnostics']={'new_forecasts':made,'updated_forecasts':updated,'new_settlements':settled,'skipped':skipped,'source_errors':dict(ERRORS),'purchase_status_counts':dict(purchase_statuses),'missing_preview_lane_counts':dict(missing_preview),'record_count':len(records),'candidate_funnel':candidate_funnel,'odds_collection_errors':data.get('odds_errors',{})}
     path=write_history(path,ledger);write_view(path,ledger);touched=[str(path)]
     # Retry unsettled previous dates without requiring their race cards.
     pending=[]

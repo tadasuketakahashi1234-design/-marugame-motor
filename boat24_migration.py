@@ -11,7 +11,10 @@ stop=Path(sys.argv[1])
 while not stop.exists():
  try:
   boat24_daily.main();boat24_compare.main();boat24_full_update.main()
-  m=json.loads(boat24_full_update.MANIFEST.read_text());m['paths']+=['omura/docs/boat24_ledger.json','omura/docs/boat24_comparison.json'];atomic_write(boat24_full_update.MANIFEST,m);boat24_full_publish.main()
+  m=json.loads(boat24_full_update.MANIFEST.read_text())
+  for name in ('omura/docs/boat24_ledger.json','omura/docs/boat24_comparison.json'):
+   if Path(name).is_file() and name not in m['paths']:m['paths'].append(name)
+  atomic_write(boat24_full_update.MANIFEST,m);boat24_full_publish.main()
  except Exception as e:print('Previous collector retry:',str(e),flush=True)
  for _ in range(30):
   if stop.exists():break

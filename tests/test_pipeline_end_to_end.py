@@ -95,6 +95,14 @@ class PipelineEndToEnd(unittest.TestCase):
   self.assertEqual(rows[CODE]['source_checks']['original']['state'],'parsed_no_matching_races')
   self.assertEqual(rows[CODE]['source_checks']['original']['matched_races'],0)
   self.assertNotIn('original_today',errors)
+ def test_duplicate_exhibition_race_codes_are_quarantined(self):
+  from boat24_fast_context import collect
+  csv_text='レースコード,展示タイム\\n'+CODE+',6.70\\n'+CODE+',6.99\\n'
+  with patch('boat24_fast_context.download',return_value=csv_text):
+   rows,errors=collect([(CODE,self.base())],AT)
+  self.assertNotIn('original',rows[CODE])
+  self.assertEqual(rows[CODE]['source_checks']['original']['duplicate_matching_race_codes'],1)
+  self.assertEqual(rows[CODE]['source_checks']['original']['matched_races'],0)
  def test_stage_records_failures_without_turning_them_into_success(self):
   from boat24_pipeline import stage
   trace={}

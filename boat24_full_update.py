@@ -314,7 +314,13 @@ def main():
         if day_key(old_path)>=day:continue
         old=read_history(old_path)
         if day_key(old_path)>=(now.date()-dt.timedelta(days=14)).isoformat() or any(not r.get('result') for r in old.get('records',{}).values()):pending.append((old_path,old))
-    old_index=json.loads(INDEX.read_text()) if INDEX.exists() else {};cursor=old_index.get('backfill_cursor','')
+    try:
+        old_index=json.loads(INDEX.read_text()) if INDEX.exists() else {}
+    except (OSError,ValueError,TypeError):
+        old_index={}
+    if not isinstance(old_index,dict):old_index={}
+    cursor=old_index.get('backfill_cursor','')
+    if not isinstance(cursor,str) or not __import__('re').fullmatch(r'\d{4}-\d{2}-\d{2}',cursor):cursor=''
     pending=[p for p in pending if day_key(p[0])>cursor]+[p for p in pending if day_key(p[0])<=cursor]
     for old_path,old in pending[:14]:
         # Snapshot before settlement: unchanged compressed race archives need no rewrite.

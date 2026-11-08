@@ -167,4 +167,7 @@ def write_view(history_file,doc):
 def view_files(history_file):
     path=Path(history_file);day=day_key(path);directory=path.parent.parent/'day_views';pointer=directory/(day+'.pointer.json')
     info=read_json(pointer)
-    return [directory/(day+'.json'),pointer,directory/info['path']]
+    name=info.get('path') if isinstance(info,dict) else None
+    if not isinstance(name,str) or not re.fullmatch(re.escape(day)+r'-[0-9a-f]{16}\.json',name):
+        raise ValueError('Invalid day view pointer for '+day)
+    return [directory/(day+'.json'),pointer,directory/name]

@@ -212,7 +212,16 @@ def merge_cache(remote,incoming):
  chosen=copy.deepcopy(remote if remote.get('updated_at','')>incoming.get('updated_at','') else incoming)
  races=copy.deepcopy(remote.get('races',{}))
  for code,rec in incoming.get('races',{}).items():
-  if code not in races or races[code].get('observed_at','')<=rec.get('observed_at',''):races[code]=copy.deepcopy(rec)
+  previous=races.get(code,{})
+  newer=rec if previous.get('observed_at','')<=rec.get('observed_at','') else previous
+  older=previous if newer is rec else rec
+  combined=copy.deepcopy(newer)
+  # A later partial/empty scrape must not erase an earlier verified
+  # exhibition observation for this exact race and date.
+  previews=copy.deepcopy(older.get('live_previews') or {})
+  previews.update(copy.deepcopy(newer.get('live_previews') or {}))
+  if previews:combined['live_previews']=previews
+  races[code]=combined
  chosen['races']=races
  chosen['venue_weather']=copy.deepcopy(remote.get('venue_weather',{}))
  for v,row in incoming.get('venue_weather',{}).items():

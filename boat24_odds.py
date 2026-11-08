@@ -74,9 +74,14 @@ def attach(data,codes,now):
     rows,errors=collect(codes,now)
     for code,row in rows.items():
         prior=data.get('odds',{}).get(code,{})
-        if dt.timedelta(0)<=dt.datetime.now(JST)-timeparse(row['取得日時'])<=dt.timedelta(minutes=5):
+        observed=timeparse(row.get('取得日時'))
+        age=dt.datetime.now(JST)-observed if observed else None
+        if age is not None and dt.timedelta(0)<=age<=dt.timedelta(minutes=5):
             # Cutoff comes from the independently saved race schedule.
             data.setdefault('odds',{})[code]={**{k:v for k,v in prior.items() if not k.startswith('3連単_')},**row}
+        else:
+            # A successfully parsed but unusable quote must not disappear silently.
+            errors[code]='official_quote_timestamp_missing' if age is None else ('official_quote_timestamp_future' if age<dt.timedelta(0) else 'official_quote_stale_over_5min')
     return errors
 
 

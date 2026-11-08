@@ -174,6 +174,12 @@ def collect(codes,cards,now,titles=None):
     if rec.get(key):rec[key+'_observed_at']=rec['observed_at']
     elif old.get(key):
      rec[key]=old[key];rec[key+'_observed_at']=old.get(key+'_observed_at',old.get('observed_at'))
+   # A later partial official response must not erase previously verified
+   # exhibition fields for the same race. Keep each kind independently.
+   if old.get('live_previews'):
+    merged=dict(old['live_previews'])
+    merged.update(rec.get('live_previews') or {})
+    rec['live_previews']=merged
    cache['races'][code]=rec
    for key in ('comments_error','maintenance_error'):
     if rec.get(key):errors[code+'_'+key]=rec[key]

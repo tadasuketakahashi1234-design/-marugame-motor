@@ -113,6 +113,13 @@ def capture(model):
     changed=0;dirty=set()
     for _,code,s in targets:
         row_trace={'attempt_at':dt.datetime.now(JST).isoformat(),'cutoff':s.get('cutoff'),'source_checks':contexts.get(code,{}).get('source_checks',{}),'odds_error':errors.get(code)};pipeline['races'][code]=row_trace
+        # Keep verified official entry independently of the quote/repricing result.
+        # This is display-only evidence and does not change a prediction.
+        row_trace['verified_context']={
+            'previews':copy.deepcopy(contexts.get(code,{}).get('previews',{})),
+            'water':copy.deepcopy(contexts.get(code,{}).get('water',{})),
+            'before_body_sha256':contexts.get(code,{}).get('body_sha256'),
+        }
         if code not in rows:
             # Preserve verified context-acquisition evidence even without a quote.
             # Never fabricate a forecast or advance its prediction timestamp.
@@ -120,13 +127,6 @@ def capture(model):
             row_trace['exhibition_parsed']=bool(contexts.get(code,{}).get('previews',{}).get('ex'))
             row_trace['entry_parsed']=bool(contexts.get(code,{}).get('previews',{}).get('st'))
             row_trace['weather_parsed']=checks.get('water',{}).get('state')=='parsed'
-            # Persist the actual verified inputs in the append-only attempt log,
-            # so a missing quote cannot erase evidence needed for root-cause audit.
-            row_trace['verified_context']={
-                'previews':copy.deepcopy(contexts.get(code,{}).get('previews',{})),
-                'water':copy.deepcopy(contexts.get(code,{}).get('water',{})),
-                'before_body_sha256':contexts.get(code,{}).get('body_sha256'),
-            }
             row_trace['state']='odds_unconfirmed_context_logged'
             continue
         compute_started=time.perf_counter();row_trace['official_quote_at']=rows[code].get('取得日時');row_trace['quote_received_at']=rows[code].get('取得完了日時')

@@ -113,13 +113,6 @@ def capture(model):
     changed=0;dirty=set()
     for _,code,s in targets:
         row_trace={'attempt_at':dt.datetime.now(JST).isoformat(),'cutoff':s.get('cutoff'),'source_checks':contexts.get(code,{}).get('source_checks',{}),'odds_error':errors.get(code)};pipeline['races'][code]=row_trace
-        # Independent of market quotes: persist verified official exhibition
-        # evidence for the public view, without mutating frozen forecasts.
-        row_trace['verified_context']={
-            'previews':copy.deepcopy(contexts.get(code,{}).get('previews',{})),
-            'water':copy.deepcopy(contexts.get(code,{}).get('water',{})),
-            'before_body_sha256':contexts.get(code,{}).get('body_sha256'),
-        }
         if code not in rows:
             # Preserve verified context-acquisition evidence even without a quote.
             # Never fabricate a forecast or advance its prediction timestamp.

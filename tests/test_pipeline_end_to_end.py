@@ -144,6 +144,16 @@ class PipelineEndToEnd(unittest.TestCase):
   self.assertEqual(rows,{})
   self.assertIn('再取得後',errors[CODE])
   self.assertEqual(get.call_count,2)
+ def test_live_capture_does_not_read_or_overwrite_broken_index(self):
+  from boat24_live import capture
+  from boat24_full_update import INDEX
+  # Capture exits early without targets; the index must remain untouched.
+  with tempfile.TemporaryDirectory() as temp:
+   from boat24_full_update import DIRECTORY
+   with patch('boat24_full_update.DIRECTORY',Path(temp)):
+    with patch.object(INDEX,'read_text',side_effect=ValueError('corrupt index')) as read:
+     self.assertFalse(capture({}))
+     read.assert_not_called()
  def test_stage_records_failures_without_turning_them_into_success(self):
   from boat24_pipeline import stage
   trace={}

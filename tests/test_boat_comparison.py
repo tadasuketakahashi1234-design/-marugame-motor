@@ -28,3 +28,20 @@ class SixBoatComparisonTests(unittest.TestCase):
   self.assertEqual(build(s)['boats'][0]['course'],2)
   s['input_snapshot']['previews']['st']['レースコード']='202611050408'
   self.assertIsNone(build(s)['boats'][0]['course'])
+
+ def test_display_verified_entry_when_quotes_missing_without_changing_prediction(self):
+  from boat24_history_io import compact_day
+  s=self.snapshot();s.update(evaluation_eligible=True,cutoff='2026-11-05T13:41:00+09:00',phase='initial')
+  original=copy.deepcopy(s)
+  observed={'レースコード':s['race_code'],'取得日時':'2026-11-05T13:35:00+09:00',**{f'艇{i}_コース':str(7-i) for i in range(1,7)}}
+  rec={'race_code':s['race_code'],'revisions':{'s':s},'collection_attempts':{'a':{'state':'odds_unconfirmed_context_logged','verified_context':{'previews':{'st':observed}}}}}
+  view=compact_day({'records':{s['race_code']:rec}})['records'][s['race_code']]
+  self.assertEqual([b['course'] for b in view['boat_comparison']['boats']],[6,5,4,3,2,1])
+  self.assertFalse(view['latest_verified_entry']['prediction_used'])
+  self.assertEqual(s,original)
+ def test_reject_unverified_duplicate_or_post_cutoff_entry(self):
+  from boat24_live_observation import latest_verified
+  s=self.snapshot();s['cutoff']='2026-11-05T13:41:00+09:00'
+  for stamp,courses in [('2026-11-05T13:42:00+09:00',list(range(1,7))),('2026-11-05T13:35:00+09:00',[1,1,3,4,5,6])]:
+   st={'レースコード':s['race_code'],'取得日時':stamp,**{f'艇{i}_コース':str(v) for i,v in enumerate(courses,1)}}
+   self.assertIsNone(latest_verified(s['race_code'],{'collection_attempts':{'x':{'verified_context':{'previews':{'st':st}}}}},s))

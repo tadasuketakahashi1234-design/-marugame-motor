@@ -112,7 +112,10 @@ def capture(model):
         rows,errors=completed(quotes_job,'odds')
         contexts,context_errors=completed(context_job,'context')
         result_rows,result_errors=completed(result_job,'results')
-    pipeline['stages']['acquire']={'seconds':round(time.perf_counter()-acquire_started,4),'completed_at':dt.datetime.now(JST).isoformat(),'state':'ok' if not errors and not context_errors else 'partial'}
+    pipeline['stages']['acquire']={'seconds':round(time.perf_counter()-acquire_started,4),'completed_at':dt.datetime.now(JST).isoformat(),'state':'ok' if not errors and not context_errors and not result_errors else 'partial',
+        'source_health':{'odds':{'requested':len(targets),'received':len(rows),'errors':errors},
+                         'context':{'requested':len(targets),'received':len(contexts),'errors':context_errors},
+                         'results':{'requested':len(result_codes),'received':len(result_rows),'errors':result_errors}}}
     unconfirmed=[code for _,code,_ in targets if contexts.get(code,{}).get('source_checks',{}).get('before',{}).get('state')!='parsed']
     pipeline['unconfirmed_previews']=unconfirmed
     if unconfirmed:pipeline['stages']['acquire']['state']='partial'

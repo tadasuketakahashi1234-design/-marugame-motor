@@ -314,7 +314,18 @@ def main():
         settled+=settle(rec,data['results'].get(code),data['payouts'].get(code),dt.datetime.now(JST))
     ledger['catalog']=catalog(data,records,dt.datetime.now(JST))
     ledger['health']=health(data,ledger['catalog'],{**ERRORS,**official_errors,**data.get('odds_errors',{}),**data.get('supplement_errors',{}),**data.get('official',{}).get('errors',{})},dt.datetime.now(JST))
-    ledger['updated_at']=dt.datetime.now(JST).isoformat();ledger['diagnostics']={'new_forecasts':made,'updated_forecasts':updated,'new_settlements':settled,'skipped':skipped,'source_errors':dict(ERRORS)}
+    from collections import Counter
+    purchase_statuses=Counter()
+    missing_preview=Counter()
+    for rec in records.values():
+        snap=latest(rec)
+        if not snap:continue
+        plan=snap.get('purchase_plan') or {}
+        purchase_statuses[plan.get('status','unknown')]+=1
+        missing=(snap.get('input_quality') or {}).get('missing_preview_lanes') or {}
+        for kind,lanes in missing.items():
+            if isinstance(lanes,list):missing_preview[kind]+=len(lanes)
+    ledger['updated_at']=dt.datetime.now(JST).isoformat();ledger['diagnostics']={'new_forecasts':made,'updated_forecasts':updated,'new_settlements':settled,'skipped':skipped,'source_errors':dict(ERRORS),'purchase_status_counts':dict(purchase_statuses),'missing_preview_lane_counts':dict(missing_preview),'record_count':len(records)}
     path=write_history(path,ledger);write_view(path,ledger);touched=[str(path)]
     # Retry unsettled previous dates without requiring their race cards.
     pending=[]

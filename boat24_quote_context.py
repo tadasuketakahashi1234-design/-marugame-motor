@@ -17,7 +17,7 @@ def newest_context(record):
         created=timeparse(snapshot.get('created_at'));cutoff=timeparse(snapshot.get('cutoff'));context=context_time(snapshot)
         if snapshot.get('evaluation_eligible') is True and created and cutoff and context and context<=created<cutoff and len(snapshot.get('input_snapshot',{}).get('features',[]))==6:
             candidates.append(snapshot)
-    return max(candidates,key=lambda s:(information_level(s),context_time(s),timeparse(s['created_at']),s['id'])) if candidates else None
+    return max(candidates,key=lambda s:(context_time(s),information_level(s),timeparse(s['created_at']),s['id'])) if candidates else None
 
 
 def reject_obsolete_reprices(remote,incoming):

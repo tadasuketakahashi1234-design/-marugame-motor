@@ -65,7 +65,7 @@ def collect(targets,now):
             if not trace['exhibition_parsed'] or not trace['entry_parsed']:trace['state']='verified_page_preview_incomplete'
         return kind,key,value,error,trace
     tasks=[('before',code) for code,s in targets]+[('water',v) for v in sorted({c[8:10] for c,s in targets})]+[('original','today')]
-    with ThreadPoolExecutor(max_workers=8) as pool:
+    with ThreadPoolExecutor(max_workers=3) as pool:
         for kind,key,value,error,trace in pool.map(job,tasks):
             for code in rows:
                 if kind=='original' or kind=='before' and code==key or kind=='water' and code[8:10]==key:rows[code].setdefault('source_checks',{})[kind]=trace

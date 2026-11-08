@@ -58,9 +58,15 @@ def collect(codes,now):
         url=f'https://www.boatrace.jp/owpc/pc/race/odds3t?hd={code[:8]}&jcd={code[8:10]}&rno={int(code[-2:])}'
         try:
             # A new fetch timestamp never makes an old official update fresh.
-            doc=get(url+'&v='+str(int(dt.datetime.now(JST).timestamp()//20)))
+            token=str(int(dt.datetime.now(JST).timestamp()//20))
+            doc=get(url+'&v='+token)
             row=parse_odds(doc,code,dt.datetime.now(JST))
-            if not row:return code,None,'公式オッズの対象R・120通り・更新時刻を照合できません'
+            if not row:
+                # The official page can be mid-update. One bounded refetch
+                # recovers transient partial tables without accepting bad data.
+                doc=get(url+'&v='+token+'&retry=1')
+                row=parse_odds(doc,code,dt.datetime.now(JST))
+            if not row:return code,None,'公式オッズの対象R・120通り・更新時刻を再取得後も照合できません'
             row['source_url']=url;return code,row,None
         except Exception as exc:return code,None,str(exc)[:160]
     with ThreadPoolExecutor(max_workers=8) as pool:

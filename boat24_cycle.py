@@ -2,6 +2,7 @@
 import argparse
 import datetime as dt
 import json
+import os
 import time
 from pathlib import Path
 from boat24_integrity import JST,atomic_write
@@ -14,7 +15,7 @@ def _main(seconds=180):
  while True:
   if attempt and dt.datetime.now(JST).hour<7:break
   tick=time.monotonic();attempt+=1
-  legacy=dt.datetime.now(JST).hour>=8
+  legacy=dt.datetime.now(JST).hour>=8 and os.environ.get('BOAT24_SKIP_LEGACY')!='1'
   legacy_error=None
   if legacy:
    try:boat24_daily.main();boat24_compare.main()

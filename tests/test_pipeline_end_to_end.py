@@ -191,6 +191,15 @@ class PipelineEndToEnd(unittest.TestCase):
    errors=attach(data,[CODE],AT)
   self.assertEqual(errors,{})
   self.assertEqual(data['odds'][CODE]['取得日時'],observed)
+ def test_settlement_queue_includes_oldest_unresolved_races(self):
+  from boat24_live import select_result_targets
+  start=dt.datetime(2026,11,4,10,0,tzinfo=JST)
+  targets=[(start+dt.timedelta(minutes=i),f'2026110410{i:02d}') for i in range(20)]
+  selected=select_result_targets(targets)
+  self.assertEqual(len(selected),12)
+  self.assertEqual(selected[:8],[code for _,code in targets[-8:][::-1]])
+  self.assertEqual(selected[-4:],[code for _,code in targets[:4]])
+  self.assertEqual(select_result_targets(targets[:3]),[code for _,code in targets[:3][::-1]])
  def test_stage_records_failures_without_turning_them_into_success(self):
   from boat24_pipeline import stage
   trace={}

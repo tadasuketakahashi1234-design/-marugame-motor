@@ -103,6 +103,17 @@ class PipelineEndToEnd(unittest.TestCase):
   self.assertNotIn('original',rows[CODE])
   self.assertEqual(rows[CODE]['source_checks']['original']['duplicate_matching_race_codes'],1)
   self.assertEqual(rows[CODE]['source_checks']['original']['matched_races'],0)
+ def test_preview_http_failure_is_separate_from_csv_parse_failure(self):
+  from urllib.error import HTTPError
+  from boat24_fast_context import collect
+  def broken(url,*args):
+   if 'original_exhibition' in url:return 'レースコード,展示タイム\\n'
+   raise HTTPError(url,503,'temporarily unavailable',{},None)
+  with patch('boat24_fast_context.download',side_effect=broken):
+   rows,errors=collect([(CODE,self.base())],AT)
+  self.assertTrue(errors['before_'+CODE].startswith('http_error:'))
+  self.assertTrue(errors['water_10'].startswith('http_error:'))
+  self.assertEqual(rows[CODE]['source_checks']['original']['state'],'parsed_no_matching_races')
  def test_stage_records_failures_without_turning_them_into_success(self):
   from boat24_pipeline import stage
   trace={}

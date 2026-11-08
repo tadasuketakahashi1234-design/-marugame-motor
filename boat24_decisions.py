@@ -39,9 +39,9 @@ def outcome(snapshot,freeze):
     except (KeyError,TypeError):valid=False
     return ('buy','ready') if valid else ('pending','invalid_saved_allocation')
 
-def update(doc,view,archives,observed_at,proof):
+def update(doc,view,archives,observed_at,proof,*,inplace=False):
     """Only matched public payloads yield receipts; later skips override prior buys."""
-    now=timeparse(observed_at);out=copy.deepcopy(doc or {});out.setdefault('protocol',{**PROTOCOL,'started_at':observed_at});records=out.setdefault('records',{});start=timeparse(out['protocol']['started_at'])
+    now=timeparse(observed_at);out=(doc if doc is not None else {}) if inplace else copy.deepcopy(doc or {});out.setdefault('protocol',{**PROTOCOL,'started_at':observed_at});records=out.setdefault('records',{});start=timeparse(out['protocol']['started_at'])
     for code,item in view.get('catalog',{}).items():
         cut=timeparse(item.get('cutoff'));rec=archives.get(code,{})
         if not cut:

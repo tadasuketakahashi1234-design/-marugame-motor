@@ -55,7 +55,11 @@ def collect(targets,now):
                 return kind,key,surface,None
             u='https://boatracecsv.github.io/data/previews/original_exhibition/'+now.strftime('%Y/%m/%d')+'.csv?v='+token
             body=download(u,4).lstrip('\ufeff')
-            return kind,key,{r['レースコード']:r for r in csv.DictReader(io.StringIO(body)) if r.get('レースコード') in rows},None
+            reader=csv.DictReader(io.StringIO(body))
+            if not reader.fieldnames or 'レースコード' not in reader.fieldnames:
+                raise ValueError('Original exhibition CSV missing レースコード column')
+            parsed={r['レースコード']:r for r in reader if r.get('レースコード') in rows}
+            return kind,key,parsed,None
         except Exception as e:return kind,key,None,str(e)[:160]
     def job(task):
         started=dt.datetime.now(JST).isoformat();tick=time.perf_counter();kind,key,value,error=acquire(task)

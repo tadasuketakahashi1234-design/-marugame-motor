@@ -11,7 +11,7 @@ class BeforeinfoRetryTests(unittest.TestCase):
         self.now=dt.datetime(2026,11,8,10,10,tzinfo=JST)
         self.snapshot={'input_snapshot':{'card':{}},'boat_identities':[]}
     def _run(self,download):
-        with patch.object(fast,'download',side_effect=download),patch.object(fast,'parse_before',return_value={'verified':True}),patch.object(fast,'parse_live_previews',return_value={'st':{'レースコード':self.code}}):
+        with patch.object(fast,'download',side_effect=download),patch.object(fast,'parse_before',return_value={'verified':True}),patch.object(fast,'parse_live_previews',return_value={'st':{'レースコード':self.code},'ex':{'レースコード':self.code}}):
             return fast.collect([(self.code,self.snapshot)],self.now)
     def test_timeout_then_success_keeps_verified_entry(self):
         def response(url,timeout=5):

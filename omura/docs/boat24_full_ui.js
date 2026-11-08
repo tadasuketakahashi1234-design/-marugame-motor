@@ -128,7 +128,7 @@ function renderComparison(items){
  }).join('')+'</tbody></table>';
 }
 function records(){const venue=Number($('venue').value);return Object.values(data?.records||{}).filter(r=>!venue||Number(r.venue)===venue).sort((a,b)=>b.race_code.localeCompare(a.race_code))}
-function catalogRows(){const v=Number($('venue').value);return Object.values(data?.catalog||index?.catalogs?.[$('fullDate').value]||{}).filter(r=>!v||r.venue===v).sort((a,b)=>a.race_code.localeCompare(b.race_code))}
+function catalogRows(){const v=Number($('venue').value);return Object.values(data?.catalog||index?.catalogs?.[$('fullDate').value]||{}).filter(r=>!v||Number(r.venue)===v).sort((a,b)=>a.race_code.localeCompare(b.race_code))}
 let quickRows=[],activeRace=null,quickScope='',raceObserver=null,manualRaceUntil=0;
 function syncQuickSelection(){
  const pos=quickRows.findIndex(x=>x.race_code===activeRace);
@@ -306,7 +306,7 @@ function retainNewerView(next,previous){
  return next;
 }
 async function loadDay(){
- const ticket=++loading;try{const day=$('fullDate').value;if(!day)return;const next=await getJSON(index.days?.[day]?.view_path||'full_history/'+day+'.json');if(ticket!==loading)return;if(next.history_storage&&!next.records)throw Error('表示用データの更新待ちです。更新ボタンで再取得してください');const keep=selected&&next.records?.[selected];data=retainNewerView(next,data);loadedDay=day;if(!keep)selected=null;if(!keep)$('fullDetail').innerHTML='<span class="muted">レースの「使った情報を見る」で入力の使用状況と更新履歴を確認できます。</span>';render()}catch(e){$('fullStatus').textContent=e.message;throw e;}
+ const ticket=++loading;try{const day=$('fullDate').value;if(!day)return;const next=await getJSON(index.days?.[day]?.view_path||'full_history/'+day+'.json');if(ticket!==loading)return;if(next.history_storage&&!next.records)throw Error('表示用データの更新待ちです。更新ボタンで再取得してください');const keep=selected&&next.records?.[selected];data=retainNewerView(next,loadedDay===day?data:null);loadedDay=day;if(!keep)selected=null;if(!keep)$('fullDetail').innerHTML='<span class="muted">レースの「使った情報を見る」で入力の使用状況と更新履歴を確認できます。</span>';render()}catch(e){$('fullStatus').textContent=e.message;throw e;}
 }
 async function load(force=false){
  if(busy)return;busy=true;

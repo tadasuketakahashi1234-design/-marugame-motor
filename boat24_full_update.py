@@ -329,7 +329,7 @@ def main():
     if not isinstance(old_index,dict):old_index={}
     cursor=old_index.get('backfill_cursor','')
     if not isinstance(cursor,str) or not __import__('re').fullmatch(r'\d{4}-\d{2}-\d{2}',cursor):cursor=''
-    pending=[p for p in pending if day_key(p[0])>cursor]+[p for p in pending if day_key(p[0])<=cursor]
+    pending=[item for item in pending if day_key(item[0])>cursor]+[item for item in pending if day_key(item[0])<=cursor]
     for old_path,old in pending[:14]:
         # Snapshot before settlement: unchanged compressed race archives need no rewrite.
         import copy

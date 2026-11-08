@@ -99,8 +99,11 @@ def _publish():
                 # The backfill cursor is a rotating scan position, not a
                 # monotonically increasing watermark. Preserve the collector's
                 # new position, including a deliberate wrap to older dates.
-                if not isinstance(index.get('backfill_cursor'),str):
-                    index['backfill_cursor']=remote_index.get('backfill_cursor',old_index.get('backfill_cursor',''))
+                # build_index has no cursor; use the collector's newly
+                # advanced rotating position, not the stale remote value.
+                collector_cursor=old_index.get('backfill_cursor')
+                remote_cursor=remote_index.get('backfill_cursor')
+                index['backfill_cursor']=collector_cursor if isinstance(collector_cursor,str) else (remote_cursor if isinstance(remote_cursor,str) else '')
                 if 'recovery' in remote_index:index['recovery']=remote_index['recovery']
                 elif 'recovery' in old_index:index['recovery']=old_index['recovery']
                 atomic_write(work/manifest['index'],index);paths.append(manifest['index'])

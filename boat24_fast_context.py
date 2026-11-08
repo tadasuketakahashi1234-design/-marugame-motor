@@ -34,7 +34,16 @@ def collect(targets,now):
         try:
             if kind=='before':
                 s=dict(targets)[key];u=f'https://www.boatrace.jp/owpc/pc/race/beforeinfo?hd={key[:8]}&jcd={key[8:10]}&rno={int(key[-2:])}'
-                body=download(u+'&v='+token);at=dt.datetime.now(JST).isoformat();card=card_for(s);before=parse_before(body,key,card)
+                # Retry transient official-site timeouts with a strict bounded budget.
+                # The second attempt uses a fresh connection, never a stale cache.
+                try:
+                    body=download(u+'&v='+token,timeout=6)
+                except (TimeoutError, OSError) as first_error:
+                    try:
+                        body=download(u+'&v='+token+'&retry=1',timeout=8)
+                    except (TimeoutError, OSError) as second_error:
+                        raise OSError(f'beforeinfo retry exhausted: {type(first_error).__name__}; {type(second_error).__name__}') from second_error
+                at=dt.datetime.now(JST).isoformat();card=card_for(s);before=parse_before(body,key,card)
                 if not before:raise ValueError('Race/date/all six racer identities not verified')
                 preview=parse_live_previews(body,key,card,at)
                 for row in preview.values():row['source_url']=u

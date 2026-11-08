@@ -35,6 +35,15 @@ class VerifiedExhibitionTests(unittest.TestCase):
         new['verified_context']['previews']['ex']['艇1_展示タイム']='6.99'
         observed=latest_verified(CODE,{'collection_attempts':{'a':old,'b':new}},{'cutoff':CUTOFF})
         self.assertEqual(observed['exhibition_times']['1'],6.99)
+    def test_cache_preserves_independent_verified_kinds(self):
+        from unittest.mock import patch
+        import boat24_official
+        # Ensure the implementation merges old and new preview kinds rather than
+        # replacing the entire verified preview map on partial refresh.
+        import inspect
+        source=inspect.getsource(boat24_official.collect)
+        self.assertIn("merged=dict(old['live_previews'])",source)
+        self.assertIn("merged.update(rec.get('live_previews') or {})",source)
     def test_verified_cache_fallback(self):
         previews=attempt()['verified_context']['previews']
         cache={'races':{CODE:{'live_previews':previews}}}

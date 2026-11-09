@@ -20,6 +20,8 @@ jobs:
     runs-on: ubuntu-latest
     timeout-minutes: 45
     env:
+      # Publish current forecasts before costly historical receipt reconciliation.
+      BOAT24_DEFER_PUBLIC_RECEIPTS: '1'
       BOAT24_FREEZE_MODEL: ${{ github.event_name == 'schedule' && github.event.schedule == '37 20 * * *' && '0' || '1' }}
     steps:
       - uses: actions/checkout@v4
@@ -106,6 +108,15 @@ jobs:
         run: python boat24_validate_saved.py
       - name: Keep collecting live previews and results while the runner is active
         run: BOAT24_SKIP_LEGACY=1 BOAT24_LIVE_ODDS_WORKER=0 python boat24_cycle.py --seconds 60
+      - name: Reconcile public receipts after live forecasts are published
+        continue-on-error: true
+        timeout-minutes: 8
+        run: |
+          BOAT24_DEFER_PUBLIC_RECEIPTS=0 python - <<'PY'
+          from pathlib import Path
+          from boat24_public_receipts import publish
+          publish(Path.cwd())
+          PY
       - name: Verify all-input public website and saved pre-cutoff revisions
         # A failed website verification must be visible as a failed workflow.
         continue-on-error: false

@@ -124,8 +124,14 @@ def _publish():
                     print('All-input observations already saved; retrying public receipts',flush=True)
                 trace.update(completed_at=dt.datetime.now(JST).isoformat(),source_commit=git('rev-parse','HEAD',cwd=work))
                 print('Publication timing:',json.dumps(trace,ensure_ascii=False),flush=True)
-                from boat24_public_receipts import publish as publish_receipts
-                publish_receipts(root,initial_work=work,publication=trace)
+                # Keep live forecast publication independent of expensive historical
+                # receipt reconciliation. The workflow runs receipts separately.
+                import os
+                if os.environ.get('BOAT24_DEFER_PUBLIC_RECEIPTS') == '1':
+                    print('Public receipts deferred; current forecasts are already pushed',flush=True)
+                else:
+                    from boat24_public_receipts import publish as publish_receipts
+                    publish_receipts(root,initial_work=work,publication=trace)
                 return
             finally:git('worktree','remove','--force',str(work),cwd=root)
         print('Publication retry timing:',json.dumps(trace,ensure_ascii=False),flush=True)

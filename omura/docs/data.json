@@ -1,6 +1,6 @@
 {
-  "updated_at": "2026-11-14T08:05+09:00",
-  "stats_date": "2026-11-14",
+  "updated_at": "2026-11-15T07:58+09:00",
+  "stats_date": "2026-11-15",
   "history_snapshot_dates": [
     "2026-11-04",
     "2026-10-27",
@@ -14,9 +14,9 @@
   "motors": [
     {
       "number": "37",
-      "score": 68.1,
+      "score": 66.8,
       "raw_score": 70.7,
-      "corrected_score": 68.1,
+      "corrected_score": 66.8,
       "score_difference": 0.2,
       "rank": "A",
       "two_rate": 60.0,
@@ -62,8 +62,8 @@
       "skill_matched": 3,
       "skill_total": 3,
       "past_three_score": 70.9,
-      "current_series_races": 5,
-      "current_series_avg_finish": 2.8,
+      "current_series_races": 7,
+      "current_series_avg_finish": 2.86,
       "current_series_uses": [
         {
           "racer": "三浦 敬太",
@@ -72,19 +72,21 @@
             4,
             2,
             2,
-            5
+            5,
+            4,
+            2
           ],
           "racer_win_rate": 6.33
         }
       ],
-      "current_series_score": 54.9,
-      "overall_score": 68.1
+      "current_series_score": 54.2,
+      "overall_score": 66.8
     },
     {
       "number": "31",
-      "score": 64.5,
+      "score": 62.9,
       "raw_score": 68.5,
-      "corrected_score": 64.5,
+      "corrected_score": 62.9,
       "score_difference": 0.5,
       "rank": "A",
       "two_rate": 100.0,
@@ -130,8 +132,8 @@
       "skill_matched": 3,
       "skill_total": 3,
       "past_three_score": 69.0,
-      "current_series_races": 5,
-      "current_series_avg_finish": 4,
+      "current_series_races": 6,
+      "current_series_avg_finish": 4.33,
       "current_series_uses": [
         {
           "racer": "廣瀬 真也",
@@ -140,13 +142,14 @@
             5,
             4,
             4,
+            6,
             6
           ],
           "racer_win_rate": 5.4
         }
       ],
-      "current_series_score": 43.5,
-      "overall_score": 64.5
+      "current_series_score": 39.8,
+      "overall_score": 62.9
     },
     {
       "number": "17",
@@ -261,73 +264,6 @@
       "overall_score": 60.8
     },
     {
-      "number": "13",
-      "score": 60.3,
-      "raw_score": 65.6,
-      "corrected_score": 60.3,
-      "score_difference": -2.9,
-      "rank": "B",
-      "two_rate": 55.56,
-      "three_rate": 66.67,
-      "starts": 9.0,
-      "period_start": "2026-05-24",
-      "uses": [
-        {
-          "start": "2026-10-22",
-          "end": "2026-10-27",
-          "racer": "稲田 浩二",
-          "grade": "一般",
-          "finishes": "２５２２２　１　１２[２]",
-          "races": 9,
-          "avg_finish": 2.11,
-          "racer_win_rate": 6.91,
-          "skill_adjusted": true
-        },
-        {
-          "start": "2026-10-06",
-          "end": "2026-10-09",
-          "racer": "東 潤樹",
-          "grade": "一般",
-          "finishes": "４　３３５　３２",
-          "races": 6,
-          "avg_finish": 3.33,
-          "racer_win_rate": 5.41,
-          "skill_adjusted": true
-        },
-        {
-          "start": "2026-09-28",
-          "end": "2026-10-02",
-          "racer": "渡邉 翼",
-          "grade": "一般",
-          "finishes": "４３３１４４２６１４",
-          "races": 10,
-          "avg_finish": 3.2,
-          "racer_win_rate": 6.24,
-          "skill_adjusted": true
-        }
-      ],
-      "confidence": "高",
-      "skill_matched": 3,
-      "skill_total": 3,
-      "past_three_score": 62.7,
-      "current_series_races": 4,
-      "current_series_avg_finish": 4,
-      "current_series_uses": [
-        {
-          "racer": "深澤 達徳",
-          "finishes": [
-            5,
-            4,
-            6,
-            1
-          ],
-          "racer_win_rate": 4.38
-        }
-      ],
-      "current_series_score": 45.8,
-      "overall_score": 60.3
-    },
-    {
       "number": "57",
       "score": 58.2,
       "raw_score": 53.7,
@@ -382,6 +318,75 @@
       "current_series_uses": [],
       "current_series_score": null,
       "overall_score": 58.2
+    },
+    {
+      "number": "13",
+      "score": 58.0,
+      "raw_score": 65.6,
+      "corrected_score": 58.0,
+      "score_difference": -2.9,
+      "rank": "B",
+      "two_rate": 55.56,
+      "three_rate": 66.67,
+      "starts": 9.0,
+      "period_start": "2026-05-24",
+      "uses": [
+        {
+          "start": "2026-10-22",
+          "end": "2026-10-27",
+          "racer": "稲田 浩二",
+          "grade": "一般",
+          "finishes": "２５２２２　１　１２[２]",
+          "races": 9,
+          "avg_finish": 2.11,
+          "racer_win_rate": 6.91,
+          "skill_adjusted": true
+        },
+        {
+          "start": "2026-10-06",
+          "end": "2026-10-09",
+          "racer": "東 潤樹",
+          "grade": "一般",
+          "finishes": "４　３３５　３２",
+          "races": 6,
+          "avg_finish": 3.33,
+          "racer_win_rate": 5.41,
+          "skill_adjusted": true
+        },
+        {
+          "start": "2026-09-28",
+          "end": "2026-10-02",
+          "racer": "渡邉 翼",
+          "grade": "一般",
+          "finishes": "４３３１４４２６１４",
+          "races": 10,
+          "avg_finish": 3.2,
+          "racer_win_rate": 6.24,
+          "skill_adjusted": true
+        }
+      ],
+      "confidence": "高",
+      "skill_matched": 3,
+      "skill_total": 3,
+      "past_three_score": 62.7,
+      "current_series_races": 6,
+      "current_series_avg_finish": 4.5,
+      "current_series_uses": [
+        {
+          "racer": "深澤 達徳",
+          "finishes": [
+            5,
+            4,
+            6,
+            1,
+            5,
+            6
+          ],
+          "racer_win_rate": 4.38
+        }
+      ],
+      "current_series_score": 40.2,
+      "overall_score": 58.0
     },
     {
       "number": "56",
@@ -441,9 +446,9 @@
     },
     {
       "number": "32",
-      "score": 57.1,
+      "score": 57.6,
       "raw_score": 59.0,
-      "corrected_score": 57.1,
+      "corrected_score": 57.6,
       "score_difference": -1.2,
       "rank": "B",
       "two_rate": 44.44,
@@ -489,8 +494,8 @@
       "skill_matched": 3,
       "skill_total": 3,
       "past_three_score": 57.8,
-      "current_series_races": 4,
-      "current_series_avg_finish": 3,
+      "current_series_races": 6,
+      "current_series_avg_finish": 2.67,
       "current_series_uses": [
         {
           "racer": "中嶋 健一郎",
@@ -498,19 +503,21 @@
             2,
             4,
             2,
-            4
+            4,
+            2,
+            2
           ],
           "racer_win_rate": 6.14
         }
       ],
-      "current_series_score": 53.0,
-      "overall_score": 57.1
+      "current_series_score": 56.8,
+      "overall_score": 57.6
     },
     {
       "number": "41",
-      "score": 55.7,
+      "score": 55.2,
       "raw_score": 54.9,
-      "corrected_score": 55.7,
+      "corrected_score": 55.2,
       "score_difference": 0.3,
       "rank": "B",
       "two_rate": 33.33,
@@ -556,8 +563,8 @@
       "skill_matched": 3,
       "skill_total": 3,
       "past_three_score": 55.2,
-      "current_series_races": 4,
-      "current_series_avg_finish": 2.5,
+      "current_series_races": 6,
+      "current_series_avg_finish": 2.83,
       "current_series_uses": [
         {
           "racer": "岩崎 正哉",
@@ -565,19 +572,21 @@
             2,
             2,
             4,
+            2,
+            5,
             2
           ],
           "racer_win_rate": 6.1
         }
       ],
-      "current_series_score": 58.7,
-      "overall_score": 55.7
+      "current_series_score": 55.0,
+      "overall_score": 55.2
     },
     {
       "number": "45",
-      "score": 55.4,
+      "score": 55.0,
       "raw_score": 58.5,
-      "corrected_score": 55.4,
+      "corrected_score": 55.0,
       "score_difference": -2.1,
       "rank": "B",
       "two_rate": 44.44,
@@ -623,8 +632,8 @@
       "skill_matched": 3,
       "skill_total": 3,
       "past_three_score": 56.4,
-      "current_series_races": 5,
-      "current_series_avg_finish": 3.4,
+      "current_series_races": 6,
+      "current_series_avg_finish": 3.5,
       "current_series_uses": [
         {
           "racer": "牧山 敦也",
@@ -633,87 +642,20 @@
             1,
             1,
             5,
-            5
+            5,
+            4
           ],
           "racer_win_rate": 5.13
         }
       ],
-      "current_series_score": 50.8,
-      "overall_score": 55.4
-    },
-    {
-      "number": "47",
-      "score": 54.8,
-      "raw_score": 57.9,
-      "corrected_score": 54.8,
-      "score_difference": -2.2,
-      "rank": "B",
-      "two_rate": 33.33,
-      "three_rate": 44.44,
-      "starts": 9.0,
-      "period_start": "2026-05-24",
-      "uses": [
-        {
-          "start": "2026-10-30",
-          "end": "2026-11-04",
-          "racer": "杉山 裕也",
-          "grade": "一般",
-          "finishes": "２　２１１　２５５１[３]",
-          "races": 9,
-          "avg_finish": 2.44,
-          "racer_win_rate": 7.2,
-          "skill_adjusted": true
-        },
-        {
-          "start": "2026-10-14",
-          "end": "2026-10-17",
-          "racer": "浦野 海",
-          "grade": "一般",
-          "finishes": "２２３　１４３３",
-          "races": 7,
-          "avg_finish": 2.57,
-          "racer_win_rate": 3.69,
-          "skill_adjusted": true
-        },
-        {
-          "start": "2026-09-28",
-          "end": "2026-10-02",
-          "racer": "渡邉 俊介",
-          "grade": "一般",
-          "finishes": "６４３４２",
-          "races": 5,
-          "avg_finish": 3.8,
-          "racer_win_rate": 6.3,
-          "skill_adjusted": true
-        }
-      ],
-      "confidence": "高",
-      "skill_matched": 3,
-      "skill_total": 3,
-      "past_three_score": 55.7,
-      "current_series_races": 5,
-      "current_series_avg_finish": 3.4,
-      "current_series_uses": [
-        {
-          "racer": "下河 誉史",
-          "finishes": [
-            3,
-            5,
-            6,
-            1,
-            2
-          ],
-          "racer_win_rate": 5.33
-        }
-      ],
-      "current_series_score": 50.4,
-      "overall_score": 54.8
+      "current_series_score": 49.7,
+      "overall_score": 55.0
     },
     {
       "number": "24",
-      "score": 54.5,
+      "score": 54.9,
       "raw_score": 58.6,
-      "corrected_score": 54.5,
+      "corrected_score": 54.9,
       "score_difference": -2.4,
       "rank": "B",
       "two_rate": 40.0,
@@ -759,8 +701,8 @@
       "skill_matched": 3,
       "skill_total": 3,
       "past_three_score": 56.2,
-      "current_series_races": 5,
-      "current_series_avg_finish": 4,
+      "current_series_races": 6,
+      "current_series_avg_finish": 3.67,
       "current_series_uses": [
         {
           "racer": "高橋 龍治",
@@ -769,13 +711,83 @@
             5,
             1,
             5,
-            6
+            6,
+            2
           ],
           "racer_win_rate": 4.08
         }
       ],
-      "current_series_score": 46.5,
-      "overall_score": 54.5
+      "current_series_score": 50.2,
+      "overall_score": 54.9
+    },
+    {
+      "number": "47",
+      "score": 54.7,
+      "raw_score": 57.9,
+      "corrected_score": 54.7,
+      "score_difference": -2.2,
+      "rank": "B",
+      "two_rate": 33.33,
+      "three_rate": 44.44,
+      "starts": 9.0,
+      "period_start": "2026-05-24",
+      "uses": [
+        {
+          "start": "2026-10-30",
+          "end": "2026-11-04",
+          "racer": "杉山 裕也",
+          "grade": "一般",
+          "finishes": "２　２１１　２５５１[３]",
+          "races": 9,
+          "avg_finish": 2.44,
+          "racer_win_rate": 7.2,
+          "skill_adjusted": true
+        },
+        {
+          "start": "2026-10-14",
+          "end": "2026-10-17",
+          "racer": "浦野 海",
+          "grade": "一般",
+          "finishes": "２２３　１４３３",
+          "races": 7,
+          "avg_finish": 2.57,
+          "racer_win_rate": 3.69,
+          "skill_adjusted": true
+        },
+        {
+          "start": "2026-09-28",
+          "end": "2026-10-02",
+          "racer": "渡邉 俊介",
+          "grade": "一般",
+          "finishes": "６４３４２",
+          "races": 5,
+          "avg_finish": 3.8,
+          "racer_win_rate": 6.3,
+          "skill_adjusted": true
+        }
+      ],
+      "confidence": "高",
+      "skill_matched": 3,
+      "skill_total": 3,
+      "past_three_score": 55.7,
+      "current_series_races": 6,
+      "current_series_avg_finish": 3.33,
+      "current_series_uses": [
+        {
+          "racer": "下河 誉史",
+          "finishes": [
+            3,
+            5,
+            6,
+            1,
+            2,
+            3
+          ],
+          "racer_win_rate": 5.33
+        }
+      ],
+      "current_series_score": 51.1,
+      "overall_score": 54.7
     },
     {
       "number": "53",
@@ -835,9 +847,9 @@
     },
     {
       "number": "38",
-      "score": 53.4,
+      "score": 53.7,
       "raw_score": 54.5,
-      "corrected_score": 53.4,
+      "corrected_score": 53.7,
       "score_difference": 1.2,
       "rank": "B",
       "two_rate": 33.33,
@@ -883,8 +895,8 @@
       "skill_matched": 3,
       "skill_total": 3,
       "past_three_score": 55.7,
-      "current_series_races": 5,
-      "current_series_avg_finish": 4,
+      "current_series_races": 7,
+      "current_series_avg_finish": 3.57,
       "current_series_uses": [
         {
           "racer": "眞鳥 章太",
@@ -893,81 +905,51 @@
             6,
             6,
             1,
-            3
+            3,
+            3,
+            2
           ],
           "racer_win_rate": 5.73
         }
       ],
-      "current_series_score": 42.8,
-      "overall_score": 53.4
+      "current_series_score": 47.6,
+      "overall_score": 53.7
     },
     {
-      "number": "46",
-      "score": 53.0,
-      "raw_score": 55.3,
-      "corrected_score": 53.0,
-      "score_difference": -2.3,
+      "number": "76",
+      "score": 52.8,
+      "raw_score": null,
+      "corrected_score": 52.8,
+      "score_difference": null,
       "rank": "B",
-      "two_rate": 33.33,
-      "three_rate": 33.33,
-      "starts": 9.0,
-      "period_start": "2026-05-24",
-      "uses": [
-        {
-          "start": "2026-10-30",
-          "end": "2026-11-04",
-          "racer": "北山 康介",
-          "grade": "一般",
-          "finishes": "３　３３２　４２２２２５",
-          "races": 10,
-          "avg_finish": 2.8,
-          "racer_win_rate": 7.31,
-          "skill_adjusted": true
-        },
-        {
-          "start": "2026-10-22",
-          "end": "2026-10-27",
-          "racer": "武重 雄介",
-          "grade": "一般",
-          "finishes": "５３５　２１５　３　２４",
-          "races": 9,
-          "avg_finish": 3.33,
-          "racer_win_rate": 5.3,
-          "skill_adjusted": true
-        },
-        {
-          "start": "2026-10-06",
-          "end": "2026-10-09",
-          "racer": "塩崎 優司",
-          "grade": "一般",
-          "finishes": "４１２　１４３２",
-          "races": 7,
-          "avg_finish": 2.43,
-          "racer_win_rate": 3.8,
-          "skill_adjusted": true
-        }
-      ],
-      "confidence": "高",
-      "skill_matched": 3,
-      "skill_total": 3,
-      "past_three_score": 53.0,
-      "current_series_races": 5,
-      "current_series_avg_finish": 3.2,
+      "two_rate": null,
+      "three_rate": null,
+      "starts": null,
+      "period_start": "",
+      "uses": [],
+      "confidence": "低",
+      "skill_matched": 0,
+      "skill_total": 0,
+      "past_data_missing": true,
+      "past_three_score": 50.0,
+      "current_series_races": 6,
+      "current_series_avg_finish": 2.33,
       "current_series_uses": [
         {
-          "racer": "杉山 喜一",
+          "racer": "酒見 峻介",
           "finishes": [
-            3,
             4,
-            5,
+            2,
+            1,
+            3,
             1,
             3
           ],
-          "racer_win_rate": 5.25
+          "racer_win_rate": 4.99
         }
       ],
-      "current_series_score": 52.8,
-      "overall_score": 53.0
+      "current_series_score": 63.1,
+      "overall_score": 52.8
     },
     {
       "number": "43",
@@ -1024,6 +1006,181 @@
       "current_series_uses": [],
       "current_series_score": null,
       "overall_score": 52.7
+    },
+    {
+      "number": "46",
+      "score": 52.6,
+      "raw_score": 55.3,
+      "corrected_score": 52.6,
+      "score_difference": -2.3,
+      "rank": "B",
+      "two_rate": 33.33,
+      "three_rate": 33.33,
+      "starts": 9.0,
+      "period_start": "2026-05-24",
+      "uses": [
+        {
+          "start": "2026-10-30",
+          "end": "2026-11-04",
+          "racer": "北山 康介",
+          "grade": "一般",
+          "finishes": "３　３３２　４２２２２５",
+          "races": 10,
+          "avg_finish": 2.8,
+          "racer_win_rate": 7.31,
+          "skill_adjusted": true
+        },
+        {
+          "start": "2026-10-22",
+          "end": "2026-10-27",
+          "racer": "武重 雄介",
+          "grade": "一般",
+          "finishes": "５３５　２１５　３　２４",
+          "races": 9,
+          "avg_finish": 3.33,
+          "racer_win_rate": 5.3,
+          "skill_adjusted": true
+        },
+        {
+          "start": "2026-10-06",
+          "end": "2026-10-09",
+          "racer": "塩崎 優司",
+          "grade": "一般",
+          "finishes": "４１２　１４３２",
+          "races": 7,
+          "avg_finish": 2.43,
+          "racer_win_rate": 3.8,
+          "skill_adjusted": true
+        }
+      ],
+      "confidence": "高",
+      "skill_matched": 3,
+      "skill_total": 3,
+      "past_three_score": 53.0,
+      "current_series_races": 6,
+      "current_series_avg_finish": 3.33,
+      "current_series_uses": [
+        {
+          "racer": "杉山 喜一",
+          "finishes": [
+            3,
+            4,
+            5,
+            1,
+            3,
+            4
+          ],
+          "racer_win_rate": 5.25
+        }
+      ],
+      "current_series_score": 51.3,
+      "overall_score": 52.6
+    },
+    {
+      "number": "28",
+      "score": 52.5,
+      "raw_score": 54.8,
+      "corrected_score": 52.5,
+      "score_difference": -2.1,
+      "rank": "B",
+      "two_rate": 40.0,
+      "three_rate": 60.0,
+      "starts": 10.0,
+      "period_start": "2026-05-24",
+      "uses": [
+        {
+          "start": "2026-10-22",
+          "end": "2026-10-27",
+          "racer": "田頭 実",
+          "grade": "一般",
+          "finishes": "２６１　５１２　１３１５",
+          "races": 10,
+          "avg_finish": 2.7,
+          "racer_win_rate": 6.93,
+          "skill_adjusted": true
+        },
+        {
+          "start": "2026-10-14",
+          "end": "2026-10-17",
+          "racer": "井上 尚悟",
+          "grade": "一般",
+          "finishes": "４３４　６４２",
+          "races": 6,
+          "avg_finish": 3.83,
+          "racer_win_rate": 4.94,
+          "skill_adjusted": true
+        },
+        {
+          "start": "2026-09-28",
+          "end": "2026-10-02",
+          "racer": "石塚 裕介",
+          "grade": "一般",
+          "finishes": "４６１　３３４　６５",
+          "races": 8,
+          "avg_finish": 4,
+          "racer_win_rate": 4.88,
+          "skill_adjusted": true
+        }
+      ],
+      "confidence": "高",
+      "skill_matched": 3,
+      "skill_total": 3,
+      "past_three_score": 52.7,
+      "current_series_races": 6,
+      "current_series_avg_finish": 3.5,
+      "current_series_uses": [
+        {
+          "racer": "相馬 翔",
+          "finishes": [
+            5,
+            6,
+            1,
+            2,
+            5,
+            2
+          ],
+          "racer_win_rate": 4.26
+        }
+      ],
+      "current_series_score": 51.7,
+      "overall_score": 52.5
+    },
+    {
+      "number": "68",
+      "score": 52.3,
+      "raw_score": null,
+      "corrected_score": 52.3,
+      "score_difference": null,
+      "rank": "B",
+      "two_rate": null,
+      "three_rate": null,
+      "starts": null,
+      "period_start": "",
+      "uses": [],
+      "confidence": "低",
+      "skill_matched": 0,
+      "skill_total": 0,
+      "past_data_missing": true,
+      "past_three_score": 50.0,
+      "current_series_races": 7,
+      "current_series_avg_finish": 2.29,
+      "current_series_uses": [
+        {
+          "racer": "佐藤 博亮",
+          "finishes": [
+            3,
+            2,
+            2,
+            4,
+            1,
+            3,
+            1
+          ],
+          "racer_win_rate": 6.94
+        }
+      ],
+      "current_series_score": 59.3,
+      "overall_score": 52.3
     },
     {
       "number": "15",
@@ -1138,41 +1295,6 @@
       "overall_score": 52.0
     },
     {
-      "number": "59",
-      "score": 52.0,
-      "raw_score": null,
-      "corrected_score": 52.0,
-      "score_difference": null,
-      "rank": "B",
-      "two_rate": null,
-      "three_rate": null,
-      "starts": null,
-      "period_start": "",
-      "uses": [],
-      "confidence": "低",
-      "skill_matched": 0,
-      "skill_total": 0,
-      "past_data_missing": true,
-      "past_three_score": 50.0,
-      "current_series_races": 5,
-      "current_series_avg_finish": 2.2,
-      "current_series_uses": [
-        {
-          "racer": "長岡 良也",
-          "finishes": [
-            2,
-            3,
-            1,
-            3,
-            2
-          ],
-          "racer_win_rate": 6.33
-        }
-      ],
-      "current_series_score": 61.6,
-      "overall_score": 52.0
-    },
-    {
       "number": "25",
       "score": 51.9,
       "raw_score": 50.5,
@@ -1226,74 +1348,6 @@
       "current_series_avg_finish": null,
       "current_series_uses": [],
       "current_series_score": null,
-      "overall_score": 51.9
-    },
-    {
-      "number": "28",
-      "score": 51.9,
-      "raw_score": 54.8,
-      "corrected_score": 51.9,
-      "score_difference": -2.1,
-      "rank": "B",
-      "two_rate": 40.0,
-      "three_rate": 60.0,
-      "starts": 10.0,
-      "period_start": "2026-05-24",
-      "uses": [
-        {
-          "start": "2026-10-22",
-          "end": "2026-10-27",
-          "racer": "田頭 実",
-          "grade": "一般",
-          "finishes": "２６１　５１２　１３１５",
-          "races": 10,
-          "avg_finish": 2.7,
-          "racer_win_rate": 6.93,
-          "skill_adjusted": true
-        },
-        {
-          "start": "2026-10-14",
-          "end": "2026-10-17",
-          "racer": "井上 尚悟",
-          "grade": "一般",
-          "finishes": "４３４　６４２",
-          "races": 6,
-          "avg_finish": 3.83,
-          "racer_win_rate": 4.94,
-          "skill_adjusted": true
-        },
-        {
-          "start": "2026-09-28",
-          "end": "2026-10-02",
-          "racer": "石塚 裕介",
-          "grade": "一般",
-          "finishes": "４６１　３３４　６５",
-          "races": 8,
-          "avg_finish": 4,
-          "racer_win_rate": 4.88,
-          "skill_adjusted": true
-        }
-      ],
-      "confidence": "高",
-      "skill_matched": 3,
-      "skill_total": 3,
-      "past_three_score": 52.7,
-      "current_series_races": 5,
-      "current_series_avg_finish": 3.8,
-      "current_series_uses": [
-        {
-          "racer": "相馬 翔",
-          "finishes": [
-            5,
-            6,
-            1,
-            2,
-            5
-          ],
-          "racer_win_rate": 4.26
-        }
-      ],
-      "current_series_score": 48.3,
       "overall_score": 51.9
     },
     {
@@ -1353,10 +1407,10 @@
       "overall_score": 51.7
     },
     {
-      "number": "76",
-      "score": 51.6,
+      "number": "63",
+      "score": 51.5,
       "raw_score": null,
-      "corrected_score": 51.6,
+      "corrected_score": 51.5,
       "score_difference": null,
       "rank": "B",
       "two_rate": null,
@@ -1369,60 +1423,28 @@
       "skill_total": 0,
       "past_data_missing": true,
       "past_three_score": 50.0,
-      "current_series_races": 4,
-      "current_series_avg_finish": 2.5,
+      "current_series_races": 7,
+      "current_series_avg_finish": 3,
       "current_series_uses": [
         {
-          "racer": "酒見 峻介",
+          "racer": "尾崎 雄二",
           "finishes": [
             4,
-            2,
             1,
-            3
-          ],
-          "racer_win_rate": 4.99
-        }
-      ],
-      "current_series_score": 61.2,
-      "overall_score": 51.6
-    },
-    {
-      "number": "68",
-      "score": 51.4,
-      "raw_score": null,
-      "corrected_score": 51.4,
-      "score_difference": null,
-      "rank": "B",
-      "two_rate": null,
-      "three_rate": null,
-      "starts": null,
-      "period_start": "",
-      "uses": [],
-      "confidence": "低",
-      "skill_matched": 0,
-      "skill_total": 0,
-      "past_data_missing": true,
-      "past_three_score": 50.0,
-      "current_series_races": 5,
-      "current_series_avg_finish": 2.4,
-      "current_series_uses": [
-        {
-          "racer": "佐藤 博亮",
-          "finishes": [
             3,
-            2,
-            2,
             4,
+            3,
+            5,
             1
           ],
-          "racer_win_rate": 6.94
+          "racer_win_rate": 4.7
         }
       ],
-      "current_series_score": 58.0,
-      "overall_score": 51.4
+      "current_series_score": 56.3,
+      "overall_score": 51.5
     },
     {
-      "number": "61",
+      "number": "59",
       "score": 51.3,
       "raw_score": null,
       "corrected_score": 51.3,
@@ -1438,29 +1460,30 @@
       "skill_total": 0,
       "past_data_missing": true,
       "past_three_score": 50.0,
-      "current_series_races": 5,
-      "current_series_avg_finish": 3,
+      "current_series_races": 6,
+      "current_series_avg_finish": 2.67,
       "current_series_uses": [
         {
-          "racer": "峰重 侑治",
+          "racer": "長岡 良也",
           "finishes": [
-            6,
             2,
+            3,
             1,
-            1,
+            3,
+            2,
             5
           ],
-          "racer_win_rate": 4.17
+          "racer_win_rate": 6.33
         }
       ],
-      "current_series_score": 57.5,
+      "current_series_score": 56.4,
       "overall_score": 51.3
     },
     {
-      "number": "63",
-      "score": 51.1,
+      "number": "78",
+      "score": 51.0,
       "raw_score": null,
-      "corrected_score": 51.1,
+      "corrected_score": 51.0,
       "score_difference": null,
       "rank": "B",
       "two_rate": null,
@@ -1473,58 +1496,25 @@
       "skill_total": 0,
       "past_data_missing": true,
       "past_three_score": 50.0,
-      "current_series_races": 5,
-      "current_series_avg_finish": 3,
+      "current_series_races": 7,
+      "current_series_avg_finish": 2.86,
       "current_series_uses": [
         {
-          "racer": "尾崎 雄二",
+          "racer": "竹田 辰也",
           "finishes": [
-            4,
-            1,
             3,
-            4,
-            3
-          ],
-          "racer_win_rate": 4.7
-        }
-      ],
-      "current_series_score": 56.3,
-      "overall_score": 51.1
-    },
-    {
-      "number": "72",
-      "score": 50.7,
-      "raw_score": null,
-      "corrected_score": 50.7,
-      "score_difference": null,
-      "rank": "B",
-      "two_rate": null,
-      "three_rate": null,
-      "starts": null,
-      "period_start": "",
-      "uses": [],
-      "confidence": "低",
-      "skill_matched": 0,
-      "skill_total": 0,
-      "past_data_missing": true,
-      "past_three_score": 50.0,
-      "current_series_races": 5,
-      "current_series_avg_finish": 2.8,
-      "current_series_uses": [
-        {
-          "racer": "石橋 道友",
-          "finishes": [
-            4,
             1,
-            3,
-            2,
-            4
+            5,
+            5,
+            1,
+            4,
+            1
           ],
-          "racer_win_rate": 6.71
+          "racer_win_rate": 6.45
         }
       ],
       "current_series_score": 54.0,
-      "overall_score": 50.7
+      "overall_score": 51.0
     },
     {
       "number": "39",
@@ -1583,41 +1573,7 @@
       "overall_score": 50.5
     },
     {
-      "number": "79",
-      "score": 50.5,
-      "raw_score": null,
-      "corrected_score": 50.5,
-      "score_difference": null,
-      "rank": "B",
-      "two_rate": null,
-      "three_rate": null,
-      "starts": null,
-      "period_start": "",
-      "uses": [],
-      "confidence": "低",
-      "skill_matched": 0,
-      "skill_total": 0,
-      "past_data_missing": true,
-      "past_three_score": 50.0,
-      "current_series_races": 4,
-      "current_series_avg_finish": 3,
-      "current_series_uses": [
-        {
-          "racer": "加藤 政彦",
-          "finishes": [
-            2,
-            2,
-            6,
-            2
-          ],
-          "racer_win_rate": 5.95
-        }
-      ],
-      "current_series_score": 53.5,
-      "overall_score": 50.5
-    },
-    {
-      "number": "78",
+      "number": "72",
       "score": 50.4,
       "raw_score": null,
       "corrected_score": 50.4,
@@ -1633,29 +1589,31 @@
       "skill_total": 0,
       "past_data_missing": true,
       "past_three_score": 50.0,
-      "current_series_races": 5,
+      "current_series_races": 7,
       "current_series_avg_finish": 3,
       "current_series_uses": [
         {
-          "racer": "竹田 辰也",
+          "racer": "石橋 道友",
           "finishes": [
-            3,
+            4,
             1,
-            5,
-            5,
-            1
+            3,
+            2,
+            4,
+            2,
+            5
           ],
-          "racer_win_rate": 6.45
+          "racer_win_rate": 6.71
         }
       ],
-      "current_series_score": 52.4,
+      "current_series_score": 51.8,
       "overall_score": 50.4
     },
     {
-      "number": "66",
-      "score": 50.2,
+      "number": "79",
+      "score": 50.3,
       "raw_score": null,
-      "corrected_score": 50.2,
+      "corrected_score": 50.3,
       "score_difference": null,
       "rank": "B",
       "two_rate": null,
@@ -1668,28 +1626,30 @@
       "skill_total": 0,
       "past_data_missing": true,
       "past_three_score": 50.0,
-      "current_series_races": 4,
-      "current_series_avg_finish": 3.25,
+      "current_series_races": 6,
+      "current_series_avg_finish": 3.17,
       "current_series_uses": [
         {
-          "racer": "一色 颯輝",
+          "racer": "加藤 政彦",
           "finishes": [
             2,
-            5,
+            2,
+            6,
+            2,
             3,
-            3
+            4
           ],
-          "racer_win_rate": 5.48
+          "racer_win_rate": 5.95
         }
       ],
-      "current_series_score": 51.7,
-      "overall_score": 50.2
+      "current_series_score": 51.6,
+      "overall_score": 50.3
     },
     {
       "number": "70",
-      "score": 50.2,
+      "score": 50.1,
       "raw_score": null,
-      "corrected_score": 50.2,
+      "corrected_score": 50.1,
       "score_difference": null,
       "rank": "B",
       "two_rate": null,
@@ -1702,8 +1662,8 @@
       "skill_total": 0,
       "past_data_missing": true,
       "past_three_score": 50.0,
-      "current_series_races": 4,
-      "current_series_avg_finish": 3.25,
+      "current_series_races": 6,
+      "current_series_avg_finish": 3.33,
       "current_series_uses": [
         {
           "racer": "鈴木 裕隆",
@@ -1711,13 +1671,121 @@
             1,
             3,
             6,
-            3
+            3,
+            1,
+            6
           ],
           "racer_win_rate": 5.5
         }
       ],
-      "current_series_score": 51.7,
-      "overall_score": 50.2
+      "current_series_score": 50.7,
+      "overall_score": 50.1
+    },
+    {
+      "number": "73",
+      "score": 50.1,
+      "raw_score": null,
+      "corrected_score": 50.1,
+      "score_difference": null,
+      "rank": "B",
+      "two_rate": null,
+      "three_rate": null,
+      "starts": null,
+      "period_start": "",
+      "uses": [],
+      "confidence": "低",
+      "skill_matched": 0,
+      "skill_total": 0,
+      "past_data_missing": true,
+      "past_three_score": 50.0,
+      "current_series_races": 7,
+      "current_series_avg_finish": 3.14,
+      "current_series_uses": [
+        {
+          "racer": "井本 昌也",
+          "finishes": [
+            1,
+            5,
+            3,
+            1,
+            6,
+            4,
+            2
+          ],
+          "racer_win_rate": 6.6
+        }
+      ],
+      "current_series_score": 50.4,
+      "overall_score": 50.1
+    },
+    {
+      "number": "36",
+      "score": 50.0,
+      "raw_score": 51.9,
+      "corrected_score": 50.0,
+      "score_difference": -0.5,
+      "rank": "B",
+      "two_rate": 22.22,
+      "three_rate": 55.56,
+      "starts": 9.0,
+      "period_start": "2026-05-24",
+      "uses": [
+        {
+          "start": "2026-10-30",
+          "end": "2026-11-04",
+          "racer": "真庭 明志",
+          "grade": "一般",
+          "finishes": "２１２　３２１４６２[６]",
+          "races": 10,
+          "avg_finish": 2.9,
+          "racer_win_rate": 5.52,
+          "skill_adjusted": true
+        },
+        {
+          "start": "2026-10-14",
+          "end": "2026-10-17",
+          "racer": "原田 秀弥",
+          "grade": "一般",
+          "finishes": "４　３２４５２５",
+          "races": 7,
+          "avg_finish": 3.57,
+          "racer_win_rate": 5.99,
+          "skill_adjusted": true
+        },
+        {
+          "start": "2026-09-28",
+          "end": "2026-10-02",
+          "racer": "池 千夏",
+          "grade": "一般",
+          "finishes": "５４１　４　１４５２",
+          "races": 8,
+          "avg_finish": 3.25,
+          "racer_win_rate": 3.32,
+          "skill_adjusted": true
+        }
+      ],
+      "confidence": "高",
+      "skill_matched": 3,
+      "skill_total": 3,
+      "past_three_score": 51.4,
+      "current_series_races": 6,
+      "current_series_avg_finish": 3.83,
+      "current_series_uses": [
+        {
+          "racer": "福田 翔吾",
+          "finishes": [
+            4,
+            6,
+            6,
+            4,
+            2,
+            1
+          ],
+          "racer_win_rate": 5.77
+        }
+      ],
+      "current_series_score": 44.5,
+      "overall_score": 50.0
     },
     {
       "number": "52",
@@ -1776,7 +1844,7 @@
       "overall_score": 50.0
     },
     {
-      "number": "62",
+      "number": "64",
       "score": 50.0,
       "raw_score": null,
       "corrected_score": 50.0,
@@ -1792,54 +1860,21 @@
       "skill_total": 0,
       "past_data_missing": true,
       "past_three_score": 50.0,
-      "current_series_races": 5,
-      "current_series_avg_finish": 3.4,
+      "current_series_races": 7,
+      "current_series_avg_finish": 3.14,
       "current_series_uses": [
         {
-          "racer": "佐々木 翔斗",
+          "racer": "松田 祐季",
           "finishes": [
-            5,
+            6,
             2,
-            5,
-            4,
+            2,
+            2,
+            6,
+            3,
             1
           ],
-          "racer_win_rate": 5.6
-        }
-      ],
-      "current_series_score": 49.8,
-      "overall_score": 50.0
-    },
-    {
-      "number": "73",
-      "score": 50.0,
-      "raw_score": null,
-      "corrected_score": 50.0,
-      "score_difference": null,
-      "rank": "B",
-      "two_rate": null,
-      "three_rate": null,
-      "starts": null,
-      "period_start": "",
-      "uses": [],
-      "confidence": "低",
-      "skill_matched": 0,
-      "skill_total": 0,
-      "past_data_missing": true,
-      "past_three_score": 50.0,
-      "current_series_races": 5,
-      "current_series_avg_finish": 3.2,
-      "current_series_uses": [
-        {
-          "racer": "井本 昌也",
-          "finishes": [
-            1,
-            5,
-            3,
-            1,
-            6
-          ],
-          "racer_win_rate": 6.6
+          "racer_win_rate": 6.88
         }
       ],
       "current_series_score": 49.8,
@@ -1911,10 +1946,10 @@
       "overall_score": 49.5
     },
     {
-      "number": "75",
-      "score": 49.2,
+      "number": "61",
+      "score": 49.5,
       "raw_score": null,
-      "corrected_score": 49.2,
+      "corrected_score": 49.5,
       "score_difference": null,
       "rank": "B",
       "two_rate": null,
@@ -1927,132 +1962,68 @@
       "skill_total": 0,
       "past_data_missing": true,
       "past_three_score": 50.0,
-      "current_series_races": 5,
-      "current_series_avg_finish": 3.8,
+      "current_series_races": 7,
+      "current_series_avg_finish": 3.86,
       "current_series_uses": [
         {
-          "racer": "芦澤 望",
+          "racer": "峰重 侑治",
           "finishes": [
-            3,
-            5,
+            6,
+            2,
             1,
+            1,
+            5,
             6,
-            4
-          ],
-          "racer_win_rate": 5.61
-        }
-      ],
-      "current_series_score": 45.3,
-      "overall_score": 49.2
-    },
-    {
-      "number": "36",
-      "score": 49.1,
-      "raw_score": 51.9,
-      "corrected_score": 49.1,
-      "score_difference": -0.5,
-      "rank": "B",
-      "two_rate": 22.22,
-      "three_rate": 55.56,
-      "starts": 9.0,
-      "period_start": "2026-05-24",
-      "uses": [
-        {
-          "start": "2026-10-30",
-          "end": "2026-11-04",
-          "racer": "真庭 明志",
-          "grade": "一般",
-          "finishes": "２１２　３２１４６２[６]",
-          "races": 10,
-          "avg_finish": 2.9,
-          "racer_win_rate": 5.52,
-          "skill_adjusted": true
-        },
-        {
-          "start": "2026-10-14",
-          "end": "2026-10-17",
-          "racer": "原田 秀弥",
-          "grade": "一般",
-          "finishes": "４　３２４５２５",
-          "races": 7,
-          "avg_finish": 3.57,
-          "racer_win_rate": 5.99,
-          "skill_adjusted": true
-        },
-        {
-          "start": "2026-09-28",
-          "end": "2026-10-02",
-          "racer": "池 千夏",
-          "grade": "一般",
-          "finishes": "５４１　４　１４５２",
-          "races": 8,
-          "avg_finish": 3.25,
-          "racer_win_rate": 3.32,
-          "skill_adjusted": true
-        }
-      ],
-      "confidence": "高",
-      "skill_matched": 3,
-      "skill_total": 3,
-      "past_three_score": 51.4,
-      "current_series_races": 5,
-      "current_series_avg_finish": 4.4,
-      "current_series_uses": [
-        {
-          "racer": "福田 翔吾",
-          "finishes": [
-            4,
-            6,
-            6,
-            4,
-            2
-          ],
-          "racer_win_rate": 5.77
-        }
-      ],
-      "current_series_score": 38.2,
-      "overall_score": 49.1
-    },
-    {
-      "number": "64",
-      "score": 49.1,
-      "raw_score": null,
-      "corrected_score": 49.1,
-      "score_difference": null,
-      "rank": "B",
-      "two_rate": null,
-      "three_rate": null,
-      "starts": null,
-      "period_start": "",
-      "uses": [],
-      "confidence": "低",
-      "skill_matched": 0,
-      "skill_total": 0,
-      "past_data_missing": true,
-      "past_three_score": 50.0,
-      "current_series_races": 5,
-      "current_series_avg_finish": 3.6,
-      "current_series_uses": [
-        {
-          "racer": "松田 祐季",
-          "finishes": [
-            6,
-            2,
-            2,
-            2,
             6
           ],
-          "racer_win_rate": 6.88
+          "racer_win_rate": 4.17
         }
       ],
-      "current_series_score": 44.7,
-      "overall_score": 49.1
+      "current_series_score": 47.9,
+      "overall_score": 49.5
+    },
+    {
+      "number": "62",
+      "score": 49.5,
+      "raw_score": null,
+      "corrected_score": 49.5,
+      "score_difference": null,
+      "rank": "B",
+      "two_rate": null,
+      "three_rate": null,
+      "starts": null,
+      "period_start": "",
+      "uses": [],
+      "confidence": "低",
+      "skill_matched": 0,
+      "skill_total": 0,
+      "past_data_missing": true,
+      "past_three_score": 50.0,
+      "current_series_races": 7,
+      "current_series_avg_finish": 3.57,
+      "current_series_uses": [
+        {
+          "racer": "佐々木 翔斗",
+          "finishes": [
+            5,
+            2,
+            5,
+            4,
+            1,
+            3,
+            5
+          ],
+          "racer_win_rate": 5.6
+        }
+      ],
+      "current_series_score": 47.9,
+      "overall_score": 49.5
     },
     {
       "number": "67",
-      "score": 49.1,
+      "score": 49.0,
       "raw_score": null,
-      "corrected_score": 49.1,
+      "corrected_score": 49.0,
       "score_difference": null,
       "rank": "B",
       "two_rate": null,
@@ -2065,8 +2036,8 @@
       "skill_total": 0,
       "past_data_missing": true,
       "past_three_score": 50.0,
-      "current_series_races": 4,
-      "current_series_avg_finish": 4,
+      "current_series_races": 6,
+      "current_series_avg_finish": 3.83,
       "current_series_uses": [
         {
           "racer": "藤田 靖弘",
@@ -2074,121 +2045,21 @@
             2,
             5,
             3,
-            6
+            6,
+            4,
+            3
           ],
           "racer_win_rate": 5.38
         }
       ],
-      "current_series_score": 43.5,
-      "overall_score": 49.1
-    },
-    {
-      "number": "71",
-      "score": 49.1,
-      "raw_score": null,
-      "corrected_score": 49.1,
-      "score_difference": null,
-      "rank": "B",
-      "two_rate": null,
-      "three_rate": null,
-      "starts": null,
-      "period_start": "",
-      "uses": [],
-      "confidence": "低",
-      "skill_matched": 0,
-      "skill_total": 0,
-      "past_data_missing": true,
-      "past_three_score": 50.0,
-      "current_series_races": 5,
-      "current_series_avg_finish": 3.8,
-      "current_series_uses": [
-        {
-          "racer": "村田 修次",
-          "finishes": [
-            5,
-            3,
-            4,
-            5,
-            2
-          ],
-          "racer_win_rate": 5.81
-        }
-      ],
-      "current_series_score": 44.8,
-      "overall_score": 49.1
-    },
-    {
-      "number": "33",
-      "score": 48.7,
-      "raw_score": 47.4,
-      "corrected_score": 48.7,
-      "score_difference": -0.4,
-      "rank": "B",
-      "two_rate": 33.33,
-      "three_rate": 66.67,
-      "starts": 9.0,
-      "period_start": "2026-05-24",
-      "uses": [
-        {
-          "start": "2026-10-30",
-          "end": "2026-11-04",
-          "racer": "深川 和仁",
-          "grade": "一般",
-          "finishes": "６　６２",
-          "races": 3,
-          "avg_finish": 4.67,
-          "racer_win_rate": 5.69,
-          "skill_adjusted": true
-        },
-        {
-          "start": "2026-10-22",
-          "end": "2026-10-27",
-          "racer": "山口 広樹",
-          "grade": "一般",
-          "finishes": "３５６　２　１６５　２４",
-          "races": 9,
-          "avg_finish": 3.78,
-          "racer_win_rate": 3.78,
-          "skill_adjusted": true
-        },
-        {
-          "start": "2026-10-06",
-          "end": "2026-10-09",
-          "racer": "原田 篤志",
-          "grade": "一般",
-          "finishes": "５１３２２５１４",
-          "races": 8,
-          "avg_finish": 2.88,
-          "racer_win_rate": 6.59,
-          "skill_adjusted": true
-        }
-      ],
-      "confidence": "高",
-      "skill_matched": 3,
-      "skill_total": 3,
-      "past_three_score": 47.0,
-      "current_series_races": 4,
-      "current_series_avg_finish": 2.5,
-      "current_series_uses": [
-        {
-          "racer": "長野 壮志郎",
-          "finishes": [
-            3,
-            1,
-            4,
-            2
-          ],
-          "racer_win_rate": 6.09
-        }
-      ],
-      "current_series_score": 58.8,
-      "overall_score": 48.7
+      "current_series_score": 45.4,
+      "overall_score": 49.0
     },
     {
       "number": "44",
-      "score": 48.7,
+      "score": 48.9,
       "raw_score": 45.5,
-      "corrected_score": 48.7,
+      "corrected_score": 48.9,
       "score_difference": 3.3,
       "rank": "B",
       "two_rate": 44.44,
@@ -2234,8 +2105,8 @@
       "skill_matched": 3,
       "skill_total": 3,
       "past_three_score": 48.8,
-      "current_series_races": 5,
-      "current_series_avg_finish": 3.4,
+      "current_series_races": 7,
+      "current_series_avg_finish": 3.29,
       "current_series_uses": [
         {
           "racer": "鈴木 孝明",
@@ -2244,89 +2115,23 @@
             6,
             3,
             3,
-            1
+            1,
+            2,
+            4
           ],
           "racer_win_rate": 6.36
         }
       ],
-      "current_series_score": 48.1,
-      "overall_score": 48.7
+      "current_series_score": 49.4,
+      "overall_score": 48.9
     },
     {
-      "number": "49",
-      "score": 48.4,
-      "raw_score": 47.8,
-      "corrected_score": 48.4,
-      "score_difference": -0.5,
-      "rank": "B",
-      "two_rate": 22.22,
-      "three_rate": 33.33,
-      "starts": 9.0,
-      "period_start": "2026-05-24",
-      "uses": [
-        {
-          "start": "2026-10-30",
-          "end": "2026-11-04",
-          "racer": "吉村 誠",
-          "grade": "一般",
-          "finishes": "１４１　５２４４１５１２",
-          "races": 11,
-          "avg_finish": 2.73,
-          "racer_win_rate": 6.17,
-          "skill_adjusted": true
-        },
-        {
-          "start": "2026-10-14",
-          "end": "2026-10-17",
-          "racer": "桑原 啓",
-          "grade": "一般",
-          "finishes": "１６５　５２４",
-          "races": 6,
-          "avg_finish": 3.83,
-          "racer_win_rate": 4.33,
-          "skill_adjusted": true
-        },
-        {
-          "start": "2026-09-28",
-          "end": "2026-10-02",
-          "racer": "大西 隆洋",
-          "grade": "一般",
-          "finishes": "６　５６５１４　３３",
-          "races": 8,
-          "avg_finish": 4.12,
-          "racer_win_rate": 4.12,
-          "skill_adjusted": true
-        }
-      ],
-      "confidence": "高",
-      "skill_matched": 3,
-      "skill_total": 3,
-      "past_three_score": 47.3,
-      "current_series_races": 5,
-      "current_series_avg_finish": 3.2,
-      "current_series_uses": [
-        {
-          "racer": "小池 公生",
-          "finishes": [
-            4,
-            2,
-            1,
-            5,
-            4
-          ],
-          "racer_win_rate": 4.9
-        }
-      ],
-      "current_series_score": 53.6,
-      "overall_score": 48.4
-    },
-    {
-      "number": "74",
-      "score": 47.5,
+      "number": "75",
+      "score": 48.7,
       "raw_score": null,
-      "corrected_score": 47.5,
+      "corrected_score": 48.7,
       "score_difference": null,
-      "rank": "C",
+      "rank": "B",
       "two_rate": null,
       "three_rate": null,
       "starts": null,
@@ -2337,8 +2142,81 @@
       "skill_total": 0,
       "past_data_missing": true,
       "past_three_score": 50.0,
-      "current_series_races": 5,
-      "current_series_avg_finish": 4.8,
+      "current_series_races": 7,
+      "current_series_avg_finish": 3.86,
+      "current_series_uses": [
+        {
+          "racer": "芦澤 望",
+          "finishes": [
+            3,
+            5,
+            1,
+            6,
+            4,
+            5,
+            3
+          ],
+          "racer_win_rate": 5.61
+        }
+      ],
+      "current_series_score": 44.6,
+      "overall_score": 48.7
+    },
+    {
+      "number": "66",
+      "score": 48.6,
+      "raw_score": null,
+      "corrected_score": 48.6,
+      "score_difference": null,
+      "rank": "B",
+      "two_rate": null,
+      "three_rate": null,
+      "starts": null,
+      "period_start": "",
+      "uses": [],
+      "confidence": "低",
+      "skill_matched": 0,
+      "skill_total": 0,
+      "past_data_missing": true,
+      "past_three_score": 50.0,
+      "current_series_races": 6,
+      "current_series_avg_finish": 4,
+      "current_series_uses": [
+        {
+          "racer": "一色 颯輝",
+          "finishes": [
+            2,
+            5,
+            3,
+            3,
+            6,
+            5
+          ],
+          "racer_win_rate": 5.48
+        }
+      ],
+      "current_series_score": 43.3,
+      "overall_score": 48.6
+    },
+    {
+      "number": "74",
+      "score": 48.6,
+      "raw_score": null,
+      "corrected_score": 48.6,
+      "score_difference": null,
+      "rank": "B",
+      "two_rate": null,
+      "three_rate": null,
+      "starts": null,
+      "period_start": "",
+      "uses": [],
+      "confidence": "低",
+      "skill_matched": 0,
+      "skill_total": 0,
+      "past_data_missing": true,
+      "past_three_score": 50.0,
+      "current_series_races": 6,
+      "current_series_avg_finish": 4.17,
       "current_series_uses": [
         {
           "racer": "野見山 拓己",
@@ -2347,88 +2225,56 @@
             6,
             6,
             3,
-            3
+            3,
+            1
           ],
           "racer_win_rate": 4.73
         }
       ],
-      "current_series_score": 36.0,
-      "overall_score": 47.5
+      "current_series_score": 43.1,
+      "overall_score": 48.6
     },
     {
-      "number": "16",
-      "score": 47.2,
-      "raw_score": 44.5,
-      "corrected_score": 47.2,
-      "score_difference": -0.8,
-      "rank": "C",
-      "two_rate": 22.22,
-      "three_rate": 33.33,
-      "starts": 9.0,
-      "period_start": "2026-05-24",
-      "uses": [
-        {
-          "start": "2026-10-30",
-          "end": "2026-11-04",
-          "racer": "三宅 健太",
-          "grade": "一般",
-          "finishes": "３　４４６　５３５　５３",
-          "races": 9,
-          "avg_finish": 4.22,
-          "racer_win_rate": 5.46,
-          "skill_adjusted": true
-        },
-        {
-          "start": "2026-10-22",
-          "end": "2026-10-27",
-          "racer": "木谷 賢太",
-          "grade": "一般",
-          "finishes": "１１４　１４２３１２[５]",
-          "races": 10,
-          "avg_finish": 2.4,
-          "racer_win_rate": 6.47,
-          "skill_adjusted": true
-        },
-        {
-          "start": "2026-10-06",
-          "end": "2026-10-09",
-          "racer": "齋藤 和政",
-          "grade": "一般",
-          "finishes": "６　３４５　２４",
-          "races": 6,
-          "avg_finish": 4,
-          "racer_win_rate": 3.43,
-          "skill_adjusted": true
-        }
-      ],
-      "confidence": "高",
-      "skill_matched": 3,
-      "skill_total": 3,
-      "past_three_score": 43.7,
+      "number": "71",
+      "score": 48.0,
+      "raw_score": null,
+      "corrected_score": 48.0,
+      "score_difference": null,
+      "rank": "B",
+      "two_rate": null,
+      "three_rate": null,
+      "starts": null,
+      "period_start": "",
+      "uses": [],
+      "confidence": "低",
+      "skill_matched": 0,
+      "skill_total": 0,
+      "past_data_missing": true,
+      "past_three_score": 50.0,
       "current_series_races": 6,
-      "current_series_avg_finish": 2.33,
+      "current_series_avg_finish": 4.17,
       "current_series_uses": [
         {
-          "racer": "白神 優",
+          "racer": "村田 修次",
           "finishes": [
-            1,
-            4,
-            2,
-            1,
+            5,
             3,
-            3
+            4,
+            5,
+            2,
+            6
           ],
-          "racer_win_rate": 6.3
+          "racer_win_rate": 5.81
         }
       ],
-      "current_series_score": 60.2,
-      "overall_score": 47.2
+      "current_series_score": 40.7,
+      "overall_score": 48.0
     },
     {
       "number": "12",
-      "score": 46.6,
+      "score": 47.9,
       "raw_score": 45.3,
-      "corrected_score": 46.6,
+      "corrected_score": 47.9,
       "score_difference": 1.2,
       "rank": "C",
       "two_rate": 11.11,
@@ -2474,8 +2320,8 @@
       "skill_matched": 3,
       "skill_total": 3,
       "past_three_score": 46.5,
-      "current_series_races": 4,
-      "current_series_avg_finish": 3.75,
+      "current_series_races": 6,
+      "current_series_avg_finish": 3.17,
       "current_series_uses": [
         {
           "racer": "林 祐介",
@@ -2483,19 +2329,299 @@
             2,
             4,
             3,
-            6
+            6,
+            2,
+            2
           ],
           "racer_win_rate": 5.15
         }
       ],
-      "current_series_score": 46.9,
-      "overall_score": 46.6
+      "current_series_score": 53.4,
+      "overall_score": 47.9
+    },
+    {
+      "number": "33",
+      "score": 47.9,
+      "raw_score": 47.4,
+      "corrected_score": 47.9,
+      "score_difference": -0.4,
+      "rank": "C",
+      "two_rate": 33.33,
+      "three_rate": 66.67,
+      "starts": 9.0,
+      "period_start": "2026-05-24",
+      "uses": [
+        {
+          "start": "2026-10-30",
+          "end": "2026-11-04",
+          "racer": "深川 和仁",
+          "grade": "一般",
+          "finishes": "６　６２",
+          "races": 3,
+          "avg_finish": 4.67,
+          "racer_win_rate": 5.69,
+          "skill_adjusted": true
+        },
+        {
+          "start": "2026-10-22",
+          "end": "2026-10-27",
+          "racer": "山口 広樹",
+          "grade": "一般",
+          "finishes": "３５６　２　１６５　２４",
+          "races": 9,
+          "avg_finish": 3.78,
+          "racer_win_rate": 3.78,
+          "skill_adjusted": true
+        },
+        {
+          "start": "2026-10-06",
+          "end": "2026-10-09",
+          "racer": "原田 篤志",
+          "grade": "一般",
+          "finishes": "５１３２２５１４",
+          "races": 8,
+          "avg_finish": 2.88,
+          "racer_win_rate": 6.59,
+          "skill_adjusted": true
+        }
+      ],
+      "confidence": "高",
+      "skill_matched": 3,
+      "skill_total": 3,
+      "past_three_score": 47.0,
+      "current_series_races": 6,
+      "current_series_avg_finish": 3.17,
+      "current_series_uses": [
+        {
+          "racer": "長野 壮志郎",
+          "finishes": [
+            3,
+            1,
+            4,
+            2,
+            4,
+            5
+          ],
+          "racer_win_rate": 6.09
+        }
+      ],
+      "current_series_score": 51.3,
+      "overall_score": 47.9
+    },
+    {
+      "number": "49",
+      "score": 47.5,
+      "raw_score": 47.8,
+      "corrected_score": 47.5,
+      "score_difference": -0.5,
+      "rank": "C",
+      "two_rate": 22.22,
+      "three_rate": 33.33,
+      "starts": 9.0,
+      "period_start": "2026-05-24",
+      "uses": [
+        {
+          "start": "2026-10-30",
+          "end": "2026-11-04",
+          "racer": "吉村 誠",
+          "grade": "一般",
+          "finishes": "１４１　５２４４１５１２",
+          "races": 11,
+          "avg_finish": 2.73,
+          "racer_win_rate": 6.17,
+          "skill_adjusted": true
+        },
+        {
+          "start": "2026-10-14",
+          "end": "2026-10-17",
+          "racer": "桑原 啓",
+          "grade": "一般",
+          "finishes": "１６５　５２４",
+          "races": 6,
+          "avg_finish": 3.83,
+          "racer_win_rate": 4.33,
+          "skill_adjusted": true
+        },
+        {
+          "start": "2026-09-28",
+          "end": "2026-10-02",
+          "racer": "大西 隆洋",
+          "grade": "一般",
+          "finishes": "６　５６５１４　３３",
+          "races": 8,
+          "avg_finish": 4.12,
+          "racer_win_rate": 4.12,
+          "skill_adjusted": true
+        }
+      ],
+      "confidence": "高",
+      "skill_matched": 3,
+      "skill_total": 3,
+      "past_three_score": 47.3,
+      "current_series_races": 6,
+      "current_series_avg_finish": 3.67,
+      "current_series_uses": [
+        {
+          "racer": "小池 公生",
+          "finishes": [
+            4,
+            2,
+            1,
+            5,
+            4,
+            6
+          ],
+          "racer_win_rate": 4.9
+        }
+      ],
+      "current_series_score": 48.4,
+      "overall_score": 47.5
+    },
+    {
+      "number": "16",
+      "score": 47.1,
+      "raw_score": 44.5,
+      "corrected_score": 47.1,
+      "score_difference": -0.8,
+      "rank": "C",
+      "two_rate": 22.22,
+      "three_rate": 33.33,
+      "starts": 9.0,
+      "period_start": "2026-05-24",
+      "uses": [
+        {
+          "start": "2026-10-30",
+          "end": "2026-11-04",
+          "racer": "三宅 健太",
+          "grade": "一般",
+          "finishes": "３　４４６　５３５　５３",
+          "races": 9,
+          "avg_finish": 4.22,
+          "racer_win_rate": 5.46,
+          "skill_adjusted": true
+        },
+        {
+          "start": "2026-10-22",
+          "end": "2026-10-27",
+          "racer": "木谷 賢太",
+          "grade": "一般",
+          "finishes": "１１４　１４２３１２[５]",
+          "races": 10,
+          "avg_finish": 2.4,
+          "racer_win_rate": 6.47,
+          "skill_adjusted": true
+        },
+        {
+          "start": "2026-10-06",
+          "end": "2026-10-09",
+          "racer": "齋藤 和政",
+          "grade": "一般",
+          "finishes": "６　３４５　２４",
+          "races": 6,
+          "avg_finish": 4,
+          "racer_win_rate": 3.43,
+          "skill_adjusted": true
+        }
+      ],
+      "confidence": "高",
+      "skill_matched": 3,
+      "skill_total": 3,
+      "past_three_score": 43.7,
+      "current_series_races": 7,
+      "current_series_avg_finish": 2.57,
+      "current_series_uses": [
+        {
+          "racer": "白神 優",
+          "finishes": [
+            1,
+            4,
+            2,
+            1,
+            3,
+            3,
+            4
+          ],
+          "racer_win_rate": 6.3
+        }
+      ],
+      "current_series_score": 57.5,
+      "overall_score": 47.1
+    },
+    {
+      "number": "26",
+      "score": 45.8,
+      "raw_score": 45.3,
+      "corrected_score": 45.8,
+      "score_difference": -1.1,
+      "rank": "C",
+      "two_rate": 0.0,
+      "three_rate": 22.22,
+      "starts": 9.0,
+      "period_start": "2026-05-24",
+      "uses": [
+        {
+          "start": "2026-10-30",
+          "end": "2026-11-04",
+          "racer": "篠原 飛翔",
+          "grade": "一般",
+          "finishes": "３　３１４　１５４３２５",
+          "races": 10,
+          "avg_finish": 3.1,
+          "racer_win_rate": 5.45,
+          "skill_adjusted": true
+        },
+        {
+          "start": "2026-10-14",
+          "end": "2026-10-17",
+          "racer": "吉田 俊彦",
+          "grade": "一般",
+          "finishes": "２１５　２３１１",
+          "races": 7,
+          "avg_finish": 2.14,
+          "racer_win_rate": 6.54,
+          "skill_adjusted": true
+        },
+        {
+          "start": "2026-10-06",
+          "end": "2026-10-09",
+          "racer": "渡 修平",
+          "grade": "一般",
+          "finishes": "１４５　５６４",
+          "races": 6,
+          "avg_finish": 4.17,
+          "racer_win_rate": 3.95,
+          "skill_adjusted": true
+        }
+      ],
+      "confidence": "高",
+      "skill_matched": 3,
+      "skill_total": 3,
+      "past_three_score": 44.2,
+      "current_series_races": 7,
+      "current_series_avg_finish": 3.57,
+      "current_series_uses": [
+        {
+          "racer": "森 智哉",
+          "finishes": [
+            3,
+            4,
+            3,
+            4,
+            6,
+            1,
+            4
+          ],
+          "racer_win_rate": 4.36
+        }
+      ],
+      "current_series_score": 50.6,
+      "overall_score": 45.8
     },
     {
       "number": "40",
-      "score": 46.4,
+      "score": 45.6,
       "raw_score": 42.0,
-      "corrected_score": 46.4,
+      "corrected_score": 45.6,
       "score_difference": 2.0,
       "rank": "C",
       "two_rate": 40.0,
@@ -2541,8 +2667,8 @@
       "skill_matched": 3,
       "skill_total": 3,
       "past_three_score": 44.0,
-      "current_series_races": 4,
-      "current_series_avg_finish": 2.5,
+      "current_series_races": 6,
+      "current_series_avg_finish": 3.33,
       "current_series_uses": [
         {
           "racer": "中本 大樹",
@@ -2550,13 +2676,84 @@
             3,
             3,
             3,
-            1
+            1,
+            4,
+            6
           ],
           "racer_win_rate": 5.07
         }
       ],
-      "current_series_score": 61.0,
-      "overall_score": 46.4
+      "current_series_score": 51.7,
+      "overall_score": 45.6
+    },
+    {
+      "number": "18",
+      "score": 45.5,
+      "raw_score": 47.6,
+      "corrected_score": 45.5,
+      "score_difference": -1.5,
+      "rank": "C",
+      "two_rate": 0.0,
+      "three_rate": 11.11,
+      "starts": 9.0,
+      "period_start": "2026-05-24",
+      "uses": [
+        {
+          "start": "2026-10-22",
+          "end": "2026-10-27",
+          "racer": "永松 良教",
+          "grade": "一般",
+          "finishes": "４２４２２　１　２６１Ｆ",
+          "races": 9,
+          "avg_finish": 2.67,
+          "racer_win_rate": 5.41,
+          "skill_adjusted": true
+        },
+        {
+          "start": "2026-10-14",
+          "end": "2026-10-17",
+          "racer": "松井 洪弥",
+          "grade": "一般",
+          "finishes": "４２４　４１１３",
+          "races": 7,
+          "avg_finish": 2.71,
+          "racer_win_rate": 6.38,
+          "skill_adjusted": true
+        },
+        {
+          "start": "2026-10-06",
+          "end": "2026-10-09",
+          "racer": "山本 浩輔",
+          "grade": "一般",
+          "finishes": "１４４　２５２２",
+          "races": 7,
+          "avg_finish": 2.86,
+          "racer_win_rate": 5.15,
+          "skill_adjusted": true
+        }
+      ],
+      "confidence": "高",
+      "skill_matched": 3,
+      "skill_total": 3,
+      "past_three_score": 46.1,
+      "current_series_races": 6,
+      "current_series_avg_finish": 3.83,
+      "current_series_uses": [
+        {
+          "racer": "丸尾 義孝",
+          "finishes": [
+            6,
+            3,
+            4,
+            5,
+            4,
+            1
+          ],
+          "racer_win_rate": 6.29
+        }
+      ],
+      "current_series_score": 43.4,
+      "overall_score": 45.5
     },
     {
       "number": "23",
@@ -2615,276 +2812,6 @@
       "overall_score": 45.3
     },
     {
-      "number": "30",
-      "score": 45.2,
-      "raw_score": 47.8,
-      "corrected_score": 45.2,
-      "score_difference": -1.8,
-      "rank": "C",
-      "two_rate": 25.0,
-      "three_rate": 25.0,
-      "starts": 8.0,
-      "period_start": "2026-05-24",
-      "uses": [
-        {
-          "start": "2026-10-30",
-          "end": "2026-11-04",
-          "racer": "中村 尊",
-          "grade": "一般",
-          "finishes": "４転１　４転",
-          "races": 3,
-          "avg_finish": 3,
-          "racer_win_rate": 5.93,
-          "skill_adjusted": true
-        },
-        {
-          "start": "2026-10-14",
-          "end": "2026-10-17",
-          "racer": "宮下 元胤",
-          "grade": "一般",
-          "finishes": "５１５　４５３",
-          "races": 6,
-          "avg_finish": 3.83,
-          "racer_win_rate": 5.81,
-          "skill_adjusted": true
-        },
-        {
-          "start": "2026-09-28",
-          "end": "2026-10-02",
-          "racer": "高倉 孝太",
-          "grade": "一般",
-          "finishes": "３５２５１　２２２５",
-          "races": 9,
-          "avg_finish": 3,
-          "racer_win_rate": 5.71,
-          "skill_adjusted": true
-        }
-      ],
-      "confidence": "高",
-      "skill_matched": 3,
-      "skill_total": 3,
-      "past_three_score": 46.0,
-      "current_series_races": 4,
-      "current_series_avg_finish": 4.25,
-      "current_series_uses": [
-        {
-          "racer": "小野 勇作",
-          "finishes": [
-            4,
-            5,
-            6,
-            2
-          ],
-          "racer_win_rate": 5.45
-        }
-      ],
-      "current_series_score": 40.6,
-      "overall_score": 45.2
-    },
-    {
-      "number": "22",
-      "score": 44.7,
-      "raw_score": 46.9,
-      "corrected_score": 44.7,
-      "score_difference": -1.2,
-      "rank": "C",
-      "two_rate": 0.0,
-      "three_rate": 12.5,
-      "starts": 8.0,
-      "period_start": "2026-05-24",
-      "uses": [
-        {
-          "start": "2026-10-22",
-          "end": "2026-10-27",
-          "racer": "照屋 厚仁",
-          "grade": "一般",
-          "finishes": "６　３２１　２２２４２５",
-          "races": 10,
-          "avg_finish": 2.9,
-          "racer_win_rate": 5.74,
-          "skill_adjusted": true
-        },
-        {
-          "start": "2026-10-06",
-          "end": "2026-10-09",
-          "racer": "山ノ内 雅人",
-          "grade": "一般",
-          "finishes": "４３１　３３１３",
-          "races": 7,
-          "avg_finish": 2.57,
-          "racer_win_rate": 5.8,
-          "skill_adjusted": true
-        },
-        {
-          "start": "2026-09-28",
-          "end": "2026-10-02",
-          "racer": "岡本 大",
-          "grade": "一般",
-          "finishes": "１３４４５　１　４１",
-          "races": 8,
-          "avg_finish": 2.88,
-          "racer_win_rate": 4.55,
-          "skill_adjusted": true
-        }
-      ],
-      "confidence": "高",
-      "skill_matched": 3,
-      "skill_total": 3,
-      "past_three_score": 45.7,
-      "current_series_races": 4,
-      "current_series_avg_finish": 4.25,
-      "current_series_uses": [
-        {
-          "racer": "森 悠稀",
-          "finishes": [
-            1,
-            5,
-            5,
-            6
-          ],
-          "racer_win_rate": 6.38
-        }
-      ],
-      "current_series_score": 38.5,
-      "overall_score": 44.7
-    },
-    {
-      "number": "18",
-      "score": 44.5,
-      "raw_score": 47.6,
-      "corrected_score": 44.5,
-      "score_difference": -1.5,
-      "rank": "C",
-      "two_rate": 0.0,
-      "three_rate": 11.11,
-      "starts": 9.0,
-      "period_start": "2026-05-24",
-      "uses": [
-        {
-          "start": "2026-10-22",
-          "end": "2026-10-27",
-          "racer": "永松 良教",
-          "grade": "一般",
-          "finishes": "４２４２２　１　２６１Ｆ",
-          "races": 9,
-          "avg_finish": 2.67,
-          "racer_win_rate": 5.41,
-          "skill_adjusted": true
-        },
-        {
-          "start": "2026-10-14",
-          "end": "2026-10-17",
-          "racer": "松井 洪弥",
-          "grade": "一般",
-          "finishes": "４２４　４１１３",
-          "races": 7,
-          "avg_finish": 2.71,
-          "racer_win_rate": 6.38,
-          "skill_adjusted": true
-        },
-        {
-          "start": "2026-10-06",
-          "end": "2026-10-09",
-          "racer": "山本 浩輔",
-          "grade": "一般",
-          "finishes": "１４４　２５２２",
-          "races": 7,
-          "avg_finish": 2.86,
-          "racer_win_rate": 5.15,
-          "skill_adjusted": true
-        }
-      ],
-      "confidence": "高",
-      "skill_matched": 3,
-      "skill_total": 3,
-      "past_three_score": 46.1,
-      "current_series_races": 5,
-      "current_series_avg_finish": 4.4,
-      "current_series_uses": [
-        {
-          "racer": "丸尾 義孝",
-          "finishes": [
-            6,
-            3,
-            4,
-            5,
-            4
-          ],
-          "racer_win_rate": 6.29
-        }
-      ],
-      "current_series_score": 37.0,
-      "overall_score": 44.5
-    },
-    {
-      "number": "26",
-      "score": 44.5,
-      "raw_score": 45.3,
-      "corrected_score": 44.5,
-      "score_difference": -1.1,
-      "rank": "C",
-      "two_rate": 0.0,
-      "three_rate": 22.22,
-      "starts": 9.0,
-      "period_start": "2026-05-24",
-      "uses": [
-        {
-          "start": "2026-10-30",
-          "end": "2026-11-04",
-          "racer": "篠原 飛翔",
-          "grade": "一般",
-          "finishes": "３　３１４　１５４３２５",
-          "races": 10,
-          "avg_finish": 3.1,
-          "racer_win_rate": 5.45,
-          "skill_adjusted": true
-        },
-        {
-          "start": "2026-10-14",
-          "end": "2026-10-17",
-          "racer": "吉田 俊彦",
-          "grade": "一般",
-          "finishes": "２１５　２３１１",
-          "races": 7,
-          "avg_finish": 2.14,
-          "racer_win_rate": 6.54,
-          "skill_adjusted": true
-        },
-        {
-          "start": "2026-10-06",
-          "end": "2026-10-09",
-          "racer": "渡 修平",
-          "grade": "一般",
-          "finishes": "１４５　５６４",
-          "races": 6,
-          "avg_finish": 4.17,
-          "racer_win_rate": 3.95,
-          "skill_adjusted": true
-        }
-      ],
-      "confidence": "高",
-      "skill_matched": 3,
-      "skill_total": 3,
-      "past_three_score": 44.2,
-      "current_series_races": 5,
-      "current_series_avg_finish": 4,
-      "current_series_uses": [
-        {
-          "racer": "森 智哉",
-          "finishes": [
-            3,
-            4,
-            3,
-            4,
-            6
-          ],
-          "racer_win_rate": 4.36
-        }
-      ],
-      "current_series_score": 45.8,
-      "overall_score": 44.5
-    },
-    {
       "number": "55",
       "score": 44.5,
       "raw_score": 46.2,
@@ -2939,6 +2866,214 @@
       "current_series_uses": [],
       "current_series_score": null,
       "overall_score": 44.5
+    },
+    {
+      "number": "22",
+      "score": 44.4,
+      "raw_score": 46.9,
+      "corrected_score": 44.4,
+      "score_difference": -1.2,
+      "rank": "C",
+      "two_rate": 0.0,
+      "three_rate": 12.5,
+      "starts": 8.0,
+      "period_start": "2026-05-24",
+      "uses": [
+        {
+          "start": "2026-10-22",
+          "end": "2026-10-27",
+          "racer": "照屋 厚仁",
+          "grade": "一般",
+          "finishes": "６　３２１　２２２４２５",
+          "races": 10,
+          "avg_finish": 2.9,
+          "racer_win_rate": 5.74,
+          "skill_adjusted": true
+        },
+        {
+          "start": "2026-10-06",
+          "end": "2026-10-09",
+          "racer": "山ノ内 雅人",
+          "grade": "一般",
+          "finishes": "４３１　３３１３",
+          "races": 7,
+          "avg_finish": 2.57,
+          "racer_win_rate": 5.8,
+          "skill_adjusted": true
+        },
+        {
+          "start": "2026-09-28",
+          "end": "2026-10-02",
+          "racer": "岡本 大",
+          "grade": "一般",
+          "finishes": "１３４４５　１　４１",
+          "races": 8,
+          "avg_finish": 2.88,
+          "racer_win_rate": 4.55,
+          "skill_adjusted": true
+        }
+      ],
+      "confidence": "高",
+      "skill_matched": 3,
+      "skill_total": 3,
+      "past_three_score": 45.7,
+      "current_series_races": 6,
+      "current_series_avg_finish": 4.17,
+      "current_series_uses": [
+        {
+          "racer": "森 悠稀",
+          "finishes": [
+            1,
+            5,
+            5,
+            6,
+            5,
+            3
+          ],
+          "racer_win_rate": 6.38
+        }
+      ],
+      "current_series_score": 39.4,
+      "overall_score": 44.4
+    },
+    {
+      "number": "29",
+      "score": 43.6,
+      "raw_score": 46.3,
+      "corrected_score": 43.6,
+      "score_difference": -2.8,
+      "rank": "C",
+      "two_rate": 11.11,
+      "three_rate": 11.11,
+      "starts": 9.0,
+      "period_start": "2026-05-24",
+      "uses": [
+        {
+          "start": "2026-10-22",
+          "end": "2026-10-27",
+          "racer": "小野 生奈",
+          "grade": "一般",
+          "finishes": "４４２１４　２４２２[６]",
+          "races": 10,
+          "avg_finish": 3.1,
+          "racer_win_rate": 7.28,
+          "skill_adjusted": true
+        },
+        {
+          "start": "2026-10-06",
+          "end": "2026-10-09",
+          "racer": "桐本 康臣",
+          "grade": "一般",
+          "finishes": "１　２２６３４３",
+          "races": 7,
+          "avg_finish": 3,
+          "racer_win_rate": 5.81,
+          "skill_adjusted": true
+        },
+        {
+          "start": "2026-09-28",
+          "end": "2026-10-02",
+          "racer": "小宮 涼雅",
+          "grade": "一般",
+          "finishes": "２　４４４２１　３４",
+          "races": 8,
+          "avg_finish": 3,
+          "racer_win_rate": 4.5,
+          "skill_adjusted": true
+        }
+      ],
+      "confidence": "高",
+      "skill_matched": 3,
+      "skill_total": 3,
+      "past_three_score": 43.5,
+      "current_series_races": 7,
+      "current_series_avg_finish": 3.71,
+      "current_series_uses": [
+        {
+          "racer": "大須賀 友",
+          "finishes": [
+            6,
+            3,
+            4,
+            6,
+            1,
+            1,
+            5
+          ],
+          "racer_win_rate": 6.65
+        }
+      ],
+      "current_series_score": 43.9,
+      "overall_score": 43.6
+    },
+    {
+      "number": "30",
+      "score": 43.5,
+      "raw_score": 47.8,
+      "corrected_score": 43.5,
+      "score_difference": -1.8,
+      "rank": "C",
+      "two_rate": 25.0,
+      "three_rate": 25.0,
+      "starts": 8.0,
+      "period_start": "2026-05-24",
+      "uses": [
+        {
+          "start": "2026-10-30",
+          "end": "2026-11-04",
+          "racer": "中村 尊",
+          "grade": "一般",
+          "finishes": "４転１　４転",
+          "races": 3,
+          "avg_finish": 3,
+          "racer_win_rate": 5.93,
+          "skill_adjusted": true
+        },
+        {
+          "start": "2026-10-14",
+          "end": "2026-10-17",
+          "racer": "宮下 元胤",
+          "grade": "一般",
+          "finishes": "５１５　４５３",
+          "races": 6,
+          "avg_finish": 3.83,
+          "racer_win_rate": 5.81,
+          "skill_adjusted": true
+        },
+        {
+          "start": "2026-09-28",
+          "end": "2026-10-02",
+          "racer": "高倉 孝太",
+          "grade": "一般",
+          "finishes": "３５２５１　２２２５",
+          "races": 9,
+          "avg_finish": 3,
+          "racer_win_rate": 5.71,
+          "skill_adjusted": true
+        }
+      ],
+      "confidence": "高",
+      "skill_matched": 3,
+      "skill_total": 3,
+      "past_three_score": 46.0,
+      "current_series_races": 6,
+      "current_series_avg_finish": 4.83,
+      "current_series_uses": [
+        {
+          "racer": "小野 勇作",
+          "finishes": [
+            4,
+            5,
+            6,
+            2,
+            6,
+            6
+          ],
+          "racer_win_rate": 5.45
+        }
+      ],
+      "current_series_score": 34.1,
+      "overall_score": 43.5
     },
     {
       "number": "27",
@@ -2997,142 +3132,6 @@
       "overall_score": 43.4
     },
     {
-      "number": "29",
-      "score": 43.0,
-      "raw_score": 46.3,
-      "corrected_score": 43.0,
-      "score_difference": -2.8,
-      "rank": "C",
-      "two_rate": 11.11,
-      "three_rate": 11.11,
-      "starts": 9.0,
-      "period_start": "2026-05-24",
-      "uses": [
-        {
-          "start": "2026-10-22",
-          "end": "2026-10-27",
-          "racer": "小野 生奈",
-          "grade": "一般",
-          "finishes": "４４２１４　２４２２[６]",
-          "races": 10,
-          "avg_finish": 3.1,
-          "racer_win_rate": 7.28,
-          "skill_adjusted": true
-        },
-        {
-          "start": "2026-10-06",
-          "end": "2026-10-09",
-          "racer": "桐本 康臣",
-          "grade": "一般",
-          "finishes": "１　２２６３４３",
-          "races": 7,
-          "avg_finish": 3,
-          "racer_win_rate": 5.81,
-          "skill_adjusted": true
-        },
-        {
-          "start": "2026-09-28",
-          "end": "2026-10-02",
-          "racer": "小宮 涼雅",
-          "grade": "一般",
-          "finishes": "２　４４４２１　３４",
-          "races": 8,
-          "avg_finish": 3,
-          "racer_win_rate": 4.5,
-          "skill_adjusted": true
-        }
-      ],
-      "confidence": "高",
-      "skill_matched": 3,
-      "skill_total": 3,
-      "past_three_score": 43.5,
-      "current_series_races": 5,
-      "current_series_avg_finish": 4,
-      "current_series_uses": [
-        {
-          "racer": "大須賀 友",
-          "finishes": [
-            6,
-            3,
-            4,
-            6,
-            1
-          ],
-          "racer_win_rate": 6.65
-        }
-      ],
-      "current_series_score": 40.7,
-      "overall_score": 43.0
-    },
-    {
-      "number": "19",
-      "score": 42.3,
-      "raw_score": 40.4,
-      "corrected_score": 42.3,
-      "score_difference": 0.4,
-      "rank": "C",
-      "two_rate": 22.22,
-      "three_rate": 55.56,
-      "starts": 9.0,
-      "period_start": "2026-05-24",
-      "uses": [
-        {
-          "start": "2026-10-22",
-          "end": "2026-10-27",
-          "racer": "木場 雄二郎",
-          "grade": "一般",
-          "finishes": "６　５２５　５４３　６",
-          "races": 8,
-          "avg_finish": 4.5,
-          "racer_win_rate": 4.69,
-          "skill_adjusted": true
-        },
-        {
-          "start": "2026-10-06",
-          "end": "2026-10-09",
-          "racer": "谷口 丞",
-          "grade": "一般",
-          "finishes": "３　２５２６１６",
-          "races": 7,
-          "avg_finish": 3.57,
-          "racer_win_rate": 5.58,
-          "skill_adjusted": true
-        },
-        {
-          "start": "2026-09-28",
-          "end": "2026-10-02",
-          "racer": "今泉 徹",
-          "grade": "一般",
-          "finishes": "６　４５３５５　１６",
-          "races": 8,
-          "avg_finish": 4.38,
-          "racer_win_rate": 4.02,
-          "skill_adjusted": true
-        }
-      ],
-      "confidence": "高",
-      "skill_matched": 3,
-      "skill_total": 3,
-      "past_three_score": 40.8,
-      "current_series_races": 5,
-      "current_series_avg_finish": 3.6,
-      "current_series_uses": [
-        {
-          "racer": "川崎 智稔",
-          "finishes": [
-            2,
-            5,
-            2,
-            4,
-            5
-          ],
-          "racer_win_rate": 4.68
-        }
-      ],
-      "current_series_score": 49.6,
-      "overall_score": 42.3
-    },
-    {
       "number": "54",
       "score": 42.1,
       "raw_score": 41.6,
@@ -3187,6 +3186,75 @@
       "current_series_uses": [],
       "current_series_score": null,
       "overall_score": 42.1
+    },
+    {
+      "number": "21",
+      "score": 41.9,
+      "raw_score": 39.5,
+      "corrected_score": 41.9,
+      "score_difference": -0.7,
+      "rank": "C",
+      "two_rate": 0.0,
+      "three_rate": 12.5,
+      "starts": 8.0,
+      "period_start": "2026-05-24",
+      "uses": [
+        {
+          "start": "2026-10-30",
+          "end": "2026-11-04",
+          "racer": "前田 聖文",
+          "grade": "一般",
+          "finishes": "１１３　３５３２２転５",
+          "races": 9,
+          "avg_finish": 2.78,
+          "racer_win_rate": 5.93,
+          "skill_adjusted": true
+        },
+        {
+          "start": "2026-10-14",
+          "end": "2026-10-17",
+          "racer": "石川 真二",
+          "grade": "一般",
+          "finishes": "３５２１１６２３",
+          "races": 8,
+          "avg_finish": 2.88,
+          "racer_win_rate": 7.01,
+          "skill_adjusted": true
+        },
+        {
+          "start": "2026-09-28",
+          "end": "2026-10-02",
+          "racer": "長嶺 真李愛",
+          "grade": "一般",
+          "finishes": "６　６６６　６６６欠",
+          "races": 7,
+          "avg_finish": 6,
+          "racer_win_rate": 1.23,
+          "skill_adjusted": true
+        }
+      ],
+      "confidence": "高",
+      "skill_matched": 3,
+      "skill_total": 3,
+      "past_three_score": 38.8,
+      "current_series_races": 6,
+      "current_series_avg_finish": 3.17,
+      "current_series_uses": [
+        {
+          "racer": "田村 慶",
+          "finishes": [
+            1,
+            2,
+            5,
+            2,
+            6,
+            3
+          ],
+          "racer_win_rate": 5.1
+        }
+      ],
+      "current_series_score": 53.5,
+      "overall_score": 41.9
     },
     {
       "number": "35",
@@ -3254,78 +3322,79 @@
       "overall_score": 41.8
     },
     {
-      "number": "21",
-      "score": 41.3,
-      "raw_score": 39.5,
-      "corrected_score": 41.3,
-      "score_difference": -0.7,
+      "number": "19",
+      "score": 41.7,
+      "raw_score": 40.4,
+      "corrected_score": 41.7,
+      "score_difference": 0.4,
       "rank": "C",
-      "two_rate": 0.0,
-      "three_rate": 12.5,
-      "starts": 8.0,
+      "two_rate": 22.22,
+      "three_rate": 55.56,
+      "starts": 9.0,
       "period_start": "2026-05-24",
       "uses": [
         {
-          "start": "2026-10-30",
-          "end": "2026-11-04",
-          "racer": "前田 聖文",
+          "start": "2026-10-22",
+          "end": "2026-10-27",
+          "racer": "木場 雄二郎",
           "grade": "一般",
-          "finishes": "１１３　３５３２２転５",
-          "races": 9,
-          "avg_finish": 2.78,
-          "racer_win_rate": 5.93,
+          "finishes": "６　５２５　５４３　６",
+          "races": 8,
+          "avg_finish": 4.5,
+          "racer_win_rate": 4.69,
           "skill_adjusted": true
         },
         {
-          "start": "2026-10-14",
-          "end": "2026-10-17",
-          "racer": "石川 真二",
+          "start": "2026-10-06",
+          "end": "2026-10-09",
+          "racer": "谷口 丞",
           "grade": "一般",
-          "finishes": "３５２１１６２３",
-          "races": 8,
-          "avg_finish": 2.88,
-          "racer_win_rate": 7.01,
+          "finishes": "３　２５２６１６",
+          "races": 7,
+          "avg_finish": 3.57,
+          "racer_win_rate": 5.58,
           "skill_adjusted": true
         },
         {
           "start": "2026-09-28",
           "end": "2026-10-02",
-          "racer": "長嶺 真李愛",
+          "racer": "今泉 徹",
           "grade": "一般",
-          "finishes": "６　６６６　６６６欠",
-          "races": 7,
-          "avg_finish": 6,
-          "racer_win_rate": 1.23,
+          "finishes": "６　４５３５５　１６",
+          "races": 8,
+          "avg_finish": 4.38,
+          "racer_win_rate": 4.02,
           "skill_adjusted": true
         }
       ],
       "confidence": "高",
       "skill_matched": 3,
       "skill_total": 3,
-      "past_three_score": 38.8,
-      "current_series_races": 5,
-      "current_series_avg_finish": 3.2,
+      "past_three_score": 40.8,
+      "current_series_races": 6,
+      "current_series_avg_finish": 4,
       "current_series_uses": [
         {
-          "racer": "田村 慶",
+          "racer": "川崎 智稔",
           "finishes": [
-            1,
             2,
             5,
             2,
+            4,
+            5,
             6
           ],
-          "racer_win_rate": 5.1
+          "racer_win_rate": 4.68
         }
       ],
-      "current_series_score": 53.1,
-      "overall_score": 41.3
+      "current_series_score": 45.1,
+      "overall_score": 41.7
     },
     {
       "number": "48",
-      "score": 40.4,
+      "score": 41.0,
       "raw_score": 38.7,
-      "corrected_score": 40.4,
+      "corrected_score": 41.0,
       "score_difference": -0.7,
       "rank": "C",
       "two_rate": 0.0,
@@ -3371,8 +3440,8 @@
       "skill_matched": 3,
       "skill_total": 3,
       "past_three_score": 38.0,
-      "current_series_races": 5,
-      "current_series_avg_finish": 3.2,
+      "current_series_races": 6,
+      "current_series_avg_finish": 3.17,
       "current_series_uses": [
         {
           "racer": "池田 剛規",
@@ -3381,13 +3450,84 @@
             5,
             5,
             1,
-            4
+            4,
+            3
           ],
           "racer_win_rate": 5.66
         }
       ],
-      "current_series_score": 51.9,
-      "overall_score": 40.4
+      "current_series_score": 52.3,
+      "overall_score": 41.0
+    },
+    {
+      "number": "50",
+      "score": 38.5,
+      "raw_score": 36.8,
+      "corrected_score": 38.5,
+      "score_difference": 0.7,
+      "rank": "C",
+      "two_rate": 0.0,
+      "three_rate": 22.22,
+      "starts": 9.0,
+      "period_start": "2026-05-24",
+      "uses": [
+        {
+          "start": "2026-10-30",
+          "end": "2026-11-04",
+          "racer": "吉岡 誠",
+          "grade": "一般",
+          "finishes": "５　６６４　３６２　５６",
+          "races": 9,
+          "avg_finish": 4.78,
+          "racer_win_rate": 3.21,
+          "skill_adjusted": true
+        },
+        {
+          "start": "2026-10-14",
+          "end": "2026-10-17",
+          "racer": "角谷 健吾",
+          "grade": "一般",
+          "finishes": "５３１１４１[４]",
+          "races": 7,
+          "avg_finish": 2.71,
+          "racer_win_rate": 5.93,
+          "skill_adjusted": true
+        },
+        {
+          "start": "2026-09-28",
+          "end": "2026-10-02",
+          "racer": "西野 翔太",
+          "grade": "一般",
+          "finishes": "１６３　６２１１[３]",
+          "races": 8,
+          "avg_finish": 2.88,
+          "racer_win_rate": 6.62,
+          "skill_adjusted": true
+        }
+      ],
+      "confidence": "高",
+      "skill_matched": 3,
+      "skill_total": 3,
+      "past_three_score": 37.5,
+      "current_series_races": 7,
+      "current_series_avg_finish": 4.14,
+      "current_series_uses": [
+        {
+          "racer": "堀越 雄貴",
+          "finishes": [
+            1,
+            5,
+            6,
+            6,
+            5,
+            5,
+            1
+          ],
+          "racer_win_rate": 5.56
+        }
+      ],
+      "current_series_score": 41.5,
+      "overall_score": 38.5
     },
     {
       "number": "11",
@@ -3444,74 +3584,6 @@
       "current_series_uses": [],
       "current_series_score": null,
       "overall_score": 37.9
-    },
-    {
-      "number": "50",
-      "score": 37.3,
-      "raw_score": 36.8,
-      "corrected_score": 37.3,
-      "score_difference": 0.7,
-      "rank": "C",
-      "two_rate": 0.0,
-      "three_rate": 22.22,
-      "starts": 9.0,
-      "period_start": "2026-05-24",
-      "uses": [
-        {
-          "start": "2026-10-30",
-          "end": "2026-11-04",
-          "racer": "吉岡 誠",
-          "grade": "一般",
-          "finishes": "５　６６４　３６２　５６",
-          "races": 9,
-          "avg_finish": 4.78,
-          "racer_win_rate": 3.21,
-          "skill_adjusted": true
-        },
-        {
-          "start": "2026-10-14",
-          "end": "2026-10-17",
-          "racer": "角谷 健吾",
-          "grade": "一般",
-          "finishes": "５３１１４１[４]",
-          "races": 7,
-          "avg_finish": 2.71,
-          "racer_win_rate": 5.93,
-          "skill_adjusted": true
-        },
-        {
-          "start": "2026-09-28",
-          "end": "2026-10-02",
-          "racer": "西野 翔太",
-          "grade": "一般",
-          "finishes": "１６３　６２１１[３]",
-          "races": 8,
-          "avg_finish": 2.88,
-          "racer_win_rate": 6.62,
-          "skill_adjusted": true
-        }
-      ],
-      "confidence": "高",
-      "skill_matched": 3,
-      "skill_total": 3,
-      "past_three_score": 37.5,
-      "current_series_races": 5,
-      "current_series_avg_finish": 4.6,
-      "current_series_uses": [
-        {
-          "racer": "堀越 雄貴",
-          "finishes": [
-            1,
-            5,
-            6,
-            6,
-            5
-          ],
-          "racer_win_rate": 5.56
-        }
-      ],
-      "current_series_score": 36.4,
-      "overall_score": 37.3
     },
     {
       "number": "51",

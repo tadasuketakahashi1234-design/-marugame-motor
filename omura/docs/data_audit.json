@@ -1,6 +1,63 @@
 {
-  "generated_at": "2026-11-25T19:31:26.908619+09:00",
+  "generated_at": "2026-11-26T19:30:37.484254+09:00",
   "dates": {
+    "2026-11-26": {
+      "race_cards": {
+        "status": "error",
+        "url": "https://boatracecsv.github.io/data/programs/race_cards/2026/11/26.csv",
+        "error": "HTTP Error 404: Not Found"
+      },
+      "waku10": {
+        "status": "error",
+        "url": "https://boatracecsv.github.io/data/programs/waku10/2026/11/26.csv",
+        "error": "HTTP Error 404: Not Found"
+      },
+      "motor_history": {
+        "status": "error",
+        "url": "https://boatracecsv.github.io/data/programs/motor_history/2026/11/26.csv",
+        "error": "HTTP Error 404: Not Found"
+      },
+      "motor_stats": {
+        "status": "error",
+        "url": "https://boatracecsv.github.io/data/programs/motor_stats/2026/11/26.csv",
+        "error": "HTTP Error 404: Not Found"
+      },
+      "exhibition": {
+        "status": "error",
+        "url": "https://boatracecsv.github.io/data/previews/tkz/2026/11/26.csv",
+        "error": "HTTP Error 404: Not Found"
+      },
+      "start_exhibition": {
+        "status": "error",
+        "url": "https://boatracecsv.github.io/data/previews/stt/2026/11/26.csv",
+        "error": "HTTP Error 404: Not Found"
+      },
+      "weather": {
+        "status": "error",
+        "url": "https://boatracecsv.github.io/data/previews/sui/2026/11/26.csv",
+        "error": "HTTP Error 404: Not Found"
+      },
+      "original_exhibition": {
+        "status": "error",
+        "url": "https://boatracecsv.github.io/data/previews/original_exhibition/2026/11/26.csv",
+        "error": "HTTP Error 404: Not Found"
+      },
+      "odds_3t": {
+        "status": "error",
+        "url": "https://boatracecsv.github.io/data/previews/od3/2026/11/26.csv",
+        "error": "HTTP Error 404: Not Found"
+      },
+      "realtime_results": {
+        "status": "error",
+        "url": "https://boatracecsv.github.io/data/results/realtime/2026/11/26.csv",
+        "error": "HTTP Error 404: Not Found"
+      },
+      "payouts": {
+        "status": "error",
+        "url": "https://boatracecsv.github.io/data/results/payouts/2026/11/26.csv",
+        "error": "HTTP Error 404: Not Found"
+      }
+    },
     "2026-11-25": {
       "race_cards": {
         "status": "error",
@@ -64,44 +121,14 @@
         "url": "https://boatracecsv.github.io/data/programs/race_cards/2026/11/24.csv",
         "error": "HTTP Error 404: Not Found"
       },
-      "waku10": {
-        "status": "error",
-        "url": "https://boatracecsv.github.io/data/programs/waku10/2026/11/24.csv",
-        "error": "HTTP Error 404: Not Found"
-      },
-      "motor_history": {
-        "status": "error",
-        "url": "https://boatracecsv.github.io/data/programs/motor_history/2026/11/24.csv",
-        "error": "HTTP Error 404: Not Found"
-      },
-      "motor_stats": {
-        "status": "error",
-        "url": "https://boatracecsv.github.io/data/programs/motor_stats/2026/11/24.csv",
-        "error": "HTTP Error 404: Not Found"
-      },
       "exhibition": {
         "status": "error",
         "url": "https://boatracecsv.github.io/data/previews/tkz/2026/11/24.csv",
         "error": "HTTP Error 404: Not Found"
       },
-      "start_exhibition": {
-        "status": "error",
-        "url": "https://boatracecsv.github.io/data/previews/stt/2026/11/24.csv",
-        "error": "HTTP Error 404: Not Found"
-      },
       "weather": {
         "status": "error",
         "url": "https://boatracecsv.github.io/data/previews/sui/2026/11/24.csv",
-        "error": "HTTP Error 404: Not Found"
-      },
-      "original_exhibition": {
-        "status": "error",
-        "url": "https://boatracecsv.github.io/data/previews/original_exhibition/2026/11/24.csv",
-        "error": "HTTP Error 404: Not Found"
-      },
-      "odds_3t": {
-        "status": "error",
-        "url": "https://boatracecsv.github.io/data/previews/od3/2026/11/24.csv",
         "error": "HTTP Error 404: Not Found"
       },
       "realtime_results": {
@@ -247,33 +274,6 @@
       "payouts": {
         "status": "error",
         "url": "https://boatracecsv.github.io/data/results/payouts/2026/11/19.csv",
-        "error": "HTTP Error 404: Not Found"
-      }
-    },
-    "2026-11-18": {
-      "race_cards": {
-        "status": "error",
-        "url": "https://boatracecsv.github.io/data/programs/race_cards/2026/11/18.csv",
-        "error": "HTTP Error 404: Not Found"
-      },
-      "exhibition": {
-        "status": "error",
-        "url": "https://boatracecsv.github.io/data/previews/tkz/2026/11/18.csv",
-        "error": "HTTP Error 404: Not Found"
-      },
-      "weather": {
-        "status": "error",
-        "url": "https://boatracecsv.github.io/data/previews/sui/2026/11/18.csv",
-        "error": "HTTP Error 404: Not Found"
-      },
-      "realtime_results": {
-        "status": "error",
-        "url": "https://boatracecsv.github.io/data/results/realtime/2026/11/18.csv",
-        "error": "HTTP Error 404: Not Found"
-      },
-      "payouts": {
-        "status": "error",
-        "url": "https://boatracecsv.github.io/data/results/payouts/2026/11/18.csv",
         "error": "HTTP Error 404: Not Found"
       }
     }
